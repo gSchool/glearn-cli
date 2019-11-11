@@ -44,7 +44,11 @@ func init() {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// Config file not found. Either user's first time using CLI or they deleted it
 			configPath := fmt.Sprintf("%s/.glearn-config.yaml", u.HomeDir)
-			initialConfig := []byte(`api_token:`)
+			initialConfig := []byte(`
+api_token:
+aws_access_key_id:
+aws_secret_access_key:
+			`)
 
 			err = ioutil.WriteFile(configPath, initialConfig, 0666)
 			if err != nil {
@@ -58,7 +62,9 @@ func init() {
 		}
 	}
 
-	rootCmd.AddCommand(setTokenCmd)
+	rootCmd.AddCommand(setApiTokenCmd)
+	rootCmd.AddCommand(setAwsAccessKeyId)
+	rootCmd.AddCommand(setAwsSecretAccessKey)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(buildCmd)

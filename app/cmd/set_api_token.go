@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-var setTokenCmd = &cobra.Command{
-	Use:   "settoken [token]",
+var setApiTokenCmd = &cobra.Command{
+	Use:   "setapitoken [token]",
 	Short: "Set your API token",
 	Long: `
 		In order to use learn resources through our CLI you
