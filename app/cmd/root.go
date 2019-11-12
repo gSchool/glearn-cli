@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/user"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -59,11 +61,9 @@ func init() {
 			// Config file not found. Either user's first time using CLI or they deleted it
 			configPath := fmt.Sprintf("%s/.glearn-config.yaml", u.HomeDir)
 			initialConfig := []byte(
-				`
-api_token:
+				`api_token:
 aws_access_key_id:
-aws_secret_access_key:
-`,
+aws_secret_access_key:`,
 			)
 
 			err = ioutil.WriteFile(configPath, initialConfig, 0666)
@@ -78,6 +78,13 @@ aws_secret_access_key:
 			os.Exit(1)
 			return
 		}
+	}
+
+	err = godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+		os.Exit(1)
+		return
 	}
 
 	rootCmd.AddCommand(setApiTokenCmd)

@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -22,7 +23,7 @@ import (
 const tmpFile string = "preview-curriculum.zip"
 
 var previewCmd = &cobra.Command{
-	Use:   "preview [not_sure_yet]",
+	Use:   "preview [file_path]",
 	Short: "Preview your content",
 	Long:  `Long description for previewing`,
 	Args:  cobra.MinimumNArgs(1),
@@ -31,10 +32,17 @@ var previewCmd = &cobra.Command{
 		if len(args) != 1 {
 			fmt.Println("Usage: `learn preview` takes one argument")
 			os.Exit(1)
+			return
 		}
 
-		// Compress directory into tmpFile name
-		compressDirectory(args[0], tmpFile)
+		// Compress directory, output -> tmpFile
+		err := compressDirectory(args[0], tmpFile)
+		if err != nil {
+			fmt.Printf("Error compressing directory %s: %v", args[0], err)
+			os.Exit(1)
+			return
+		}
+
 		// Removes artifacts on user's machine
 		defer cleanUpFiles()
 
@@ -46,51 +54,88 @@ var previewCmd = &cobra.Command{
 		}
 		defer f.Close()
 
-		// Create a sha256 hash of the curriculum directory
-		hash := sha256.New()
-		if _, err := io.Copy(hash, f); err != nil {
-			log.Fatal(err)
-			return
-		}
-		// Make the hash URL safe with base64
-		checksum := base64.URLEncoding.EncodeToString(hash.Sum(nil))
-
-		// The io.Copy call for producing the hash consumed the read position of the
-		// file (file now at EOF). Need to reset to beginning for sending to s3
-		_, err = f.Seek(0, os.SEEK_SET)
+		// Create checksum of files in directory
+		checksum, err := createChecksumFromZip(f)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Printf("Failed to create checksum for compressed file. Err: %v", err)
 			os.Exit(1)
 			return
 		}
 
-		// TODO: FIRST CHECK IF THE CREDENTIALS CAN BE COERCED TO A STRING BELOW
-
-		// Set up an AWS session and create an s3 manager uploader
-		sess, err := session.NewSession(&aws.Config{
-			Region: aws.String("us-west-2"),
-			Credentials: credentials.NewStaticCredentials(
-				viper.Get("aws_access_key_id").(string),
-				viper.Get("aws_secret_access_key").(string),
-				"",
-			),
-		})
-		uploader := s3manager.NewUploader(sess)
-
-		// Upload compressed zip file to s3
-		_, err = uploader.Upload(&s3manager.UploadInput{
-			Bucket: aws.String("BUCKET_NAME_ENV"),
-			Key:    aws.String(fmt.Sprintf("KEY_NAME_ENV")),
-			Body:   f,
-		})
+		// Send compressed zip file to s3
+		err = uploadToS3(f, checksum)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Printf("Failed to upload zip file to s3. Err: %v", err)
 			os.Exit(1)
 			return
 		}
 
 		fmt.Println("Sucessfully uploaded your curriculum preview!")
 	},
+}
+
+func uploadToS3(file *os.File, checksum string) error {
+	// Coerce AWS credentials to strings
+	accessKeyID, ok := viper.Get("aws_access_key_id").(string)
+	if !ok {
+		return errors.New("Your aws_access_key_id must be a string")
+	}
+	secretAccessKey, ok := viper.Get("aws_secret_access_key").(string)
+	if !ok {
+		return errors.New("Your aws_secret_access_key must be a string")
+	}
+
+	// Set up an AWS session and create an s3 manager uploader
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-west-2"),
+		Credentials: credentials.NewStaticCredentials(
+			accessKeyID,
+			secretAccessKey,
+			"",
+		),
+	})
+	uploader := s3manager.NewUploader(sess)
+
+	s3Bucket := os.Getenv("AWS_S3_BUCKET")
+	keyPrefix := os.Getenv("AWS_KEY_PREFIX")
+
+	if s3Bucket == "" || keyPrefix == "" {
+		return errors.New("Please ensure you have both your AWS_S3_BUCKET and AWS_KEY_PREFIX env variables set")
+	}
+
+	// Upload compressed zip file to s3
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(s3Bucket),
+		Key:    aws.String(fmt.Sprintf("%s/%s-%s", keyPrefix, checksum, tmpFile)),
+		Body:   file,
+	})
+	if err != nil {
+		return fmt.Errorf("Error uploading assets to s3: %v", err)
+	}
+
+	return nil
+}
+
+func createChecksumFromZip(file *os.File) (string, error) {
+	// Create a sha256 hash of the curriculum directory
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	// Make the hash URL safe with base64
+	checksum := base64.URLEncoding.EncodeToString(hash.Sum(nil))
+
+	// The io.Copy call for producing the hash consumed the read position of the
+	// file (file now at EOF). Need to reset to beginning for sending to s3
+	_, err := file.Seek(0, io.SeekStart)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+		return "", err
+	}
+
+	return checksum, nil
 }
 
 func cleanUpFiles() {
@@ -154,7 +199,9 @@ func compressDirectory(source, target string) error {
 			return err
 		}
 		defer file.Close()
+
 		_, err = io.Copy(writer, file)
+
 		return err
 	})
 
