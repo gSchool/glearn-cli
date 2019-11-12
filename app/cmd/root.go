@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/user"
 
@@ -80,12 +79,10 @@ aws_secret_access_key:`,
 		}
 	}
 
-	err = godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-		os.Exit(1)
-		return
-	}
+	// Loads env variables from .env file. This is for development only. When releasing, there
+	// is no .env file and rather we pass in env vars to the .goreleaser.yml when creating
+	// a release from the command line
+	godotenv.Load()
 
 	rootCmd.AddCommand(setApiTokenCmd)
 	rootCmd.AddCommand(setAwsAccessKeyId)
