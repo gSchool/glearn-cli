@@ -84,6 +84,14 @@ func uploadToS3(file *os.File, checksum string) error {
 	if !ok {
 		return errors.New("Your aws_secret_access_key must be a string")
 	}
+	bucketName, ok := viper.Get("aws_s3_bucket").(string)
+	if !ok {
+		return errors.New("Your aws_s3_bucket must be a string")
+	}
+	keyPrefix, ok := viper.Get("aws_s3_key_prefix").(string)
+	if !ok {
+		return errors.New("Your aws_s3_key_prefix must be a string")
+	}
 
 	// Set up an AWS session and create an s3 manager uploader
 	sess, err := session.NewSession(&aws.Config{
@@ -96,16 +104,9 @@ func uploadToS3(file *os.File, checksum string) error {
 	})
 	uploader := s3manager.NewUploader(sess)
 
-	s3Bucket := os.Getenv("AWS_S3_BUCKET")
-	keyPrefix := os.Getenv("AWS_KEY_PREFIX")
-
-	if s3Bucket == "" || keyPrefix == "" {
-		return errors.New("Please ensure you have both your AWS_S3_BUCKET and AWS_KEY_PREFIX env variables set")
-	}
-
 	// Upload compressed zip file to s3
 	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(s3Bucket),
+		Bucket: aws.String(bucketName),
 		Key:    aws.String(fmt.Sprintf("%s/%s-%s", keyPrefix, checksum, tmpFile)),
 		Body:   file,
 	})

@@ -62,7 +62,9 @@ func init() {
 			initialConfig := []byte(
 				`api_token:
 aws_access_key_id:
-aws_secret_access_key:`,
+aws_secret_access_key:
+aws_s3_bucket:
+aws_s3_key_prefix:`,
 			)
 
 			err = ioutil.WriteFile(configPath, initialConfig, 0666)
@@ -87,6 +89,8 @@ aws_secret_access_key:`,
 	rootCmd.AddCommand(setApiTokenCmd)
 	rootCmd.AddCommand(setAwsAccessKeyId)
 	rootCmd.AddCommand(setAwsSecretAccessKey)
+	rootCmd.AddCommand(setBucketName)
+	rootCmd.AddCommand(setBucketKey)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(buildCmd)
