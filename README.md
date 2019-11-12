@@ -32,7 +32,14 @@ glearn-cli setawssecretaccesskey [secret_access_key]
 ```
 
 ## Development
-Be sure to add a `.env` with the variables set from the `.env.example`
+Add a `.env` with the variables set from the `.env.example`
+
+Create/add a github token with `repo` access. This gives you the ability to push releases and their binaries.
+
+To release run:
+```
+GITHUB_TOKEN=your_githhub_token goreleaser release
+```
 
 Build
 ```
