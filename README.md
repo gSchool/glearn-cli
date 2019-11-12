@@ -34,13 +34,6 @@ glearn-cli setawssecretaccesskey [secret_access_key]
 ## Development
 Add a `.env` with the variables set from the `.env.example`
 
-Create/add a github token with `repo` access. This gives you the ability to push releases and their binaries.
-
-To release run:
-```
-GITHUB_TOKEN=your_githhub_token goreleaser release
-```
-
 Build
 ```
 go build -o glearn-cli main.go
@@ -54,6 +47,23 @@ Run
 Or for quicker iterations:
 ```
 go run main.go [command...] [flag...]
+```
+
+# Releases
+
+Create/add a github token with `repo` access. This gives you the ability to push releases and their binaries.
+
+For test release run:
+```
+goreleaser --snapshot --skip-publish --rm-dist
+```
+
+To release run:
+```
+GITHUB_TOKEN=your_githhub_token \
+    AWS_S3_BUCKET=bucket_from_env \
+    AWS_KEY_PREFIX=key_prefix_from_env \
+    goreleaser release
 ```
 
 ## Examples

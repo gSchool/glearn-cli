@@ -11,6 +11,8 @@
 builds:
 - env:
   - CGO_ENABLED=0
+  - AWS_S3_BUCKET=${AWS_S3_BUCKET}
+  - AWS_KEY_PREFIX=${AWS_KEY_PREFIX}
 archives:
 - replacements:
     darwin: Darwin
