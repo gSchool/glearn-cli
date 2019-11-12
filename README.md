@@ -53,6 +53,16 @@ go run main.go [command...] [flag...]
 
 Create/add a github token with `repo` access. This gives you the ability to push releases and their binaries.
 
+Create a new semantic version tag (ex. 0.1.0)
+```
+git tag -a v{semantic_version} -m "Some new release commit"
+```
+
+Push new tag
+```
+git push origin v{semantic_version}
+```
+
 For test release run:
 ```
 goreleaser --snapshot --skip-publish --rm-dist
