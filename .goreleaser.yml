@@ -2,7 +2,8 @@
 # Make sure to check the documentation at http://goreleaser.com
 
 builds:
-- env:
+- binary: glearn
+  env:
   - CGO_ENABLED=0
 archives:
 - replacements:
@@ -21,3 +22,19 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
+brews:
+  -
+    name: glearn
+    github:
+      owner: Galvanize-IT
+      name: homebrew-glearn
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@carlosbecker.com
+    download_strategy: GitHubPrivateRepositoryReleaseDownloadStrategy
+    description: "Long description for glearn-cli"
+    dependencies:
+      - git
+      - zsh
+    install: |
+      bin.install "glearn"
