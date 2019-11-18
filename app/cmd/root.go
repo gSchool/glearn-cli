@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/user"
 
-	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -18,18 +17,30 @@ var rootCmd = &cobra.Command{
 	Long:  `A longer description of what glearn is`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			return errors.New("Please set your API token first with `glearn setapitoken [token]`")
+			return errors.New("Please set your API token first with `glearn set --api_token=value`")
 		}
 
 		if viper.Get("aws_access_key_id") == "" || viper.Get("aws_access_key_id") == nil {
 			return errors.New(
-				"Please set your AWS credentials first with `glearn setawsaccesskeyid [access_key_id] or by editing your ~/.glearn-config.yaml`",
+				"Please set your AWS access key ID first with `glearn set --access_key_id=value or by editing your ~/.glearn-config.yaml`",
 			)
 		}
 
 		if viper.Get("aws_secret_access_key") == "" || viper.Get("aws_secret_access_key") == nil {
 			return errors.New(
-				"Please set your AWS credentials first with `glearn setawssecretaccesskey [secret_access_key] or by editing your ~/.glearn-config.yaml`",
+				"Please set your AWS secret access key first with `glearn set --secret_access_key=value or by editing your ~/.glearn-config.yaml`",
+			)
+		}
+
+		if viper.Get("aws_s3_bucket") == "" || viper.Get("aws_s3_bucket") == nil {
+			return errors.New(
+				"Please set your AWS s3 bucket first with `glearn set --s3_bucket=value or by editing your ~/.glearn-config.yaml`",
+			)
+		}
+
+		if viper.Get("aws_s3_key_prefix") == "" || viper.Get("aws_s3_key_prefix") == nil {
+			return errors.New(
+				"Please set your AWS s3 key prefix first with `glearn set --s3_prefix=value or by editing your ~/.glearn-config.yaml`",
 			)
 		}
 
@@ -43,6 +54,21 @@ var rootCmd = &cobra.Command{
 		fmt.Println("ran main command")
 	},
 }
+
+// APIToken is an initialized string used for holding it's flag value
+var APIToken string
+
+// AwsAccessKeyID is an initialized string used for holding it's flag value
+var AwsAccessKeyID string
+
+// AwsSecretAccessKey is an initialized string used for holding it's flag value
+var AwsSecretAccessKey string
+
+// AwsS3Bucket is an initialized string used for holding it's flag value
+var AwsS3Bucket string
+
+// AwsS3KeyPrefix is an initialized string used for holding it's flag value
+var AwsS3KeyPrefix string
 
 func init() {
 	u, err := user.Current()
@@ -81,19 +107,16 @@ aws_s3_key_prefix:`,
 		}
 	}
 
-	// Loads env variables from .env file. This is for development only. When releasing, there
-	// is no .env file and rather we pass in env vars to the .goreleaser.yml when creating
-	// a release from the command line
-	godotenv.Load()
-
-	rootCmd.AddCommand(setApiTokenCmd)
-	rootCmd.AddCommand(setAwsAccessKeyId)
-	rootCmd.AddCommand(setAwsSecretAccessKey)
-	rootCmd.AddCommand(setBucketName)
-	rootCmd.AddCommand(setBucketKey)
+	rootCmd.AddCommand(setCmd)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(buildCmd)
+
+	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
+	setCmd.Flags().StringVarP(&AwsAccessKeyID, "access_key_id", "", "", "Access key ID for glearn-cli")
+	setCmd.Flags().StringVarP(&AwsSecretAccessKey, "secret_access_key", "", "", "Secret access key for glearn-cli")
+	setCmd.Flags().StringVarP(&AwsS3Bucket, "s3_bucket", "", "", "S3 bucket name for glearn-cli")
+	setCmd.Flags().StringVarP(&AwsS3KeyPrefix, "s3_prefix", "", "", "S3 bucket key prefix for glearn-cli")
 }
 
 // Execute runs the glearn CLI according to the user's command/subcommand/flags
