@@ -14,14 +14,16 @@ aws_s3_key_prefix: S3_BUCKET_KEY_PREFIX
 
 Or by using the set commands:
 ```
-glearn-cli set [...flags]
+glearn set [...flags]
 ```
 
 _**Option A:**_
 
+Create/add a github token with full `repo` access. If you are logged into github, you can go here: `https://github.com/settings/tokens` to add one. This gives you the ability to use brew to manage glearn.
+
 ```
-brew tap Galvanize-IT/glearn
-brew install Galvanize-IT/glearn/glearn
+HOMEBREW_GITHUB_API_TOKEN=YOUR_TOKEN brew tap Galvanize-IT/glearn
+HOMEBREW_GITHUB_API_TOKEN=YOUR_TOKEN brew install Galvanize-IT/glearn/glearn
 ```
 
 _**Option B:**_
@@ -39,8 +41,6 @@ go install github.com/bradford-hamilton/monkey-lang
 This will place the binary in your `go/bin` and is ready to use.
 
 ## Development
-Add a `.env` with the variables set from the `.env.example`
-
 Build
 ```
 go build -o glearn-cli main.go
@@ -48,7 +48,7 @@ go build -o glearn-cli main.go
 
 Run
 ```
-./glearn-cli [command...] [flag...]
+./glearn [command...] [flag...]
 ```
 
 Or for quicker iterations:
@@ -87,20 +87,25 @@ GITHUB_TOKEN=your_githhub_token \
 
 Setting your API token:
 ```
-glearn-cli settoken my_neat_token_123_456
+glearn set --api_token=neat_token_123
+```
+
+Preview a `test_curriculum` directory:
+```
+glearn preview test_curriculum
 ```
 
 Creating new:
 ```
-glearn-cli new
+glearn new
 ```
 
 Building:
 ```
-glearn-cli build
+glearn build
 ```
 
 Publishing:
 ```
-glearn-cli publish
+glearn publish
 ```
