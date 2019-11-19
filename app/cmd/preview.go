@@ -2,15 +2,19 @@ package cmd
 
 import (
 	"archive/zip"
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -21,6 +25,10 @@ import (
 )
 
 const tmpFile string = "preview-curriculum.zip"
+
+type LearnPreviewResponse struct {
+	Url string `json:"url"`
+}
 
 var previewCmd = &cobra.Command{
 	Use:   "preview [file_path]",
@@ -63,34 +71,91 @@ var previewCmd = &cobra.Command{
 		}
 
 		// Send compressed zip file to s3
-		err = uploadToS3(f, checksum)
+		bucketKey, err := uploadToS3(f, checksum)
 		if err != nil {
 			fmt.Printf("Failed to upload zip file to s3. Err: %v", err)
 			os.Exit(1)
 			return
 		}
 
-		fmt.Println("Sucessfully uploaded your curriculum preview!")
+		res, err := notifyLearn(bucketKey)
+		if err != nil {
+			fmt.Printf("Failed to notify learn of new preview content. Err: %v", err)
+			os.Exit(1)
+			return
+		}
+
+		// POST to /api/v1/releases create method just need s3 key
+		// Need to add functionality to endpoing on learn to take some sort of param saying I am a single content file or a full release
+		// Would be great to ping an endpoint seeing when the build is complete and return the url to go to
+
+		// Maybes?
+		// Potentially make stage bucket a flag or something instead of changing env vars every time?
+		// Possibly a loader bar for the zip upload? Maybe something like heroku's little animation showing things are processing
+
+		fmt.Printf("Sucessfully uploaded your preview! You can find your content at: %s", res.Url)
 	},
 }
 
-func uploadToS3(file *os.File, checksum string) error {
+func notifyLearn(bucketKey string) (*LearnPreviewResponse, error) {
+	apiToken, ok := viper.Get("api_token").(string)
+	if !ok {
+		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
+	}
+
+	payload := map[string]string{
+		"bucket_key_name": bucketKey,
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{Timeout: time.Second * 10}
+
+	req, err := http.NewRequest("POST", "https://httpbin.org/post", bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+	defer req.Body.Close()
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
+	}
+
+	l := &LearnPreviewResponse{}
+	json.NewDecoder(res.Body).Decode(l)
+
+	return l, nil
+}
+
+func uploadToS3(file *os.File, checksum string) (string, error) {
 	// Coerce AWS credentials to strings
 	accessKeyID, ok := viper.Get("aws_access_key_id").(string)
 	if !ok {
-		return errors.New("Your aws_access_key_id must be a string")
+		return "", errors.New("Your aws_access_key_id must be a string")
 	}
 	secretAccessKey, ok := viper.Get("aws_secret_access_key").(string)
 	if !ok {
-		return errors.New("Your aws_secret_access_key must be a string")
+		return "", errors.New("Your aws_secret_access_key must be a string")
 	}
 	bucketName, ok := viper.Get("aws_s3_bucket").(string)
 	if !ok {
-		return errors.New("Your aws_s3_bucket must be a string")
+		return "", errors.New("Your aws_s3_bucket must be a string")
 	}
 	keyPrefix, ok := viper.Get("aws_s3_key_prefix").(string)
 	if !ok {
-		return errors.New("Your aws_s3_key_prefix must be a string")
+		return "", errors.New("Your aws_s3_key_prefix must be a string")
 	}
 
 	// Set up an AWS session and create an s3 manager uploader
@@ -104,17 +169,19 @@ func uploadToS3(file *os.File, checksum string) error {
 	})
 	uploader := s3manager.NewUploader(sess)
 
+	bucketKey := fmt.Sprintf("%s/%s-%s", keyPrefix, checksum, tmpFile)
+
 	// Upload compressed zip file to s3
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucketName),
-		Key:    aws.String(fmt.Sprintf("%s/%s-%s", keyPrefix, checksum, tmpFile)),
+		Key:    aws.String(bucketKey),
 		Body:   file,
 	})
 	if err != nil {
-		return fmt.Errorf("Error uploading assets to s3: %v", err)
+		return "", fmt.Errorf("Error uploading assets to s3: %v", err)
 	}
 
-	return nil
+	return bucketKey, nil
 }
 
 func createChecksumFromZip(file *os.File) (string, error) {

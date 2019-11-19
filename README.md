@@ -19,7 +19,7 @@ glearn set [...flags]
 
 _**Option A:**_
 
-Create/add a github token with full `repo` access. If you are logged into github, you can go here: `https://github.com/settings/tokens` to add one. This gives you the ability to use brew to manage glearn.
+Create/add a github token with full `repo` access. If you are logged into github, you can go here: [your tokens](https://github.com/settings/tokens) to add one. This gives you the ability to use brew to manage glearn.
 
 ```
 HOMEBREW_GITHUB_API_TOKEN=YOUR_TOKEN brew tap Galvanize-IT/glearn
