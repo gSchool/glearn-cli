@@ -1,14 +1,6 @@
 # glearn-cli
 
 ## Installation
-Install glearn-cli using `go install`:
-
-```
-go install github.com/Galvanize-IT/glearn-cli
-```
-
-- We will soon be adding other installation methods that don't require
-golang to be installed
 
 Make sure to set your config variables in `~/.glearn-config.yaml`. You can do this by either manually
 editing the file:
@@ -16,20 +8,35 @@ editing the file:
 api_token: YOUR_API_TOKEN
 aws_access_key_id: S3_USER_ACCESS_KEY_ID
 aws_secret_access_key: S3_USER_SECRET_ACCESS_KEY
+aws_s3_bucket: S3_BUCKET_NAME
+aws_s3_key_prefix: S3_BUCKET_KEY_PREFIX
 ```
 
 Or by using the set commands:
 ```
-glearn-cli setapitoken [token]
+glearn-cli set [...flags]
 ```
 
-```
-glearn-cli setawsaccesskeyid [access_key_id]
-```
+_**Option A:**_
 
 ```
-glearn-cli setawssecretaccesskey [secret_access_key]
+brew tap Galvanize-IT/glearn-cli
+brew install Galvanize-IT/glearn-cli/glearn-cli
 ```
+
+_**Option B:**_
+
+If you mosey on over to [releases](https://github.com/Galvanize-IT/glearn-cli/releases), you'll find binaries for darwin, linux, windows, and amd64. You can download directly from there.
+
+_**Option C:**_
+
+If you have Go installed on your machine, use `go install`:
+
+```
+go install github.com/bradford-hamilton/monkey-lang
+```
+
+This will place the binary in your `go/bin` and is ready to use.
 
 ## Development
 Add a `.env` with the variables set from the `.env.example`
