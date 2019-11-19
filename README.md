@@ -20,8 +20,8 @@ glearn-cli set [...flags]
 _**Option A:**_
 
 ```
-brew tap Galvanize-IT/glearn-cli
-brew install Galvanize-IT/glearn-cli/glearn-cli
+brew tap Galvanize-IT/glearn
+brew install Galvanize-IT/glearn/glearn
 ```
 
 _**Option B:**_

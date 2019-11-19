@@ -33,7 +33,7 @@ brews:
       email: goreleaser@carlosbecker.com
     folder: Formula
     download_strategy: GitHubPrivateRepositoryReleaseDownloadStrategy
-    custom_require: custom_download_strategy
+    custom_require: ../lib/custom_download_strategy
     description: "Long description for glearn-cli"
     dependencies:
       - git
