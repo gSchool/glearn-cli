@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -46,29 +45,38 @@ func currentBranch() (string, error) {
 	out, err := exec.Command("bash", "-c", branchCommand).Output()
 	if err != nil {
 		return "", err
-		log.Fatal("Cannot run git branch detection with bash:", err)
 	}
 
 	return strings.TrimSpace(string(out)), nil
 }
 
 func pushToRemote(branch string) error {
-	cmd := exec.Command("git", "push", "origin", branch)
-	stdout, err := cmd.StdoutPipe()
+	out, err := exec.Command("bash", "-c", fmt.Sprintf("git push origin %s", branch)).Output()
 	if err != nil {
-		return err
+		return "", err
 	}
-	defer stdout.Close()
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	resp, err := ioutil.ReadAll(stdout)
-	if err != nil {
-		return err
-	}
-	if err := cmd.Wait(); err != nil {
-		return err
-	}
-	fmt.Println("stdout:", string(resp))
+
+	fmt.Println("push out:", strings.TrimSpace(string(out)))
 	return nil
 }
+
+// func pushToRemote(branch string) error {
+// 	cmd := exec.Command("git", "push", "origin", branch)
+// 	stdout, err := cmd.StdoutPipe()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer stdout.Close()
+// 	if err := cmd.Start(); err != nil {
+// 		return err
+// 	}
+// 	resp, err := ioutil.ReadAll(stdout)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if err := cmd.Wait(); err != nil {
+// 		return err
+// 	}
+// 	fmt.Println("stdout:", string(resp))
+// 	return nil
+// }
