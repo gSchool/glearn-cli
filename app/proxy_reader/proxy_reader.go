@@ -2,6 +2,8 @@ package proxy_reader
 
 import (
 	"os"
+
+	"github.com/cheggaaa/pb"
 )
 
 type ProxyReader struct {
