@@ -199,7 +199,7 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(bucketKey),
-		Body:   pr,
+		Body:   pr, // As our file is read and uploaded, our proxy reader will update/render the progress bar
 	})
 	if err != nil {
 		return "", fmt.Errorf("Error uploading assets to s3: %v", err)
