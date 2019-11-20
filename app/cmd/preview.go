@@ -16,10 +16,12 @@ import (
 	"strings"
 	"time"
 
+	proxyReader "github.com/Galvanize-IT/glearn-cli/app/proxy_reader"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -167,15 +169,37 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 			"",
 		),
 	})
-	uploader := s3manager.NewUploader(sess)
 
+	// Create new uploader and specify buffer size (in bytes) to use when buffering
+	// data into chunks and sending them as parts to S3 and clean up on error
+	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
+		u.PartSize = 5 * 1024 * 1024
+		u.LeavePartsOnError = false
+	})
+
+	// Generate the bucket key using the key prefix, checksum, and tmpFile name
 	bucketKey := fmt.Sprintf("%s/%s-%s", keyPrefix, checksum, tmpFile)
+
+	// Obtain FileInfo so we can look at length in bytes
+	fileStats, err := file.Stat()
+	if err != nil {
+		return "", fmt.Errorf("Could not obtain file stats for %s", file.Name())
+	}
+
+	// Create and start a new progress bar
+	bar := pb.Full.Start64(fileStats.Size())
+
+	// Create a ProxyReader and attach the file and progress bar
+	pr, err := proxyReader.New(file, bar)
+	if err != nil {
+		return "", err
+	}
 
 	// Upload compressed zip file to s3
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(bucketKey),
-		Body:   file,
+		Body:   pr,
 	})
 	if err != nil {
 		return "", fmt.Errorf("Error uploading assets to s3: %v", err)
