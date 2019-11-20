@@ -25,14 +25,25 @@ var buildCmd = &cobra.Command{
 
 		branch, err := currentBranch()
 		if err != nil {
-			log.Fatal("Cannot run git branch detection with bash:", err)
+			log.Println("Cannot run git branch detection with bash:", err)
+			os.Exit(1)
 		}
+		remote, err := remoteName()
+		if err != nil {
+			log.Println("Cannot run git branch detection with bash:", err)
+			os.Exit(1)
+		}
+		if remote == "" {
+			log.Println("no fetch remote detected")
+			os.Exit(1)
+		}
+		fmt.Println("remote:", remote)
 
 		if branch != "publish#169468994" { // TODO change to master before merging
 			fmt.Println("You are currently not on branch 'master'- the `learn build` command must be on master branch to push all currently committed work to your 'origin master' remote.")
 			os.Exit(1)
 		}
-		fmt.Println("Pushing work to origin remote for ", branch)
+		fmt.Println("Pushing work to origin remote for", branch)
 		err = pushToRemote(branch)
 		if err != nil {
 			fmt.Printf("Error pushing to origin remote on branch %s: %s", err)
@@ -56,27 +67,15 @@ func pushToRemote(branch string) error {
 		return err
 	}
 
-	fmt.Println("push out:", strings.TrimSpace(string(out)))
+	fmt.Println(strings.TrimSpace(string(out)))
 	return nil
 }
 
-// func pushToRemote(branch string) error {
-// 	cmd := exec.Command("git", "push", "origin", branch)
-// 	stdout, err := cmd.StdoutPipe()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer stdout.Close()
-// 	if err := cmd.Start(); err != nil {
-// 		return err
-// 	}
-// 	resp, err := ioutil.ReadAll(stdout)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if err := cmd.Wait(); err != nil {
-// 		return err
-// 	}
-// 	fmt.Println("stdout:", string(resp))
-// 	return nil
-// }
+func remoteName() (string, error) {
+	out, err := exec.Command("bash", "-c", "git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'").Output()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(out)), nil
+}
