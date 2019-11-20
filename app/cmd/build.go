@@ -51,7 +51,7 @@ func currentBranch() (string, error) {
 }
 
 func pushToRemote(branch string) error {
-	out, err := exec.Command("bash", "-c", fmt.Sprintf("git push origin %s | echo", branch)).Output()
+	out, err := exec.Command("bash", "-c", fmt.Sprintf("git push origin %s", branch)).CombinedOutput()
 	if err != nil {
 		return err
 	}
