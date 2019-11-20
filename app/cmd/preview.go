@@ -21,7 +21,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -190,10 +189,7 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 	bar := pb.Full.Start64(fileStats.Size())
 
 	// Create a ProxyReader and attach the file and progress bar
-	pr, err := proxyReader.New(file, bar)
-	if err != nil {
-		return "", err
-	}
+	pr := proxyReader.New(file, bar)
 
 	// Upload compressed zip file to s3
 	_, err = uploader.Upload(&s3manager.UploadInput{

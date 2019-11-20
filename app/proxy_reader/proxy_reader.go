@@ -2,8 +2,6 @@ package proxy_reader
 
 import (
 	"os"
-
-	"github.com/cheggaaa/pb/v3"
 )
 
 type ProxyReader struct {
@@ -13,11 +11,11 @@ type ProxyReader struct {
 
 // New creates a new ProxyReader assigning the file, the file's size, and the
 // *pb.ProgressBar passed in to it
-func New(file *os.File, bar *pb.ProgressBar) (*ProxyReader, error) {
+func New(file *os.File, bar *pb.ProgressBar) *ProxyReader {
 	return &ProxyReader{
 		file:        file,
 		progressBar: bar,
-	}, nil
+	}
 }
 
 // Read passes the slice of bytes to read right to file.Read() -> kind of like a "super" call
