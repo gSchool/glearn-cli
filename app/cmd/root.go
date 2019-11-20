@@ -79,7 +79,7 @@ func init() {
 	}
 
 	viper.AddConfigPath(u.HomeDir)
-	viper.SetConfigName(".glearn-config.yaml")
+	viper.SetConfigName(".glearn-config")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
