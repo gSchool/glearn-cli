@@ -6,13 +6,16 @@ import (
 	"github.com/cheggaaa/pb/v3"
 )
 
+// ProxyReader holds a file and a progress bar. We use it to implement an
+// io.Reader when uploading files to s3. This gives us the opportunity
+// to write our own Read and ReadAt methods and update the progress bar
+// throughout.
 type ProxyReader struct {
-	file        *os.File        // file
-	progressBar *pb.ProgressBar // Every call to read can update progress bar
+	file        *os.File
+	progressBar *pb.ProgressBar
 }
 
-// New creates a new ProxyReader assigning the file, the file's size, and the
-// *pb.ProgressBar passed in to it
+// New creates a new ProxyReader assigning values to the private file and the *pb.ProgressBar fields.
 func New(file *os.File, bar *pb.ProgressBar) *ProxyReader {
 	return &ProxyReader{
 		file:        file,
@@ -20,14 +23,17 @@ func New(file *os.File, bar *pb.ProgressBar) *ProxyReader {
 	}
 }
 
-// Read passes the slice of bytes to read right to file.Read() -> kind of like a "super" call
-// with no additional functionality
+// Read must be implemented for ProxyReader, however we just pass the slice
+// of bytes argument right through to the file's Read method. We need no extra
+// functionality here.
 func (pr *ProxyReader) Read(p []byte) (int, error) {
 	return pr.file.Read(p)
 }
 
+// ReadAt passes the slice of bytes right to file.ReadAt() -> kind of like a "super" call
+// and then updates the ProxyReader's progress bar on each read
 func (pr *ProxyReader) ReadAt(p []byte, off int64) (int, error) {
-	// Call original ReadAt method with slice the slice of bytes
+	// Call original ReadAt method with the slice of bytes
 	n, err := pr.file.ReadAt(p, off)
 	if err != nil {
 		return n, err
@@ -40,6 +46,8 @@ func (pr *ProxyReader) ReadAt(p []byte, off int64) (int, error) {
 	return n, err
 }
 
+// Seek must be implemented for ProxyReader, however we just pass offset and whence args
+// right through to the file's Seek method. We need no extra functionality here.
 func (pr *ProxyReader) Seek(offset int64, whence int) (int64, error) {
 	return pr.file.Seek(offset, whence)
 }

@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// rootCmd is the base for all our commands. It currently just checks for all the
+// necessary credentials and prompts the user to set them if they are not there.
 var rootCmd = &cobra.Command{
 	Use:   "glearn",
 	Short: "glearn is a cli application for Learn",
@@ -19,25 +21,21 @@ var rootCmd = &cobra.Command{
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
 			return errors.New("Please set your API token first with `glearn set --api_token=value`")
 		}
-
 		if viper.Get("aws_access_key_id") == "" || viper.Get("aws_access_key_id") == nil {
 			return errors.New(
 				"Please set your AWS access key ID first with `glearn set --access_key_id=value or by editing your ~/.glearn-config.yaml`",
 			)
 		}
-
 		if viper.Get("aws_secret_access_key") == "" || viper.Get("aws_secret_access_key") == nil {
 			return errors.New(
 				"Please set your AWS secret access key first with `glearn set --secret_access_key=value or by editing your ~/.glearn-config.yaml`",
 			)
 		}
-
 		if viper.Get("aws_s3_bucket") == "" || viper.Get("aws_s3_bucket") == nil {
 			return errors.New(
 				"Please set your AWS s3 bucket first with `glearn set --s3_bucket=value or by editing your ~/.glearn-config.yaml`",
 			)
 		}
-
 		if viper.Get("aws_s3_key_prefix") == "" || viper.Get("aws_s3_key_prefix") == nil {
 			return errors.New(
 				"Please set your AWS s3 key prefix first with `glearn set --s3_prefix=value or by editing your ~/.glearn-config.yaml`",
@@ -93,6 +91,7 @@ aws_s3_bucket:
 aws_s3_key_prefix:`,
 			)
 
+			// Write a ~/.glearn-config.yaml file with all the needed credential keys to fill in.
 			err = ioutil.WriteFile(configPath, initialConfig, 0666)
 			if err != nil {
 				fmt.Println("Error writing your glearn config file")
@@ -107,11 +106,13 @@ aws_s3_key_prefix:`,
 		}
 	}
 
+	// Add all the other glearn commands defined in cmd/ directory
 	rootCmd.AddCommand(setCmd)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(buildCmd)
 
+	// Check for flags set by the user and hyrate their corresponding variables.
 	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
 	setCmd.Flags().StringVarP(&AwsAccessKeyID, "access_key_id", "", "", "Access key ID for glearn-cli")
 	setCmd.Flags().StringVarP(&AwsSecretAccessKey, "secret_access_key", "", "", "Secret access key for glearn-cli")

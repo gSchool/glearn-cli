@@ -26,12 +26,22 @@ import (
 	"github.com/spf13/viper"
 )
 
+// tmpFile is used throughout as the temporary zip file target location.
 const tmpFile string = "preview-curriculum.zip"
 
+// LearnPreviewResponse is a simple struct defining the shape of data we care about
+// that comes back from notifying Learn for decoding into.
 type LearnPreviewResponse struct {
 	Url string `json:"url"`
 }
 
+// previewCmd is executed when the `glearn preview` command is used. Preview's concerns:
+// 1. Compress directory/file into target location.
+// 2. Defer cleaning up the file after command is finished.
+// 3. Create a checksum for the zip file.
+// 4. Upload the zip file to s3.
+// 5. Notify learn that new content is available for building.
+// 6. Handle progress bar for s3 upload.
 var previewCmd = &cobra.Command{
 	Use:   "preview [file_path]",
 	Short: "Preview your content",
@@ -87,18 +97,18 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
-		// POST to /api/v1/releases create method just need s3 key
-		// Need to add functionality to endpoing on learn to take some sort of param saying I am a single content file or a full release
+		// Need to add functionality to endpoint on learn to take some sort of param saying I am a single content file vs a full release
 		// Would be great to ping an endpoint seeing when the build is complete and return the url to go to
 
 		// Maybes?
 		// Potentially make stage bucket a flag or something instead of changing env vars every time?
-		// Possibly a loader bar for the zip upload? Maybe something like heroku's little animation showing things are processing
 
 		fmt.Printf("Sucessfully uploaded your preview! You can find your content at: %s", res.Url)
 	},
 }
 
+// notifyLearn takes an s3 bucket key name as an argument is used to tell Learn there is new preview
+// content on s3 and where to find it so it can build/preview.
 func notifyLearn(bucketKey string) (*LearnPreviewResponse, error) {
 	apiToken, ok := viper.Get("api_token").(string)
 	if !ok {
@@ -141,6 +151,7 @@ func notifyLearn(bucketKey string) (*LearnPreviewResponse, error) {
 	return l, nil
 }
 
+// uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
 func uploadToS3(file *os.File, checksum string) (string, error) {
 	// Coerce AWS credentials to strings
 	accessKeyID, ok := viper.Get("aws_access_key_id").(string)
@@ -160,7 +171,7 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 		return "", errors.New("Your aws_s3_key_prefix must be a string")
 	}
 
-	// Set up an AWS session and create an s3 manager uploader
+	// Set up an AWS session with the user's credentials
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-west-2"),
 		Credentials: credentials.NewStaticCredentials(
@@ -173,8 +184,8 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 	// Create new uploader and specify buffer size (in bytes) to use when buffering
 	// data into chunks and sending them as parts to S3 and clean up on error
 	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
-		u.PartSize = 5 * 1024 * 1024
-		u.LeavePartsOnError = false
+		u.PartSize = 5 * 1024 * 1024 // 5,242,880 bytes or 5.24288 Mb which is the default minimum here
+		u.LeavePartsOnError = false  // If an error occurs during upload to s3, clean up & don't leave partial upload there
 	})
 
 	// Generate the bucket key using the key prefix, checksum, and tmpFile name
@@ -205,6 +216,11 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 	return bucketKey, nil
 }
 
+// createChecksumFromZip takes a pointer to a file and creates a sha256 checksum
+// of the content. We use this for naming the s3 bucket key so that we don't write
+// duplicates to s3. The call to io.Copy actually consumes the read position of
+// the file to EOF so we call file.Seek and set the read position back to the
+// beginning of the file
 func createChecksumFromZip(file *os.File) (string, error) {
 	// Create a sha256 hash of the curriculum directory
 	hash := sha256.New()
@@ -227,6 +243,8 @@ func createChecksumFromZip(file *os.File) (string, error) {
 	return checksum, nil
 }
 
+// cleanUpFiles removes the tmp zipfile that was created for uploading to s3. We
+// wouldn't want to leave artifacts on user's machines
 func cleanUpFiles() {
 	err := os.Remove(tmpFile)
 	if err != nil {
@@ -234,6 +252,9 @@ func cleanUpFiles() {
 	}
 }
 
+// compressDirectory takes a source file path (where the content you want zipped lives)
+// and a target file path (where to put the zip file) and recursively compresses the source.
+// Source can either be a directory or a single file
 func compressDirectory(source, target string) error {
 	zipfile, err := os.Create(target)
 	if err != nil {
