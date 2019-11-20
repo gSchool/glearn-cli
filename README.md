@@ -35,7 +35,7 @@ _**Option C:**_
 If you have Go installed on your machine, use `go install`:
 
 ```
-go install github.com/bradford-hamilton/monkey-lang
+go install github.com/Galvanize-IT/glearn-cli
 ```
 
 This will place the binary in your `go/bin` and is ready to use.
