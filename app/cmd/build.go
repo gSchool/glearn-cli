@@ -8,9 +8,9 @@ import (
 )
 
 var buildCmd = &cobra.Command{
-	Use:   "build [not_sure_yet]",
-	Short: "Build your content",
-	Long:  `Long description for building`,
+	Use:   "build",
+	Short: "Publish master for your curriculum repository",
+	Long:  `The Learn system recognizes blocks of content held in GitHub respositories. This command publishes the latest commit on master as a new release.`,
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
