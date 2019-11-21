@@ -32,7 +32,10 @@ const tmpFile string = "preview-curriculum.zip"
 // LearnPreviewResponse is a simple struct defining the shape of data we care about
 // that comes back from notifying Learn for decoding into.
 type LearnPreviewResponse struct {
-	Url string `json:"url"`
+	ReleaseID int    `json:"release_id"`
+	URL       string `json:"url"`
+	Errors    string `json:"errors"`
+	Status    string `json:"status"`
 }
 
 // previewCmd is executed when the `glearn preview` command is used. Preview's concerns:
@@ -100,35 +103,26 @@ var previewCmd = &cobra.Command{
 		// Should the above call to notify learn just return an identifier to track/poll? Instead of
 		// passing bucket key again?
 		var attempts uint8 = 100
-		res, err = pollForBuildResponse(bucketKey, &attempts)
+		res, err = pollForBuildResponse(res.ReleaseID, &attempts)
 		if err != nil {
 			fmt.Printf("Failed to poll Learn for your new preview build. Err: %v", err)
 			os.Exit(1)
 			return
 		}
 
-		fmt.Printf("Sucessfully uploaded your preview! You can find your content at: %s", res.Url)
+		fmt.Printf("Sucessfully uploaded your preview! You can find your content at: %s", res.URL)
 	},
 }
 
-func pollForBuildResponse(bucketKey string, attempts *uint8) (*LearnPreviewResponse, error) {
+func pollForBuildResponse(releaseID int, attempts *uint8) (*LearnPreviewResponse, error) {
 	apiToken, ok := viper.Get("api_token").(string)
 	if !ok {
 		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
 	}
 
-	payload := map[string]string{
-		"bucket_key_name": bucketKey,
-	}
-
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-
 	client := &http.Client{Timeout: time.Second * 10}
 
-	req, err := http.NewRequest("POST", "https://httpbin.org/post", bytes.NewBuffer(payloadBytes))
+	req, err := http.NewRequest("GET", fmt.Sprintf("/api/v1/releases/%d/release_polling", releaseID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -148,11 +142,11 @@ func pollForBuildResponse(bucketKey string, attempts *uint8) (*LearnPreviewRespo
 
 		if *attempts == uint8(0) {
 			return nil, errors.New(
-				"Sorry, we are having trouble requesting your preview build from Learn. Please try again.",
+				"Sorry, we are having trouble requesting your preview build from Learn. Please try again",
 			)
 		}
 
-		return pollForBuildResponse(bucketKey, attempts)
+		return pollForBuildResponse(releaseID, attempts)
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -174,7 +168,7 @@ func notifyLearn(bucketKey string) (*LearnPreviewResponse, error) {
 	}
 
 	payload := map[string]string{
-		"bucket_key_name": bucketKey,
+		"s3_key": bucketKey,
 	}
 
 	payloadBytes, err := json.Marshal(payload)
@@ -184,7 +178,7 @@ func notifyLearn(bucketKey string) (*LearnPreviewResponse, error) {
 
 	client := &http.Client{Timeout: time.Second * 10}
 
-	req, err := http.NewRequest("POST", "https://httpbin.org/post", bytes.NewBuffer(payloadBytes))
+	req, err := http.NewRequest("POST", "http://localhost:3003/api/v1/releases", bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return nil, err
 	}
