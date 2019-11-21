@@ -97,14 +97,72 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
-		// Need to add functionality to endpoint on learn to take some sort of param saying I am a single content file vs a full release
-		// Would be great to ping an endpoint seeing when the build is complete and return the url to go to
-
-		// Maybes?
-		// Potentially make stage bucket a flag or something instead of changing env vars every time?
+		// Should the above call to notify learn just return an identifier to track/poll? Instead of
+		// passing bucket key again?
+		var attempts uint8 = 100
+		res, err = pollForBuildResponse(bucketKey, &attempts)
+		if err != nil {
+			fmt.Printf("Failed to poll Learn for your new preview build. Err: %v", err)
+			os.Exit(1)
+			return
+		}
 
 		fmt.Printf("Sucessfully uploaded your preview! You can find your content at: %s", res.Url)
 	},
+}
+
+func pollForBuildResponse(bucketKey string, attempts *uint8) (*LearnPreviewResponse, error) {
+	apiToken, ok := viper.Get("api_token").(string)
+	if !ok {
+		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
+	}
+
+	payload := map[string]string{
+		"bucket_key_name": bucketKey,
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{Timeout: time.Second * 10}
+
+	req, err := http.NewRequest("POST", "https://httpbin.org/post", bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+	defer req.Body.Close()
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusProcessing {
+		*attempts--
+
+		if *attempts == uint8(0) {
+			return nil, errors.New(
+				"Sorry, we are having trouble requesting your preview build from Learn. Please try again.",
+			)
+		}
+
+		return pollForBuildResponse(bucketKey, attempts)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
+	}
+
+	l := &LearnPreviewResponse{}
+	json.NewDecoder(res.Body).Decode(l)
+
+	return l, nil
 }
 
 // notifyLearn takes an s3 bucket key name as an argument is used to tell Learn there is new preview
@@ -197,8 +255,8 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 		return "", fmt.Errorf("Could not obtain file stats for %s", file.Name())
 	}
 
-	// Create and start a new progress bar
-	bar := pb.Full.Start64(fileStats.Size())
+	// Create and start a new progress bar with a fixed width
+	bar := pb.Full.Start64(fileStats.Size()).SetWidth(100)
 
 	// Create a ProxyReader and attach the file and progress bar
 	pr := proxyReader.New(file, bar)
