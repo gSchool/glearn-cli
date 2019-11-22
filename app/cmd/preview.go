@@ -22,7 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/cheggaaa/pb/v3"
+	pb "github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -103,7 +103,7 @@ var previewCmd = &cobra.Command{
 
 		// Should the above call to notify learn just return an identifier to track/poll? Instead of
 		// passing bucket key again?
-		var attempts uint8 = 100
+		var attempts uint8 = 20
 		res, err = pollForBuildResponse(res.ReleaseID, &attempts)
 		if err != nil {
 			fmt.Printf("Failed to poll Learn for your new preview build. Err: %v", err)
@@ -138,8 +138,19 @@ func pollForBuildResponse(releaseID int, attempts *uint8) (*LearnPreviewResponse
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode == http.StatusProcessing {
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
+	}
+
+	var l LearnPreviewResponse
+	err = json.NewDecoder(res.Body).Decode(&l)
+	if err != nil {
+		return nil, err
+	}
+
+	if l.Status == "processing" || l.Status == "pending" {
 		*attempts--
+		time.Sleep(2 * time.Second)
 
 		if *attempts == uint8(0) {
 			return nil, errors.New(
@@ -150,14 +161,7 @@ func pollForBuildResponse(releaseID int, attempts *uint8) (*LearnPreviewResponse
 		return pollForBuildResponse(releaseID, attempts)
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
-	}
-
-	l := &LearnPreviewResponse{}
-	json.NewDecoder(res.Body).Decode(l)
-
-	return l, nil
+	return &l, nil
 }
 
 // notifyLearn takes an s3 bucket key name as an argument is used to tell Learn there is new preview
