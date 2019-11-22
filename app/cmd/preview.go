@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -32,10 +33,10 @@ const tmpFile string = "preview-curriculum.zip"
 // LearnPreviewResponse is a simple struct defining the shape of data we care about
 // that comes back from notifying Learn for decoding into.
 type LearnPreviewResponse struct {
-	ReleaseID int    `json:"release_id"`
-	URL       string `json:"url"`
-	Errors    string `json:"errors"`
-	Status    string `json:"status"`
+	ReleaseID  int    `json:"release_id"`
+	PreviewURL string `json:"preview_url"`
+	Errors     string `json:"errors"`
+	Status     string `json:"status"`
 }
 
 // previewCmd is executed when the `glearn preview` command is used. Preview's concerns:
@@ -110,7 +111,8 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Printf("Sucessfully uploaded your preview! You can find your content at: %s", res.URL)
+		fmt.Printf("Sucessfully uploaded your preview! You can find your content at: %s", res.PreviewURL)
+		exec.Command("bash", "-c", fmt.Sprintf("open %s", res.PreviewURL)).Output()
 	},
 }
 
@@ -120,13 +122,12 @@ func pollForBuildResponse(releaseID int, attempts *uint8) (*LearnPreviewResponse
 		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
 	}
 
-	client := &http.Client{Timeout: time.Second * 10}
+	client := &http.Client{Timeout: time.Second * 30}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("/api/v1/releases/%d/release_polling", releaseID), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:3003/api/v1/releases/%d/release_polling", releaseID), nil)
 	if err != nil {
 		return nil, err
 	}
-	defer req.Body.Close()
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
@@ -176,7 +177,7 @@ func notifyLearn(bucketKey string) (*LearnPreviewResponse, error) {
 		return nil, err
 	}
 
-	client := &http.Client{Timeout: time.Second * 10}
+	client := &http.Client{Timeout: time.Second * 30}
 
 	req, err := http.NewRequest("POST", "http://localhost:3003/api/v1/releases", bytes.NewBuffer(payloadBytes))
 	if err != nil {
