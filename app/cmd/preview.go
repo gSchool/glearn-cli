@@ -54,16 +54,14 @@ var previewCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Takes one argument which is the filepath to the directory you want zipped/previewed
 		if len(args) != 1 {
-			fmt.Println("Usage: `learn preview` takes one argument")
-			os.Exit(1)
+			previewCmdError("Usage: `learn preview` takes one argument")
 			return
 		}
 
 		// Compress directory, output -> tmpFile
 		err := compressDirectory(args[0], tmpFile)
 		if err != nil {
-			fmt.Printf("Error compressing directory %s: %v", args[0], err)
-			os.Exit(1)
+			previewCmdError(fmt.Sprintf("Error compressing directory %s: %v", args[0], err))
 			return
 		}
 
@@ -73,7 +71,7 @@ var previewCmd = &cobra.Command{
 		// Open file so we can get a checksum as well as send to s3
 		f, err := os.Open(tmpFile)
 		if err != nil {
-			fmt.Printf("Failed to open file %q, %v", tmpFile, err)
+			previewCmdError(fmt.Sprintf("Failed to open file %q, %v", tmpFile, err))
 			return
 		}
 		defer f.Close()
@@ -81,31 +79,27 @@ var previewCmd = &cobra.Command{
 		// Create checksum of files in directory
 		checksum, err := createChecksumFromZip(f)
 		if err != nil {
-			fmt.Printf("Failed to create checksum for compressed file. Err: %v", err)
-			os.Exit(1)
+			previewCmdError(fmt.Sprintf("Failed to create checksum for compressed file. Err: %v", err))
 			return
 		}
 
 		// Send compressed zip file to s3
 		bucketKey, err := uploadToS3(f, checksum)
 		if err != nil {
-			fmt.Printf("Failed to upload zip file to s3. Err: %v", err)
-			os.Exit(1)
+			previewCmdError(fmt.Sprintf("Failed to upload zip file to s3. Err: %v", err))
 			return
 		}
 
 		fileInfo, err := os.Stat(args[0])
 		if err != nil {
-			fmt.Printf("Failed to get stats on file. Err: %v", err)
-			os.Exit(1)
+			previewCmdError(fmt.Sprintf("Failed to get stats on file. Err: %v", err))
 			return
 		}
 
 		isDirectory := fileInfo.IsDir()
 		res, err := notifyLearn(bucketKey, isDirectory)
 		if err != nil {
-			fmt.Printf("Failed to notify learn of new preview content. Err: %v", err)
-			os.Exit(1)
+			previewCmdError(fmt.Sprintf("Failed to notify learn of new preview content. Err: %v", err))
 			return
 		}
 
@@ -114,14 +108,19 @@ var previewCmd = &cobra.Command{
 		var attempts uint8 = 20
 		res, err = pollForBuildResponse(res.ReleaseID, &attempts)
 		if err != nil {
-			fmt.Printf("Failed to poll Learn for your new preview build. Err: %v", err)
-			os.Exit(1)
+			previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
 			return
 		}
 
 		fmt.Printf("Sucessfully uploaded your preview! You can find your content at: %s", res.PreviewURL)
 		exec.Command("bash", "-c", fmt.Sprintf("open %s", res.PreviewURL)).Output()
 	},
+}
+
+func previewCmdError(msg string) {
+	fmt.Println(msg)
+	cleanUpFiles()
+	os.Exit(1)
 }
 
 func pollForBuildResponse(releaseID int, attempts *uint8) (*LearnPreviewResponse, error) {
