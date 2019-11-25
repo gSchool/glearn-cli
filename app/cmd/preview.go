@@ -33,13 +33,15 @@ const tmpFile string = "preview-curriculum.zip"
 // LearnResponse is a simple struct defining the shape of data we care about
 // that comes back from notifying Learn for decoding into.
 type LearnResponse struct {
-	ReleaseID         int    `json:"release_id"`
-	PreviewURL        string `json:"preview_url"`
-	Errors            string `json:"errors"`
-	Status            string `json:"status"`
-	GLearnCredentials GLearnCredentials
+	ReleaseID         int               `json:"release_id"`
+	PreviewURL        string            `json:"preview_url"`
+	Errors            string            `json:"errors"`
+	Status            string            `json:"status"`
+	GLearnCredentials GLearnCredentials `json:"glearn_credentials"`
 }
 
+// GLearnCredentials represents the important AWS credentials we retrieve from Learn
+// with an api_token
 type GLearnCredentials struct {
 	AccessKeyID     string `json:"access_key_id"`
 	SecretAccessKey string `json:"secret_access_key"`
@@ -234,7 +236,9 @@ func notifyLearn(bucketKey string, isDirectory bool) (*LearnResponse, error) {
 	return l, nil
 }
 
-func retrieveS3CredentialsWithApiKey() (*GLearnCredentials, error) {
+// retrieveS3CredentialsWithAPIKey uses a user's api_token to request AWS credentials
+// from Learn. It returns a populated *GLearnCredentials struct or an error
+func retrieveS3CredentialsWithAPIKey() (*GLearnCredentials, error) {
 	apiToken, ok := viper.Get("api_token").(string)
 	if !ok {
 		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
@@ -242,7 +246,7 @@ func retrieveS3CredentialsWithApiKey() (*GLearnCredentials, error) {
 
 	client := &http.Client{Timeout: time.Second * 30}
 
-	req, err := http.NewRequest("GET", "http://localhost:3003/api/v1/glearn-credentials", nil)
+	req, err := http.NewRequest("GET", "http://localhost:3003/api/v1/glearn_credentials", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +277,7 @@ func retrieveS3CredentialsWithApiKey() (*GLearnCredentials, error) {
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
 func uploadToS3(file *os.File, checksum string) (string, error) {
 	// Retrieve the application credentials from AWS
-	creds, err := retrieveS3CredentialsWithApiKey()
+	creds, err := retrieveS3CredentialsWithAPIKey()
 
 	// Set up an AWS session with the user's credentials
 	sess, err := session.NewSession(&aws.Config{
