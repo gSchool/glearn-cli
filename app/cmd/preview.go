@@ -30,13 +30,21 @@ import (
 // tmpFile is used throughout as the temporary zip file target location.
 const tmpFile string = "preview-curriculum.zip"
 
-// LearnPreviewResponse is a simple struct defining the shape of data we care about
+// LearnResponse is a simple struct defining the shape of data we care about
 // that comes back from notifying Learn for decoding into.
-type LearnPreviewResponse struct {
-	ReleaseID  int    `json:"release_id"`
-	PreviewURL string `json:"preview_url"`
-	Errors     string `json:"errors"`
-	Status     string `json:"status"`
+type LearnResponse struct {
+	ReleaseID         int    `json:"release_id"`
+	PreviewURL        string `json:"preview_url"`
+	Errors            string `json:"errors"`
+	Status            string `json:"status"`
+	GLearnCredentials GLearnCredentials
+}
+
+type GLearnCredentials struct {
+	AccessKeyID     string `json:"access_key_id"`
+	SecretAccessKey string `json:"secret_access_key"`
+	KeyPrefix       string `json:"key_prefix"`
+	BucketName      string `json:"bucket_name"`
 }
 
 // previewCmd is executed when the `glearn preview` command is used. Preview's concerns:
@@ -123,7 +131,7 @@ func previewCmdError(msg string) {
 	os.Exit(1)
 }
 
-func pollForBuildResponse(releaseID int, attempts *uint8) (*LearnPreviewResponse, error) {
+func pollForBuildResponse(releaseID int, attempts *uint8) (*LearnResponse, error) {
 	apiToken, ok := viper.Get("api_token").(string)
 	if !ok {
 		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
@@ -149,7 +157,7 @@ func pollForBuildResponse(releaseID int, attempts *uint8) (*LearnPreviewResponse
 		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
 	}
 
-	var l LearnPreviewResponse
+	var l LearnResponse
 	err = json.NewDecoder(res.Body).Decode(&l)
 	if err != nil {
 		return nil, err
@@ -173,7 +181,7 @@ func pollForBuildResponse(releaseID int, attempts *uint8) (*LearnPreviewResponse
 
 // notifyLearn takes an s3 bucket key name as an argument is used to tell Learn there is new preview
 // content on s3 and where to find it so it can build/preview.
-func notifyLearn(bucketKey string, isDirectory bool) (*LearnPreviewResponse, error) {
+func notifyLearn(bucketKey string, isDirectory bool) (*LearnResponse, error) {
 	apiToken, ok := viper.Get("api_token").(string)
 	if !ok {
 		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
@@ -220,38 +228,59 @@ func notifyLearn(bucketKey string, isDirectory bool) (*LearnPreviewResponse, err
 		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
 	}
 
-	l := &LearnPreviewResponse{}
+	l := &LearnResponse{}
 	json.NewDecoder(res.Body).Decode(l)
 
 	return l, nil
 }
 
+func retrieveS3CredentialsWithApiKey() (*GLearnCredentials, error) {
+	apiToken, ok := viper.Get("api_token").(string)
+	if !ok {
+		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
+	}
+
+	client := &http.Client{Timeout: time.Second * 30}
+
+	req, err := http.NewRequest("GET", "http://localhost:3003/api/v1/glearn-credentials", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	var l LearnResponse
+	err = json.NewDecoder(res.Body).Decode(&l)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GLearnCredentials{
+		AccessKeyID:     l.GLearnCredentials.AccessKeyID,
+		SecretAccessKey: l.GLearnCredentials.SecretAccessKey,
+		KeyPrefix:       l.GLearnCredentials.KeyPrefix,
+		BucketName:      l.GLearnCredentials.BucketName,
+	}, nil
+}
+
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
 func uploadToS3(file *os.File, checksum string) (string, error) {
-	// Coerce AWS credentials to strings
-	accessKeyID, ok := viper.Get("aws_access_key_id").(string)
-	if !ok {
-		return "", errors.New("Your aws_access_key_id must be a string")
-	}
-	secretAccessKey, ok := viper.Get("aws_secret_access_key").(string)
-	if !ok {
-		return "", errors.New("Your aws_secret_access_key must be a string")
-	}
-	bucketName, ok := viper.Get("aws_s3_bucket").(string)
-	if !ok {
-		return "", errors.New("Your aws_s3_bucket must be a string")
-	}
-	keyPrefix, ok := viper.Get("aws_s3_key_prefix").(string)
-	if !ok {
-		return "", errors.New("Your aws_s3_key_prefix must be a string")
-	}
+	// Retrieve the application credentials from AWS
+	creds, err := retrieveS3CredentialsWithApiKey()
 
 	// Set up an AWS session with the user's credentials
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-west-2"),
 		Credentials: credentials.NewStaticCredentials(
-			accessKeyID,
-			secretAccessKey,
+			creds.AccessKeyID,
+			creds.SecretAccessKey,
 			"",
 		),
 	})
@@ -264,7 +293,7 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 	})
 
 	// Generate the bucket key using the key prefix, checksum, and tmpFile name
-	bucketKey := fmt.Sprintf("%s/%s-%s", keyPrefix, checksum, tmpFile)
+	bucketKey := fmt.Sprintf("%s/%s-%s", creds.KeyPrefix, checksum, tmpFile)
 
 	// Obtain FileInfo so we can look at length in bytes
 	fileStats, err := file.Stat()
@@ -280,7 +309,7 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 
 	// Upload compressed zip file to s3
 	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(bucketName),
+		Bucket: aws.String(creds.BucketName),
 		Key:    aws.String(bucketKey),
 		Body:   pr, // As our file is read and uploaded, our proxy reader will update/render the progress bar
 	})
