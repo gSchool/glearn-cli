@@ -94,7 +94,15 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
-		res, err := notifyLearn(bucketKey)
+		fileInfo, err := os.Stat(args[0])
+		if err != nil {
+			fmt.Printf("Failed to get stats on file. Err: %v", err)
+			os.Exit(1)
+			return
+		}
+
+		isDirectory := fileInfo.IsDir()
+		res, err := notifyLearn(bucketKey, isDirectory)
 		if err != nil {
 			fmt.Printf("Failed to notify learn of new preview content. Err: %v", err)
 			os.Exit(1)
@@ -166,7 +174,7 @@ func pollForBuildResponse(releaseID int, attempts *uint8) (*LearnPreviewResponse
 
 // notifyLearn takes an s3 bucket key name as an argument is used to tell Learn there is new preview
 // content on s3 and where to find it so it can build/preview.
-func notifyLearn(bucketKey string) (*LearnPreviewResponse, error) {
+func notifyLearn(bucketKey string, isDirectory bool) (*LearnPreviewResponse, error) {
 	apiToken, ok := viper.Get("api_token").(string)
 	if !ok {
 		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
@@ -181,9 +189,20 @@ func notifyLearn(bucketKey string) (*LearnPreviewResponse, error) {
 		return nil, err
 	}
 
+	var endpoint string
+	if isDirectory {
+		endpoint = "/api/v1/releases"
+	} else {
+		endpoint = "/api/v1/content_file"
+	}
+
 	client := &http.Client{Timeout: time.Second * 30}
 
-	req, err := http.NewRequest("POST", "http://localhost:3003/api/v1/releases", bytes.NewBuffer(payloadBytes))
+	req, err := http.NewRequest(
+		"POST",
+		fmt.Sprintf("http://localhost:3003%s", endpoint),
+		bytes.NewBuffer(payloadBytes),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -313,54 +332,67 @@ func cleanUpFiles() {
 // and a target file path (where to put the zip file) and recursively compresses the source.
 // Source can either be a directory or a single file
 func compressDirectory(source, target string) error {
+	// Create file with target name and defer its closing
 	zipfile, err := os.Create(target)
 	if err != nil {
 		return err
 	}
 	defer zipfile.Close()
 
+	// Create a new zip writer and pass our zipfile in
 	archive := zip.NewWriter(zipfile)
 	defer archive.Close()
 
+	// Get os.FileInfo about our source
 	info, err := os.Stat(source)
 	if err != nil {
 		return nil
 	}
 
+	// Check to see if the provided source file is a directory and set baseDir if so
 	var baseDir string
 	if info.IsDir() {
 		baseDir = filepath.Base(source)
 	}
 
+	// Walk the whole filepath
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
+		// Creates a partially-populated FileHeader from an os.FileInfo
 		header, err := zip.FileInfoHeader(info)
 		if err != nil {
 			return err
 		}
 
+		// Check if baseDir has been set (from the IsDir check) and if it has not been
+		// set, update the header.Name to reflect the correct path
 		if baseDir != "" {
 			header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
 		}
 
+		// Check if the file we are iterating is a directory and update the header.Name
+		// or the header.Method appropriately
 		if info.IsDir() {
 			header.Name += "/"
 		} else {
 			header.Method = zip.Deflate
 		}
 
+		//  Add a file to the zip archive using the provided FileHeader for the file metadata
 		writer, err := archive.CreateHeader(header)
 		if err != nil {
 			return err
 		}
 
+		// Return nil if at this point if info is a directory
 		if info.IsDir() {
 			return nil
 		}
 
+		// If it was not a directory, we open the file and copy it into the archive writer
 		file, err := os.Open(path)
 		if err != nil {
 			return err
