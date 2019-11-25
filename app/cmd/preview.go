@@ -246,7 +246,7 @@ func retrieveS3CredentialsWithAPIKey() (*GLearnCredentials, error) {
 
 	client := &http.Client{Timeout: time.Second * 30}
 
-	req, err := http.NewRequest("GET", "http://localhost:3003/api/v1/glearn_credentials", nil)
+	req, err := http.NewRequest("GET", "http://localhost:3003/api/v1/users/glearn_credentials", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -278,6 +278,12 @@ func retrieveS3CredentialsWithAPIKey() (*GLearnCredentials, error) {
 func uploadToS3(file *os.File, checksum string) (string, error) {
 	// Retrieve the application credentials from AWS
 	creds, err := retrieveS3CredentialsWithAPIKey()
+	if err != nil {
+		return "", fmt.Errorf(
+			"Could not retrieve credentials from Learn. Please ensure you have the right API key in your ~/.glearn-config.yaml %s",
+			file.Name(),
+		)
+	}
 
 	// Set up an AWS session with the user's credentials
 	sess, err := session.NewSession(&aws.Config{
