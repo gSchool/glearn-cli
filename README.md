@@ -2,19 +2,14 @@
 
 ## Installation
 
-Make sure to set your config variables in `~/.glearn-config.yaml`. You can do this by either manually
-editing the file:
+Make sure to set your `api_token` in `~/.glearn-config.yaml`. You can do this by either manually editing the file:
 ```
 api_token: YOUR_API_TOKEN
-aws_access_key_id: S3_USER_ACCESS_KEY_ID
-aws_secret_access_key: S3_USER_SECRET_ACCESS_KEY
-aws_s3_bucket: S3_BUCKET_NAME
-aws_s3_key_prefix: S3_BUCKET_KEY_PREFIX
 ```
 
-Or by using the set commands:
+Or by using the set command:
 ```
-glearn set [...flags]
+glearn set --api_token=neat_token_123
 ```
 
 _**Option A:**_
@@ -48,12 +43,12 @@ go build -o glearn-cli main.go
 
 Run
 ```
-./glearn [command...] [flag...]
+./glearn [commands...] [flags...]
 ```
 
 Or for quicker iterations:
 ```
-go run main.go [command...] [flag...]
+go run main.go [commands...] [flags...]
 ```
 
 # Releases
@@ -77,10 +72,7 @@ goreleaser --snapshot --skip-publish --rm-dist
 
 To release run:
 ```
-GITHUB_TOKEN=your_githhub_token \
-    AWS_S3_BUCKET=bucket_from_env \
-    AWS_KEY_PREFIX=key_prefix_from_env \
-    goreleaser release
+GITHUB_TOKEN=your_githhub_token goreleaser release
 ```
 
 ## Examples
