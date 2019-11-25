@@ -1,11 +1,16 @@
 package cmd
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -34,6 +39,11 @@ var buildCmd = &cobra.Command{
 		}
 		// fetch block by remote name, bail if not found
 		// TODO block := learn.GetBlockByRepoName(remote)
+		block, err := GetBlockByRepoName(remote)
+		if err != nil {
+			log.Println("Error fetchng block from learn", err)
+			os.Exit(1)
+		}
 
 		branch, err := currentBranch()
 		if err != nil {
@@ -83,4 +93,57 @@ func pushToRemote(branch string) error {
 	}
 
 	return nil
+}
+
+// TODO move this into a learn api package
+type block struct {
+	id            int
+	repo_name     string
+	sync_errors   []string
+	title         string
+	cohorts_using []int
+}
+
+func GetBlockByRepoName(repoName string) (block, error) {
+	apiToken, ok := viper.Get("api_token").(string)
+	if !ok {
+		return block{}, errors.New("Please set your api_token in ~/.glearn-config.yaml")
+	}
+
+	u, err := url.Parse("http://localhost:3000/api/v1/blocks")
+	if err != nil {
+		return block{}, errors.New("unable to parse Learn remote")
+	}
+	v := url.Values{}
+	v.Set("repo_name", repoName)
+	u.RawQuery = v.Encode()
+
+	client := &http.Client{Timeout: time.Second * 10}
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s", u), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
+	}
+
+	responseBody := struct {
+		blocks []block `json:"blocks"`
+	}{}
+	json.NewDecoder(res.Body).Decode(responseBody)
+
+	if len(responseBody.blocks) == 1 {
+		return responseBody.blocks[0]
+	}
+	return &block, nil
 }
