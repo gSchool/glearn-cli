@@ -4,9 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/user"
+	"time"
 
+	"github.com/Galvanize-IT/glearn-cli/apis/learn"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -67,6 +70,20 @@ func init() {
 			return
 		}
 	}
+
+	apiToken, ok := viper.Get("api_token").(string)
+	if !ok {
+		fmt.Println("Please set your api_token in ~/.glearn-config.yaml")
+		os.Exit(1)
+	}
+
+	client := http.Client{Timeout: 15 * time.Second}
+	baseUrl := "https://learn-2.galvanize.com"
+	alternateUrl := os.Getenv("LEARN_BASE_URL")
+	if alternateUrl != "" {
+		baseUrl = alternateUrl
+	}
+	learn.Api = learn.NewAPI(apiToken, baseUrl, client)
 
 	// Add all the other glearn commands defined in cmd/ directory
 	rootCmd.AddCommand(setCmd)

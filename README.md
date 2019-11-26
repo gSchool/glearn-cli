@@ -51,6 +51,10 @@ Or for quicker iterations:
 go run main.go [commands...] [flags...]
 ```
 
+### Specifying Learn App URL
+
+By default, the CLI tool will use Learn's base url `https://learn-2.galvanize.com`. This value can be changed by exporting the environment variable `LEARN_BASE_URL` to specify the desired address.
+
 # Releases
 
 Create/add a github token with `repo` access. This gives you the ability to push releases and their binaries.
