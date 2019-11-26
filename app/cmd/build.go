@@ -1,22 +1,18 @@
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
-	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
+	"github.com/Galvanize-IT/glearn-cli/apis/learn"
 	"github.com/spf13/cobra"
 )
 
 var branchCommand = `git branch | grep \* | cut -d ' ' -f2`
+var remoteNameCommand = `git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'`
 
 var buildCmd = &cobra.Command{
 	Use:   "build",
@@ -39,13 +35,13 @@ var buildCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		// TODO refactor learn api block := learn.GetBlockByRepoName(remote)
-		block, err := GetBlockByRepoName(remote)
+		block, err := learn.Api.GetBlockByRepoName(remote)
 		if err != nil {
 			log.Println("Error fetchng block from learn", err)
 			os.Exit(1)
 		}
 		// TODO if block does not exist, create one
-		if block.id == 0 {
+		if block.Exists() {
 			// block, err = CreateBlockByRepoName(remote)
 			// if err != nil {
 			// 	log.Println("Error creating block from learn", err)
@@ -82,7 +78,7 @@ func currentBranch() (string, error) {
 }
 
 func remoteName() (string, error) {
-	return runBashCommand("git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'")
+	return runBashCommand(remoteNameCommand)
 }
 
 func runBashCommand(command string) (string, error) {
@@ -101,97 +97,4 @@ func pushToRemote(branch string) error {
 	}
 
 	return nil
-}
-
-// TODO move this into a learn api package
-type block struct {
-	id            int
-	repo_name     string
-	sync_errors   []string
-	title         string
-	cohorts_using []int
-}
-
-type blockResponse struct {
-	blocks []block `json:"blocks"`
-}
-
-func GetBlockByRepoName(repoName string) (block, error) {
-	apiToken, ok := viper.Get("api_token").(string)
-	if !ok {
-		return block{}, errors.New("Please set your api_token in ~/.glearn-config.yaml")
-	}
-
-	u, err := url.Parse("http://localhost:3000/api/v1/blocks")
-	if err != nil {
-		return block{}, errors.New("unable to parse Learn remote")
-	}
-	v := url.Values{}
-	v.Set("repo_name", repoName)
-	u.RawQuery = v.Encode()
-
-	client := &http.Client{Timeout: time.Second * 10}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s", u), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
-
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
-	}
-
-	var blockResp blockResponse
-	json.NewDecoder(res.Body).Decode(responseBody)
-
-	if len(responseBody.blocks) == 1 {
-		return responseBody.blocks[0]
-	}
-	return &block, nil
-}
-
-func CreateBlockByRepoName(repoName string) (block, error) {
-	apiToken, ok := viper.Get("api_token").(string)
-	if !ok {
-		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
-	}
-
-	payload := map[string]string{
-		"bucket_key_name": bucketKey,
-	}
-
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	client := &http.Client{Timeout: time.Second * 10}
-
-	req, err := http.NewRequest("POST", "https://httpbin.org/post", bytes.NewBuffer(payloadBytes))
-	if err != nil {
-		return nil, err
-	}
-	defer req.Body.Close()
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
-
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
-	}
-
 }
