@@ -86,7 +86,7 @@ var previewCmd = &cobra.Command{
 		}
 
 		isDirectory := fileInfo.IsDir()
-		res, err := learn.Api.NotifyLearn(bucketKey, isDirectory)
+		res, err := learn.Api.BuildReleaseFromS3(bucketKey, isDirectory)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to notify learn of new preview content. Err: %v", err))
 			return
@@ -115,7 +115,7 @@ func previewCmdError(msg string) {
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
 func uploadToS3(file *os.File, checksum string) (string, error) {
 	// Retrieve the application credentials from AWS
-	creds, err := learn.Api.RetrieveS3CredentialsWithAPIKey()
+	creds, err := learn.Api.RetrieveS3Credentials()
 	if err != nil {
 		return "", fmt.Errorf(
 			"Could not retrieve credentials from Learn. Please ensure you have the right API key in your ~/.glearn-config.yaml %s",
