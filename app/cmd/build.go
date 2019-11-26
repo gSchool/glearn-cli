@@ -34,19 +34,17 @@ var buildCmd = &cobra.Command{
 			log.Println("no fetch remote detected")
 			os.Exit(1)
 		}
-		// TODO refactor learn api block := learn.GetBlockByRepoName(remote)
 		block, err := learn.Api.GetBlockByRepoName(remote)
 		if err != nil {
 			log.Println("Error fetchng block from learn", err)
 			os.Exit(1)
 		}
-		// TODO if block does not exist, create one
-		if block.Exists() {
-			// block, err = CreateBlockByRepoName(remote)
-			// if err != nil {
-			// 	log.Println("Error creating block from learn", err)
-			// 	os.Exit(1)
-			// }
+		if !block.Exists() {
+			block, err = learn.Api.CreateBlockByRepoName(remote)
+			if err != nil {
+				log.Println("Error creating block from learn", err)
+				os.Exit(1)
+			}
 		}
 
 		branch, err := currentBranch()
@@ -54,18 +52,19 @@ var buildCmd = &cobra.Command{
 			log.Println("Cannot run git branch detection with bash:", err)
 			os.Exit(1)
 		}
-		if branch != "publish#169468994" { // TODO change to master before merging
+		if branch != "master" {
 			fmt.Println("You are currently not on branch 'master'- the `learn build` command must be on master branch to push all currently committed work to your 'origin master' remote.")
 			os.Exit(1)
 		}
 		fmt.Println("Pushing work to remote origin", branch)
+		// TODO what happens when they do not have work in remote and push fails?
 		err = pushToRemote(branch)
 		if err != nil {
 			fmt.Printf("Error pushing to origin remote on branch %s: %s", err)
 			os.Exit(1)
 		}
 		// create a release on learn, notify user
-		// TODO resp, err := learn.CreateMasterRelease(remote)
+		// TODO resp, err := learn.Api.CreateMasterRelease(remote)
 		// if err != nil {
 		// 	fmt.Printf("", err)
 		// 	os.Exit(1)
@@ -91,7 +90,7 @@ func runBashCommand(command string) (string, error) {
 }
 
 func pushToRemote(branch string) error {
-	out, err := exec.Command("bash", "-c", fmt.Sprintf("git push origin %s", branch)).CombinedOutput()
+	_, err := exec.Command("bash", "-c", fmt.Sprintf("git push origin %s", branch)).CombinedOutput()
 	if err != nil {
 		return err
 	}
