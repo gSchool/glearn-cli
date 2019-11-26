@@ -9,37 +9,36 @@ import (
 	"time"
 )
 
-// LearnResponse is a simple struct defining the shape of data we care about
+// PreviewResponse is a simple struct defining the shape of data we care about
 // that comes back from notifying Learn for decoding into.
-type LearnResponse struct {
-	ReleaseID         int               `json:"release_id"`
-	PreviewURL        string            `json:"preview_url"`
-	Errors            string            `json:"errors"`
-	Status            string            `json:"status"`
-	GLearnCredentials GLearnCredentials `json:"glearn_credentials"`
+type PreviewResponse struct {
+	ReleaseID          int                `json:"release_id"`
+	PreviewURL         string             `json:"preview_url"`
+	Errors             string             `json:"errors"`
+	Status             string             `json:"status"`
+	LearnS3Credentials LearnS3Credentials `json:"glearn_credentials"`
 }
 
-// GLearnCredentials represents the important AWS credentials we retrieve from Learn
+// LearnS3Credentials represents the important AWS credentials we retrieve from Learn
 // with an api_token
-type GLearnCredentials struct {
+type LearnS3Credentials struct {
 	AccessKeyID     string `json:"access_key_id"`
 	SecretAccessKey string `json:"secret_access_key"`
 	KeyPrefix       string `json:"key_prefix"`
 	BucketName      string `json:"bucket_name"`
 }
 
-func (api *ApiClient) PollForBuildResponse(releaseID int, attempts *uint8) (*LearnResponse, error) {
-	client := &http.Client{Timeout: time.Second * 30}
-
-	req, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:3003/api/v1/releases/%d/release_polling", releaseID), nil)
+// PollForBuildResponse attempts to check if a release has finished building every 2 seconds.
+func (api *ApiClient) PollForBuildResponse(releaseID int, attempts *uint8) (*PreviewResponse, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/releases/%d/release_polling", api.baseUrl, releaseID), nil)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", a.token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.token))
 
-	res, err := client.Do(req)
+	res, err := api.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +48,7 @@ func (api *ApiClient) PollForBuildResponse(releaseID int, attempts *uint8) (*Lea
 		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
 	}
 
-	var l LearnResponse
+	var l PreviewResponse
 	err = json.NewDecoder(res.Body).Decode(&l)
 	if err != nil {
 		return nil, err
@@ -65,15 +64,15 @@ func (api *ApiClient) PollForBuildResponse(releaseID int, attempts *uint8) (*Lea
 			)
 		}
 
-		return pollForBuildResponse(releaseID, attempts)
+		return Api.PollForBuildResponse(releaseID, attempts)
 	}
 
 	return &l, nil
 }
 
-// notifyLearn takes an s3 bucket key name as an argument is used to tell Learn there is new preview
+// NotifyLearn takes an s3 bucket key name as an argument is used to tell Learn there is new preview
 // content on s3 and where to find it so it can build/preview.
-func (api *ApiClient) NotifyLearn(bucketKey string, isDirectory bool) (*LearnResponse, error) {
+func (api *ApiClient) NotifyLearn(bucketKey string, isDirectory bool) (*PreviewResponse, error) {
 	payload := map[string]string{
 		"s3_key": bucketKey,
 	}
@@ -90,11 +89,9 @@ func (api *ApiClient) NotifyLearn(bucketKey string, isDirectory bool) (*LearnRes
 		endpoint = "/api/v1/content_file"
 	}
 
-	client := &http.Client{Timeout: time.Second * 30}
-
 	req, err := http.NewRequest(
 		"POST",
-		fmt.Sprintf("http://localhost:3003%s", endpoint),
+		fmt.Sprintf("%s%s", api.baseUrl, endpoint),
 		bytes.NewBuffer(payloadBytes),
 	)
 	if err != nil {
@@ -103,9 +100,9 @@ func (api *ApiClient) NotifyLearn(bucketKey string, isDirectory bool) (*LearnRes
 	defer req.Body.Close()
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", a.token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.token))
 
-	res, err := client.Do(req)
+	res, err := api.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -115,46 +112,39 @@ func (api *ApiClient) NotifyLearn(bucketKey string, isDirectory bool) (*LearnRes
 		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
 	}
 
-	l := &LearnResponse{}
+	l := &PreviewResponse{}
 	json.NewDecoder(res.Body).Decode(l)
 
 	return l, nil
 }
 
-// retrieveS3CredentialsWithAPIKey uses a user's api_token to request AWS credentials
-// from Learn. It returns a populated *GLearnCredentials struct or an error
-func (api *ApiClient) RetrieveS3CredentialsWithAPIKey() (*GLearnCredentials, error) {
-	apiToken, ok := viper.Get("api_token").(string)
-	if !ok {
-		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
-	}
-
-	client := &http.Client{Timeout: time.Second * 30}
-
-	req, err := http.NewRequest("GET", "http://localhost:3003/api/v1/users/glearn_credentials", nil)
+// RetrieveS3CredentialsWithAPIKey uses a user's api_token to request AWS credentials
+// from Learn. It returns a populated *LearnS3Credentials struct or an error
+func (api *ApiClient) RetrieveS3CredentialsWithAPIKey() (*LearnS3Credentials, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/users/glearn_credentials", api.baseUrl), nil)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", a.token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.token))
 
-	res, err := client.Do(req)
+	res, err := api.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
 
-	var l LearnResponse
+	var l PreviewResponse
 	err = json.NewDecoder(res.Body).Decode(&l)
 	if err != nil {
 		return nil, err
 	}
 
-	return &GLearnCredentials{
-		AccessKeyID:     l.GLearnCredentials.AccessKeyID,
-		SecretAccessKey: l.GLearnCredentials.SecretAccessKey,
-		KeyPrefix:       l.GLearnCredentials.KeyPrefix,
-		BucketName:      l.GLearnCredentials.BucketName,
+	return &LearnS3Credentials{
+		AccessKeyID:     l.LearnS3Credentials.AccessKeyID,
+		SecretAccessKey: l.LearnS3Credentials.SecretAccessKey,
+		KeyPrefix:       l.LearnS3Credentials.KeyPrefix,
+		BucketName:      l.LearnS3Credentials.BucketName,
 	}, nil
 }

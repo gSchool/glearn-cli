@@ -83,7 +83,8 @@ func init() {
 	if alternateUrl != "" {
 		baseUrl = alternateUrl
 	}
-	learn.Api = learn.NewAPI(apiToken, baseUrl, client)
+
+	learn.Api = learn.NewAPI(apiToken, baseUrl, &client)
 
 	// Add all the other glearn commands defined in cmd/ directory
 	rootCmd.AddCommand(setCmd)

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Galvanize-IT/glearn-cli/apis/learn"
 	proxyReader "github.com/Galvanize-IT/glearn-cli/app/proxy_reader"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -85,7 +86,7 @@ var previewCmd = &cobra.Command{
 		}
 
 		isDirectory := fileInfo.IsDir()
-		res, err := notifyLearn(bucketKey, isDirectory)
+		res, err := learn.Api.NotifyLearn(bucketKey, isDirectory)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to notify learn of new preview content. Err: %v", err))
 			return
@@ -94,7 +95,7 @@ var previewCmd = &cobra.Command{
 		// Should the above call to notify learn just return an identifier to track/poll? Instead of
 		// passing bucket key again?
 		var attempts uint8 = 20
-		res, err = pollForBuildResponse(res.ReleaseID, &attempts)
+		res, err = learn.Api.PollForBuildResponse(res.ReleaseID, &attempts)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
 			return
@@ -114,7 +115,7 @@ func previewCmdError(msg string) {
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
 func uploadToS3(file *os.File, checksum string) (string, error) {
 	// Retrieve the application credentials from AWS
-	creds, err := retrieveS3CredentialsWithAPIKey()
+	creds, err := learn.Api.RetrieveS3CredentialsWithAPIKey()
 	if err != nil {
 		return "", fmt.Errorf(
 			"Could not retrieve credentials from Learn. Please ensure you have the right API key in your ~/.glearn-config.yaml %s",
