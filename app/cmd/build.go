@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,12 +38,19 @@ var buildCmd = &cobra.Command{
 			log.Println("no fetch remote detected")
 			os.Exit(1)
 		}
-		// fetch block by remote name, bail if not found
-		// TODO block := learn.GetBlockByRepoName(remote)
+		// TODO refactor learn api block := learn.GetBlockByRepoName(remote)
 		block, err := GetBlockByRepoName(remote)
 		if err != nil {
 			log.Println("Error fetchng block from learn", err)
 			os.Exit(1)
+		}
+		// TODO if block does not exist, create one
+		if block.id == 0 {
+			// block, err = CreateBlockByRepoName(remote)
+			// if err != nil {
+			// 	log.Println("Error creating block from learn", err)
+			// 	os.Exit(1)
+			// }
 		}
 
 		branch, err := currentBranch()
@@ -104,6 +112,10 @@ type block struct {
 	cohorts_using []int
 }
 
+type blockResponse struct {
+	blocks []block `json:"blocks"`
+}
+
 func GetBlockByRepoName(repoName string) (block, error) {
 	apiToken, ok := viper.Get("api_token").(string)
 	if !ok {
@@ -137,13 +149,49 @@ func GetBlockByRepoName(repoName string) (block, error) {
 		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
 	}
 
-	responseBody := struct {
-		blocks []block `json:"blocks"`
-	}{}
+	var blockResp blockResponse
 	json.NewDecoder(res.Body).Decode(responseBody)
 
 	if len(responseBody.blocks) == 1 {
 		return responseBody.blocks[0]
 	}
 	return &block, nil
+}
+
+func CreateBlockByRepoName(repoName string) (block, error) {
+	apiToken, ok := viper.Get("api_token").(string)
+	if !ok {
+		return nil, errors.New("Please set your api_token in ~/.glearn-config.yaml")
+	}
+
+	payload := map[string]string{
+		"bucket_key_name": bucketKey,
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{Timeout: time.Second * 10}
+
+	req, err := http.NewRequest("POST", "https://httpbin.org/post", bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, err
+	}
+	defer req.Body.Close()
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
+	}
+
 }
