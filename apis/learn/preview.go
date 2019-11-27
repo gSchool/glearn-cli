@@ -60,7 +60,7 @@ func (api *ApiClient) PollForBuildResponse(releaseID int, attempts *uint8) (*Pre
 
 		if *attempts == uint8(0) {
 			return nil, errors.New(
-				"Sorry, we are having trouble requesting your preview build from Learn. Please try again",
+				"Sorry, we are having trouble requesting your build from Learn. Please try again",
 			)
 		}
 
