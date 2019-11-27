@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	pb "github.com/cheggaaa/pb/v3"
+	"github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -79,26 +79,31 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
+		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
 		fileInfo, err := os.Stat(args[0])
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to get stats on file. Err: %v", err))
 			return
 		}
-
 		isDirectory := fileInfo.IsDir()
+
+		// Let Learn know there is new preview content on s3, where it is, and to build it
 		res, err := learn.Api.BuildReleaseFromS3(bucketKey, isDirectory)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to notify learn of new preview content. Err: %v", err))
 			return
 		}
 
-		// Should the above call to notify learn just return an identifier to track/poll? Instead of
-		// passing bucket key again?
-		var attempts uint8 = 20
-		res, err = learn.Api.PollForBuildResponse(res.ReleaseID, &attempts)
-		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
-			return
+		// If content is a directory, rewrite the res from polling for build response. Directories
+		// can take much longer to build, however single files build instantly so we do not need to
+		// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
+		if isDirectory {
+			var attempts uint8 = 20
+			res, err = learn.Api.PollForBuildResponse(res.ReleaseID, &attempts)
+			if err != nil {
+				previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
+				return
+			}
 		}
 
 		fmt.Printf("Sucessfully uploaded your preview! You can find your content at: %s", res.PreviewURL)
