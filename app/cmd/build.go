@@ -11,8 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var branchCommand = `git branch | grep \* | cut -d ' ' -f2`
-var remoteNameCommand = `git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'`
+const (
+	branchCommand     = `git branch | grep \* | cut -d ' ' -f2`
+	remoteNameCommand = `git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'`
+)
 
 var buildCmd = &cobra.Command{
 	Use:   "build",
