@@ -26,6 +26,11 @@ type BlockPost struct {
 	Block Block `json:"block"`
 }
 
+// ReleaseResponse holds the release id of a fetched or created release
+type ReleaseResponse struct {
+	ReleaseID int `json:"release_id"`
+}
+
 // Exists reports if a Block struct has a nonzero id value
 func (b Block) Exists() bool {
 	return b.Id != 0
@@ -59,7 +64,10 @@ func (api *ApiClient) GetBlockByRepoName(repoName string) (Block, error) {
 	}
 
 	var blockResp blockResponse
-	json.NewDecoder(res.Body).Decode(&blockResp)
+	err = json.NewDecoder(res.Body).Decode(&blockResp)
+	if err != nil {
+		return Block{}, err
+	}
 
 	if len(blockResp.Blocks) == 1 {
 		return blockResp.Blocks[0], nil
@@ -94,10 +102,39 @@ func (api *ApiClient) CreateBlockByRepoName(repoName string) (Block, error) {
 	}
 
 	var blockResp blockResponse
-	json.NewDecoder(res.Body).Decode(&blockResp)
+	err = json.NewDecoder(res.Body).Decode(&blockResp)
+	if err != nil {
+		return Block{}, err
+	}
 
 	if len(blockResp.Blocks) == 1 {
 		return blockResp.Blocks[0], nil
 	}
 	return Block{}, nil
+}
+
+func (api *ApiClient) CreateMasterRelease(blockId int) (int, error) {
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/blocks/%d/releases", api.baseUrl, blockId), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.token))
+
+	res, err := api.client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("Error: response status: %d", res.StatusCode)
+	}
+	var r ReleaseResponse
+	err = json.NewDecoder(res.Body).Decode(&r)
+	if err != nil {
+		return 0, err
+	}
+	return r.ReleaseID, nil
 }

@@ -27,7 +27,7 @@ var buildCmd = &cobra.Command{
 
 		remote, err := remoteName()
 		if err != nil {
-			log.Println("Cannot run git remote detection with command: git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'\n", err)
+			log.Printf("Cannot run git remote detection with command: git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'\n%s", err)
 			os.Exit(1)
 		}
 		if remote == "" {
@@ -36,13 +36,13 @@ var buildCmd = &cobra.Command{
 		}
 		block, err := learn.Api.GetBlockByRepoName(remote)
 		if err != nil {
-			log.Println("Error fetchng block from learn", err)
+			log.Printf("Error fetchng block from learn: %s", err)
 			os.Exit(1)
 		}
 		if !block.Exists() {
 			block, err = learn.Api.CreateBlockByRepoName(remote)
 			if err != nil {
-				log.Println("Error creating block from learn", err)
+				log.Printf("Error creating block from learn: %s", err)
 				os.Exit(1)
 			}
 		}
@@ -64,11 +64,20 @@ var buildCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		// create a release on learn, notify user
-		// TODO resp, err := learn.Api.CreateMasterRelease(remote)
-		// if err != nil {
-		// 	fmt.Printf("", err)
-		// 	os.Exit(1)
-		// }
+		releaseId, err := learn.Api.CreateMasterRelease(block.Id)
+		if err != nil || releaseId == 0 {
+			fmt.Printf("error creating master release for releaseId: %d", releaseId)
+			fmt.Printf("", err)
+			os.Exit(1)
+		}
+		var attempts uint8 = 20
+		_, err = learn.Api.PollForBuildResponse(releaseId, &attempts)
+		if err != nil {
+			fmt.Printf("Failed to fetch the state of your build: %s", err)
+			os.Exit(1)
+			return
+		}
+		fmt.Printf("Block %d released!\n", block.Id)
 	},
 }
 
