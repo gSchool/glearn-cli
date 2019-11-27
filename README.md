@@ -76,7 +76,7 @@ goreleaser --snapshot --skip-publish --rm-dist
 
 To release run:
 ```
-GITHUB_TOKEN=your_githhub_token goreleaser release
+GITHUB_TOKEN=your_githhub_token goreleaser release --rm-dist
 ```
 
 ## Examples
