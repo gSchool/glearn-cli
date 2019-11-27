@@ -26,22 +26,6 @@ var setCmd = &cobra.Command{
 			viper.Set("api_token", APIToken)
 		}
 
-		if AwsAccessKeyID != "" {
-			viper.Set("aws_access_key_id", AwsAccessKeyID)
-		}
-
-		if AwsSecretAccessKey != "" {
-			viper.Set("aws_secret_access_key", AwsSecretAccessKey)
-		}
-
-		if AwsS3Bucket != "" {
-			viper.Set("aws_s3_bucket", AwsS3Bucket)
-		}
-
-		if AwsS3KeyPrefix != "" {
-			viper.Set("aws_s3_key_prefix", AwsS3KeyPrefix)
-		}
-
 		err := viper.WriteConfig()
 		if err != nil {
 			fmt.Printf("There was an error writing credentials to your config: %v", err)

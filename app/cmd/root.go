@@ -4,13 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/user"
+	"time"
 
+	"github.com/Galvanize-IT/glearn-cli/apis/learn"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+// rootCmd is the base for all our commands. It currently just checks for all the
+// necessary credentials and prompts the user to set them if they are not there.
 var rootCmd = &cobra.Command{
 	Use:   "glearn",
 	Short: "glearn is a cli application for Learn",
@@ -18,30 +23,6 @@ var rootCmd = &cobra.Command{
 	Args: func(cmd *cobra.Command, args []string) error {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
 			return errors.New("Please set your API token first with `glearn set --api_token=value`")
-		}
-
-		if viper.Get("aws_access_key_id") == "" || viper.Get("aws_access_key_id") == nil {
-			return errors.New(
-				"Please set your AWS access key ID first with `glearn set --access_key_id=value or by editing your ~/.glearn-config.yaml`",
-			)
-		}
-
-		if viper.Get("aws_secret_access_key") == "" || viper.Get("aws_secret_access_key") == nil {
-			return errors.New(
-				"Please set your AWS secret access key first with `glearn set --secret_access_key=value or by editing your ~/.glearn-config.yaml`",
-			)
-		}
-
-		if viper.Get("aws_s3_bucket") == "" || viper.Get("aws_s3_bucket") == nil {
-			return errors.New(
-				"Please set your AWS s3 bucket first with `glearn set --s3_bucket=value or by editing your ~/.glearn-config.yaml`",
-			)
-		}
-
-		if viper.Get("aws_s3_key_prefix") == "" || viper.Get("aws_s3_key_prefix") == nil {
-			return errors.New(
-				"Please set your AWS s3 key prefix first with `glearn set --s3_prefix=value or by editing your ~/.glearn-config.yaml`",
-			)
 		}
 
 		if len(args) < 1 {
@@ -58,18 +39,6 @@ var rootCmd = &cobra.Command{
 // APIToken is an initialized string used for holding it's flag value
 var APIToken string
 
-// AwsAccessKeyID is an initialized string used for holding it's flag value
-var AwsAccessKeyID string
-
-// AwsSecretAccessKey is an initialized string used for holding it's flag value
-var AwsSecretAccessKey string
-
-// AwsS3Bucket is an initialized string used for holding it's flag value
-var AwsS3Bucket string
-
-// AwsS3KeyPrefix is an initialized string used for holding it's flag value
-var AwsS3KeyPrefix string
-
 func init() {
 	u, err := user.Current()
 	if err != nil {
@@ -85,14 +54,9 @@ func init() {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// Config file not found. Either user's first time using CLI or they deleted it
 			configPath := fmt.Sprintf("%s/.glearn-config.yaml", u.HomeDir)
-			initialConfig := []byte(
-				`api_token:
-aws_access_key_id:
-aws_secret_access_key:
-aws_s3_bucket:
-aws_s3_key_prefix:`,
-			)
+			initialConfig := []byte(`api_token:`)
 
+			// Write a ~/.glearn-config.yaml file with all the needed credential keys to fill in.
 			err = ioutil.WriteFile(configPath, initialConfig, 0666)
 			if err != nil {
 				fmt.Println("Error writing your glearn config file")
@@ -107,16 +71,29 @@ aws_s3_key_prefix:`,
 		}
 	}
 
+	apiToken, ok := viper.Get("api_token").(string)
+	if !ok {
+		fmt.Println("Please set your api_token in ~/.glearn-config.yaml")
+		os.Exit(1)
+	}
+
+	client := http.Client{Timeout: 15 * time.Second}
+	baseUrl := "https://learn-2.galvanize.com"
+	alternateUrl := os.Getenv("LEARN_BASE_URL")
+	if alternateUrl != "" {
+		baseUrl = alternateUrl
+	}
+
+	learn.Api = learn.NewAPI(apiToken, baseUrl, &client)
+
+	// Add all the other glearn commands defined in cmd/ directory
 	rootCmd.AddCommand(setCmd)
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(buildCmd)
 
+	// Check for flags set by the user and hyrate their corresponding variables.
 	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
-	setCmd.Flags().StringVarP(&AwsAccessKeyID, "access_key_id", "", "", "Access key ID for glearn-cli")
-	setCmd.Flags().StringVarP(&AwsSecretAccessKey, "secret_access_key", "", "", "Secret access key for glearn-cli")
-	setCmd.Flags().StringVarP(&AwsS3Bucket, "s3_bucket", "", "", "S3 bucket name for glearn-cli")
-	setCmd.Flags().StringVarP(&AwsS3KeyPrefix, "s3_prefix", "", "", "S3 bucket key prefix for glearn-cli")
 }
 
 // Execute runs the glearn CLI according to the user's command/subcommand/flags
