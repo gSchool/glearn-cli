@@ -14,11 +14,15 @@ glearn set --api_token=neat_token_123
 
 _**Option A:**_
 
-Homebrew
-
+Homebrew:
 ```
-brew tap Galvanize-IT/glearn
-brew install Galvanize-IT/glearn/glearn
+brew tap gSchool/glearn
+brew install gSchool/glearn/glearn
+```
+
+Uninstalling:
+```
+brew uninstall gSchool/glearn/glearn
 ```
 
 _**Option B:**_
