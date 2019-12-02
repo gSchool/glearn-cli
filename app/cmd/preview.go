@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Galvanize-IT/glearn-cli/api/learn"
 	proxyReader "github.com/Galvanize-IT/glearn-cli/app/proxy_reader"
@@ -18,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/briandowns/spinner"
 	"github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 )
@@ -91,6 +93,13 @@ var previewCmd = &cobra.Command{
 		}
 		isDirectory := fileInfo.IsDir()
 
+		fmt.Println("\nPlease wait while Learn builds your preview...")
+
+		// Start a processing spinner that runs until Learn is finsihed building the preview
+		s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
+		s.Color("green")
+		s.Start()
+
 		// Let Learn know there is new preview content on s3, where it is, and to build it
 		res, err := learn.API.BuildReleaseFromS3(bucketKey, isDirectory)
 		if err != nil {
@@ -110,7 +119,12 @@ var previewCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Printf("Sucessfully uploaded your preview! You can find your content at: %s", res.PreviewURL)
+		// Set final message for dislpay
+		s.FinalMSG = fmt.Sprintf("Sucessfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
+
+		// Stop the processing spinner
+		s.Stop()
+
 		exec.Command("bash", "-c", fmt.Sprintf("open %s", res.PreviewURL)).Output()
 	},
 }
@@ -166,6 +180,8 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 	// Create a ProxyReader and attach the file and progress bar
 	pr := proxyReader.New(file, bar)
 
+	fmt.Println("Uploading assets to Learn...")
+
 	// Upload compressed zip file to s3
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(creds.BucketName),
@@ -175,6 +191,8 @@ func uploadToS3(file *os.File, checksum string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Error uploading assets to s3: %v", err)
 	}
+
+	bar.Finish()
 
 	return bucketKey, nil
 }
