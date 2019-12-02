@@ -37,9 +37,13 @@ const tmpFile string = "preview-curriculum.zip"
 // 6. Handle progress bar for s3 upload.
 var previewCmd = &cobra.Command{
 	Use:   "preview [file_path]",
-	Short: "Preview your content",
-	Long:  `Long description for previewing`,
-	Args:  cobra.MinimumNArgs(1),
+	Short: "Uploads content and builds a preview.",
+	Long: `
+		The preview command takes a path to either a directory or a single file and
+		uploads the content to Learn through the Learn API. Learn will build the preview
+		and return/open the preview URL when it is complete.
+	`,
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// Takes one argument which is the filepath to the directory you want zipped/previewed
 		if len(args) != 1 {

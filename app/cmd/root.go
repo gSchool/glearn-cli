@@ -17,8 +17,8 @@ import (
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
 var rootCmd = &cobra.Command{
-	Use:   "glearn",
-	Short: "glearn is a cli application for Learn",
+	Use:   "glearn [command]",
+	Short: "glearn is a CLI tool for communicating with Learn",
 	Long:  `A longer description of what glearn is`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
@@ -32,7 +32,7 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("ran main command")
+		fmt.Println("Unknown command. Try `glearn help` for more information")
 	},
 }
 
@@ -88,7 +88,6 @@ func init() {
 
 	// Add all the other glearn commands defined in cmd/ directory
 	rootCmd.AddCommand(setCmd)
-	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(buildCmd)
 

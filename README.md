@@ -95,17 +95,12 @@ Preview a `test_curriculum` directory:
 glearn preview test_curriculum
 ```
 
-Creating new:
-```
-glearn new
-```
-
 Building:
 ```
-glearn build
+glearn build test_curriculum
 ```
 
 Publishing:
 ```
-glearn publish
+glearn publish test_curriculum
 ```

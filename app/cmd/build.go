@@ -19,8 +19,13 @@ const (
 var buildCmd = &cobra.Command{
 	Use:   "build",
 	Short: "Publish master for your curriculum repository",
-	Long:  `The Learn system recognizes blocks of content held in GitHub respositories. This command pushes the latest commit for the remote origin master (which should be GitHub), then attemptes the release of a new Learn block version at the HEAD of master.`,
-	Args:  cobra.MinimumNArgs(0),
+	Long: `
+		The Learn system recognizes blocks of content held in GitHub respositories.
+		This command pushes the latest commit for the remote origin master (which
+		should be GitHub), then attemptes the release of a new Learn block version
+		at the HEAD of master.
+	`,
+	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
 			fmt.Println("Usage: `learn build` takes no arguments, merely pushing latest master and releasing a version to Learn")
