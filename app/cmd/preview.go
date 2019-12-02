@@ -13,15 +13,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Galvanize-IT/glearn-cli/api/learn"
-	proxyReader "github.com/Galvanize-IT/glearn-cli/app/proxy_reader"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/briandowns/spinner"
-	"github.com/cheggaaa/pb/v3"
+	pb "github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
+
+	"github.com/gSchool/glearn-cli/api/learn"
+	proxyReader "github.com/gSchool/glearn-cli/app/proxy_reader"
 )
 
 // tmpFile is used throughout as the temporary zip file target location.

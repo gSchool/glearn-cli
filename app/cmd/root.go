@@ -9,7 +9,7 @@ import (
 	"os/user"
 	"time"
 
-	"github.com/Galvanize-IT/glearn-cli/api/learn"
+	"github.com/gSchool/glearn-cli/api/learn"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

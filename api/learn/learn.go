@@ -1,6 +1,6 @@
 package learn
 
-import "github.com/Galvanize-IT/glearn-cli/api"
+import "github.com/gSchool/glearn-cli/api"
 
 // API is the exported APIClient, it is set during Init
 var API *APIClient

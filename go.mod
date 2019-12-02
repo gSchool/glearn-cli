@@ -1,4 +1,4 @@
-module github.com/Galvanize-IT/glearn-cli
+module github.com/gSchool/glearn-cli
 
 require (
 	github.com/aws/aws-sdk-go v1.25.38
