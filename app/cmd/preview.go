@@ -27,9 +27,6 @@ import (
 // tmpFile is used throughout as the temporary zip file target location.
 const tmpFile string = "preview-curriculum.zip"
 
-// LearnResponse is a simple struct defining the shape of data we care about
-// that comes back from notifying Learn for decoding into.
-
 // previewCmd is executed when the `glearn preview` command is used. Preview's concerns:
 // 1. Compress directory/file into target location.
 // 2. Defer cleaning up the file after command is finished.
