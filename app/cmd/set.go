@@ -22,10 +22,12 @@ var setCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// If the --api_token=some_value flag was given, set it in viper
 		if APIToken != "" {
 			viper.Set("api_token", APIToken)
 		}
 
+		// Write any changes made above to the config
 		err := viper.WriteConfig()
 		if err != nil {
 			fmt.Printf("There was an error writing credentials to your config: %v", err)
@@ -33,6 +35,6 @@ var setCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println("Successfully wrote credentials!")
+		fmt.Println("Successfully added credentials!")
 	},
 }
