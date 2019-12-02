@@ -44,11 +44,13 @@ func (api *ApiClient) PollForBuildResponse(releaseID int, attempts *uint8) (*Pre
 	}
 	defer res.Body.Close()
 
+	var p PreviewResponse
+
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
+		json.NewDecoder(res.Body).Decode(&p)
+		return nil, fmt.Errorf("Error: response status: %d, response body: %s", res.StatusCode, p.Errors)
 	}
 
-	var p PreviewResponse
 	err = json.NewDecoder(res.Body).Decode(&p)
 	if err != nil {
 		return nil, err
