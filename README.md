@@ -27,14 +27,14 @@ brew uninstall gSchool/glearn/glearn
 
 _**Option B:**_
 
-If you mosey on over to [releases](https://github.com/Galvanize-IT/glearn-cli/releases), you'll find binaries for darwin, linux, windows, and amd64. You can download directly from there.
+If you mosey on over to [releases](https://github.com/gSchool/glearn-cli/releases), you'll find binaries for darwin, linux, windows, and amd64. You can download directly from there.
 
 _**Option C:**_
 
 If you have Go installed on your machine, use `go install`:
 
 ```
-go install github.com/Galvanize-IT/glearn-cli
+go install github.com/gSchool/glearn-cli
 ```
 
 This will place the binary in your `go/bin` and is ready to use.
