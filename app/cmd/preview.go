@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Galvanize-IT/glearn-cli/apis/learn"
+	"github.com/Galvanize-IT/glearn-cli/api/learn"
 	proxyReader "github.com/Galvanize-IT/glearn-cli/app/proxy_reader"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"

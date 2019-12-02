@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/Galvanize-IT/glearn-cli/apis/learn"
+	"github.com/Galvanize-IT/glearn-cli/api/learn"
 	"github.com/spf13/cobra"
 )
 
