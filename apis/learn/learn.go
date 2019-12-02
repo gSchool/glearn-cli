@@ -2,21 +2,21 @@ package learn
 
 import "github.com/Galvanize-IT/glearn-cli/apis"
 
-// Api is the exported ApiClient, it is set during Init
-var Api *ApiClient
+// API is the exported APIClient, it is set during Init
+var API *APIClient
 
-// API makes network API calls to Learn
-type ApiClient struct {
+// APIClient makes network API calls to Learn
+type APIClient struct {
 	client  apis.Client
 	token   string
-	baseUrl string
+	baseURL string
 }
 
 // NewAPI is a constructor for the ApiClient
-func NewAPI(token, baseUrl string, client apis.Client) *ApiClient {
-	return &ApiClient{
+func NewAPI(token, baseURL string, client apis.Client) *APIClient {
+	return &APIClient{
 		client:  client,
 		token:   token,
-		baseUrl: baseUrl,
+		baseURL: baseURL,
 	}
 }

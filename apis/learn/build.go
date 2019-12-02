@@ -9,21 +9,24 @@ import (
 	"net/url"
 )
 
+// BlockPost represents the shape of the data needed to POST to learn for
+// creating a new block
+type BlockPost struct {
+	Block Block `json:"block"`
+}
+
 // Block holds information yielded from the Learn Block API
 type Block struct {
-	Id           int      `json:"id"`
+	ID           int      `json:"id"`
 	RepoName     string   `json:"repo_name"`
 	SyncErrors   []string `json:"sync_errors"`
 	Title        string   `json:"title"`
 	CohortsUsing []int    `json:"cohorts_using"`
 }
 
+// blockReponse represents the shape of our Learn API block responses
 type blockResponse struct {
 	Blocks []Block `json:"blocks"`
-}
-
-type BlockPost struct {
-	Block Block `json:"block"`
 }
 
 // ReleaseResponse holds the release id of a fetched or created release
@@ -33,11 +36,13 @@ type ReleaseResponse struct {
 
 // Exists reports if a Block struct has a nonzero id value
 func (b Block) Exists() bool {
-	return b.Id != 0
+	return b.ID != 0
 }
 
-func (api *ApiClient) GetBlockByRepoName(repoName string) (Block, error) {
-	u, err := url.Parse(fmt.Sprintf("%s/api/v1/blocks", api.baseUrl))
+// GetBlockByRepoName takes a string repo name and requests a block from Learn. Returns
+// either the Block or an error
+func (api *APIClient) GetBlockByRepoName(repoName string) (Block, error) {
+	u, err := url.Parse(fmt.Sprintf("%s/api/v1/blocks", api.baseURL))
 	if err != nil {
 		return Block{}, errors.New("unable to parse Learn remote")
 	}
@@ -75,7 +80,8 @@ func (api *ApiClient) GetBlockByRepoName(repoName string) (Block, error) {
 	return Block{}, nil
 }
 
-func (api *ApiClient) CreateBlockByRepoName(repoName string) (Block, error) {
+// CreateBlockByRepoName takes a string repo name and makes a POST to the Learn API to create the block
+func (api *APIClient) CreateBlockByRepoName(repoName string) (Block, error) {
 	payload := BlockPost{Block: Block{RepoName: repoName}}
 
 	payloadBytes, err := json.Marshal(payload)
@@ -83,7 +89,7 @@ func (api *ApiClient) CreateBlockByRepoName(repoName string) (Block, error) {
 		return Block{}, err
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/blocks", api.baseUrl), bytes.NewBuffer(payloadBytes))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/blocks", api.baseURL), bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return Block{}, err
 	}
@@ -102,6 +108,7 @@ func (api *ApiClient) CreateBlockByRepoName(repoName string) (Block, error) {
 	}
 
 	var blockResp blockResponse
+
 	err = json.NewDecoder(res.Body).Decode(&blockResp)
 	if err != nil {
 		return Block{}, err
@@ -110,11 +117,13 @@ func (api *ApiClient) CreateBlockByRepoName(repoName string) (Block, error) {
 	if len(blockResp.Blocks) == 1 {
 		return blockResp.Blocks[0], nil
 	}
+
 	return Block{}, nil
 }
 
-func (api *ApiClient) CreateMasterRelease(blockId int) (int, error) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/blocks/%d/releases", api.baseUrl, blockId), nil)
+// CreateMasterRelease takes a block ID and creates a master release from it by POSTing to the Learn API
+func (api *APIClient) CreateMasterRelease(blockID int) (int, error) {
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/blocks/%d/releases", api.baseURL, blockID), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -131,10 +140,13 @@ func (api *ApiClient) CreateMasterRelease(blockId int) (int, error) {
 	if res.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("Error: response status: %d", res.StatusCode)
 	}
+
 	var r ReleaseResponse
+
 	err = json.NewDecoder(res.Body).Decode(&r)
 	if err != nil {
 		return 0, err
 	}
+
 	return r.ReleaseID, nil
 }

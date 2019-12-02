@@ -78,13 +78,13 @@ func init() {
 	}
 
 	client := http.Client{Timeout: 15 * time.Second}
-	baseUrl := "https://learn-2.galvanize.com"
-	alternateUrl := os.Getenv("LEARN_BASE_URL")
-	if alternateUrl != "" {
-		baseUrl = alternateUrl
+	baseURL := "https://learn-2.galvanize.com"
+	alternateURL := os.Getenv("LEARN_BASE_URL")
+	if alternateURL != "" {
+		baseURL = alternateURL
 	}
 
-	learn.Api = learn.NewAPI(apiToken, baseUrl, &client)
+	learn.API = learn.NewAPI(apiToken, baseURL, &client)
 
 	// Add all the other glearn commands defined in cmd/ directory
 	rootCmd.AddCommand(setCmd)

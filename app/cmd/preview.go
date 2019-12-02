@@ -88,7 +88,7 @@ var previewCmd = &cobra.Command{
 		isDirectory := fileInfo.IsDir()
 
 		// Let Learn know there is new preview content on s3, where it is, and to build it
-		res, err := learn.Api.BuildReleaseFromS3(bucketKey, isDirectory)
+		res, err := learn.API.BuildReleaseFromS3(bucketKey, isDirectory)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to notify learn of new preview content. Err: %v", err))
 			return
@@ -99,7 +99,7 @@ var previewCmd = &cobra.Command{
 		// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
 		if isDirectory {
 			var attempts uint8 = 20
-			res, err = learn.Api.PollForBuildResponse(res.ReleaseID, &attempts)
+			res, err = learn.API.PollForBuildResponse(res.ReleaseID, &attempts)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
 				return
@@ -111,6 +111,8 @@ var previewCmd = &cobra.Command{
 	},
 }
 
+// previewCmdError is a small wrapper for all errors within the preview command. It ensures
+// artifacts are cleaned up with a call to cleanUpFiles
 func previewCmdError(msg string) {
 	fmt.Println(msg)
 	cleanUpFiles()
@@ -120,7 +122,7 @@ func previewCmdError(msg string) {
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
 func uploadToS3(file *os.File, checksum string) (string, error) {
 	// Retrieve the application credentials from AWS
-	creds, err := learn.Api.RetrieveS3Credentials()
+	creds, err := learn.API.RetrieveS3Credentials()
 	if err != nil {
 		return "", fmt.Errorf(
 			"Could not retrieve credentials from Learn. Please ensure you have the right API key in your ~/.glearn-config.yaml %s",

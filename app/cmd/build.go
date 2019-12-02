@@ -36,13 +36,14 @@ var buildCmd = &cobra.Command{
 			log.Println("no fetch remote detected")
 			os.Exit(1)
 		}
-		block, err := learn.Api.GetBlockByRepoName(remote)
+
+		block, err := learn.API.GetBlockByRepoName(remote)
 		if err != nil {
 			log.Printf("Error fetchng block from learn: %s", err)
 			os.Exit(1)
 		}
 		if !block.Exists() {
-			block, err = learn.Api.CreateBlockByRepoName(remote)
+			block, err = learn.API.CreateBlockByRepoName(remote)
 			if err != nil {
 				log.Printf("Error creating block from learn: %s", err)
 				os.Exit(1)
@@ -58,28 +59,33 @@ var buildCmd = &cobra.Command{
 			fmt.Println("You are currently not on branch 'master'- the `learn build` command must be on master branch to push all currently committed work to your 'origin master' remote.")
 			os.Exit(1)
 		}
+
 		fmt.Println("Pushing work to remote origin", branch)
+
 		// TODO what happens when they do not have work in remote and push fails?
 		err = pushToRemote(branch)
 		if err != nil {
 			fmt.Printf("Error pushing to origin remote on branch %s: %s", err)
 			os.Exit(1)
 		}
-		// create a release on learn, notify user
-		releaseId, err := learn.Api.CreateMasterRelease(block.Id)
-		if err != nil || releaseId == 0 {
-			fmt.Printf("error creating master release for releaseId: %d", releaseId)
+
+		// Create a release on learn, notify user
+		releaseID, err := learn.API.CreateMasterRelease(block.ID)
+		if err != nil || releaseID == 0 {
+			fmt.Printf("error creating master release for releaseID: %d", releaseID)
 			fmt.Printf("", err)
 			os.Exit(1)
 		}
+
 		var attempts uint8 = 20
-		_, err = learn.Api.PollForBuildResponse(releaseId, &attempts)
+		_, err = learn.API.PollForBuildResponse(releaseID, &attempts)
 		if err != nil {
 			fmt.Printf("Failed to fetch the state of your build: %s", err)
 			os.Exit(1)
 			return
 		}
-		fmt.Printf("Block %d released!\n", block.Id)
+
+		fmt.Printf("Block %d released!\n", block.ID)
 	},
 }
 
