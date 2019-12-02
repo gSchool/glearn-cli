@@ -86,7 +86,7 @@ func (api *ApiClient) BuildReleaseFromS3(bucketKey string, isDirectory bool) (*P
 	if isDirectory {
 		endpoint = "/api/v1/releases"
 	} else {
-		endpoint = "/api/v1/content_file"
+		endpoint = "/api/v1/content_files"
 	}
 
 	req, err := http.NewRequest(
