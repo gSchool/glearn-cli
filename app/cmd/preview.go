@@ -20,6 +20,7 @@ import (
 	"github.com/briandowns/spinner"
 	pb "github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
 	proxyReader "github.com/gSchool/glearn-cli/app/proxy_reader"
@@ -45,6 +46,10 @@ var previewCmd = &cobra.Command{
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
+			previewCmdError("Please set your API token first with `glearn set --api_token=value`")
+		}
+
 		// Takes one argument which is the filepath to the directory you want zipped/previewed
 		if len(args) != 1 {
 			previewCmdError("Usage: `learn preview` takes one argument")
@@ -52,15 +57,18 @@ var previewCmd = &cobra.Command{
 		}
 
 		// Compress directory, output -> tmpFile
+		fmt.Println("START COMPRESS")
 		err := compressDirectory(args[0], tmpFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Error compressing directory %s: %v", args[0], err))
 			return
 		}
+		fmt.Println("END COMPRESS")
 
 		// Removes artifacts on user's machine
 		defer cleanUpFiles()
 
+		fmt.Println("START FILEOPEN")
 		// Open file so we can get a checksum as well as send to s3
 		f, err := os.Open(tmpFile)
 		if err != nil {
@@ -69,6 +77,7 @@ var previewCmd = &cobra.Command{
 		}
 		defer f.Close()
 
+		fmt.Println("START CHECKSUMMING")
 		// Create checksum of files in directory
 		checksum, err := createChecksumFromZip(f)
 		if err != nil {
@@ -76,13 +85,14 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
+		fmt.Println("START S3UPLOAD")
 		// Send compressed zip file to s3
 		bucketKey, err := uploadToS3(f, checksum)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to upload zip file to s3. Err: %v", err))
 			return
 		}
-
+		fmt.Println("END S3UPLOAD")
 		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
 		fileInfo, err := os.Stat(args[0])
 		if err != nil {

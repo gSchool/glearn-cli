@@ -9,6 +9,7 @@ import (
 
 	"github.com/gSchool/glearn-cli/api/learn"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -27,6 +28,10 @@ var buildCmd = &cobra.Command{
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
+		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
+			previewCmdError("Please set your API token first with `glearn set --api_token=value`")
+		}
+
 		if len(args) != 0 {
 			fmt.Println("Usage: `learn build` takes no arguments, merely pushing latest master and releasing a version to Learn")
 			os.Exit(1)

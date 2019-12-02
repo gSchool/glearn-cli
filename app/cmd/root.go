@@ -21,10 +21,6 @@ var rootCmd = &cobra.Command{
 	Short: "glearn is a CLI tool for communicating with Learn",
 	Long:  `A longer description of what glearn is`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			return errors.New("Please set your API token first with `glearn set --api_token=value`")
-		}
-
 		if len(args) < 1 {
 			return errors.New("Requires at least 1 argument")
 		}
