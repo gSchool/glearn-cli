@@ -9,7 +9,6 @@ archives:
 - replacements:
     darwin: Darwin
     linux: Linux
-    windows: Windows
     386: i386
     amd64: x86_64
 checksum:
@@ -26,14 +25,12 @@ brews:
   -
     name: glearn
     github:
-      owner: Galvanize-IT
+      owner: gSchool
       name: homebrew-glearn
     commit_author:
       name: goreleaserbot
       email: goreleaser@carlosbecker.com
     folder: Formula
-    download_strategy: GitHubPrivateRepositoryReleaseDownloadStrategy
-    custom_require: ../lib/custom_download_strategy
     description: "Long description for glearn-cli"
     dependencies:
       - git

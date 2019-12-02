@@ -14,11 +14,15 @@ glearn set --api_token=neat_token_123
 
 _**Option A:**_
 
-Create/add a github token with full `repo` access. If you are logged into github, you can go here: [your tokens](https://github.com/settings/tokens) to add one. This gives you the ability to use brew to manage glearn.
-
+Homebrew:
 ```
-HOMEBREW_GITHUB_API_TOKEN=YOUR_TOKEN brew tap Galvanize-IT/glearn
-HOMEBREW_GITHUB_API_TOKEN=YOUR_TOKEN brew install Galvanize-IT/glearn/glearn
+brew tap gSchool/glearn
+brew install gSchool/glearn/glearn
+```
+
+Uninstalling:
+```
+brew uninstall gSchool/glearn/glearn
 ```
 
 _**Option B:**_
