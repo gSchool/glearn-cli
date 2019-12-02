@@ -65,15 +65,14 @@ var buildCmd = &cobra.Command{
 		// TODO what happens when they do not have work in remote and push fails?
 		err = pushToRemote(branch)
 		if err != nil {
-			fmt.Printf("Error pushing to origin remote on branch %s: %s", err)
+			fmt.Printf("Error pushing to origin remote on branch: %s", err)
 			os.Exit(1)
 		}
 
 		// Create a release on learn, notify user
 		releaseID, err := learn.API.CreateMasterRelease(block.ID)
 		if err != nil || releaseID == 0 {
-			fmt.Printf("error creating master release for releaseID: %d", releaseID)
-			fmt.Printf("", err)
+			fmt.Printf("error creating master release for releaseID: %d. Error: %s", releaseID, err)
 			os.Exit(1)
 		}
 
