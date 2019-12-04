@@ -85,7 +85,7 @@ func init() {
 	// Add all the other glearn commands defined in cmd/ directory
 	rootCmd.AddCommand(setCmd)
 	rootCmd.AddCommand(previewCmd)
-	rootCmd.AddCommand(buildCmd)
+	rootCmd.AddCommand(publishCmd)
 
 	// Check for flags set by the user and hyrate their corresponding variables.
 	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
