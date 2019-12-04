@@ -9,20 +9,20 @@ api_token: YOUR_API_TOKEN
 
 Or by using the set command:
 ```
-glearn set --api_token=neat_token_123
+learn set --api_token=neat_token_123
 ```
 
 _**Option A:**_
 
 Homebrew:
 ```
-brew tap gSchool/glearn
-brew install gSchool/glearn/glearn
+brew tap gSchool/learn
+brew install gSchool/learn/learn
 ```
 
 Uninstalling:
 ```
-brew uninstall gSchool/glearn/glearn
+brew uninstall gSchool/learn/learn
 ```
 
 _**Option B:**_
@@ -47,7 +47,7 @@ go build -o glearn-cli main.go
 
 Run
 ```
-./glearn [commands...] [flags...]
+./learn [commands...] [flags...]
 ```
 
 Or for quicker iterations:
@@ -73,11 +73,6 @@ Push new tag
 git push origin v{semantic_version}
 ```
 
-For test release run:
-```
-goreleaser --snapshot --skip-publish --rm-dist
-```
-
 To release run:
 ```
 GITHUB_TOKEN=your_githhub_token goreleaser release --rm-dist
@@ -87,20 +82,15 @@ GITHUB_TOKEN=your_githhub_token goreleaser release --rm-dist
 
 Setting your API token:
 ```
-glearn set --api_token=neat_token_123
+learn set --api_token=neat_token_123
 ```
 
 Preview a `test_curriculum` directory:
 ```
-glearn preview test_curriculum
-```
-
-Building:
-```
-glearn build test_curriculum
+learn preview test_curriculum
 ```
 
 Publishing:
 ```
-glearn publish test_curriculum
+learn publish test_curriculum
 ```
