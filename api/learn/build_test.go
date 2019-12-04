@@ -68,15 +68,19 @@ func Test_CreateBlockByRepoName(t *testing.T) {
 	}
 }
 
+const validMasterReleaseResponse = `{"release_id":9}`
+
 func Test_CreateMasterRelease(t *testing.T) {
-	mockClient := api.MockResponse(validBlockResponse)
+	mockClient := api.MockResponse(validMasterReleaseResponse)
 	API = NewAPI("apiToken", "https://example.com", mockClient)
 
-	block, err := API.CreateMasterRelease("blocks-test")
+	id, err := API.CreateMasterRelease(1)
 	if err != nil {
 		t.Errorf("error not nil: %s\n", err)
 	}
-	testValidBlockSerialization(block, t)
+	if id != 9 {
+		t.Errorf("Response release id was %d but expected 9", id)
+	}
 
 	// verify that requests were made properly
 	if len(mockClient.Requests) != 1 {
@@ -87,8 +91,8 @@ func Test_CreateMasterRelease(t *testing.T) {
 	if req.Method != "POST" {
 		t.Errorf("Request made to Learn should be a POST, was %s", req.Method)
 	}
-	if req.URL.String() != "https://example.com/api/v1/blocks" {
-		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", "https://example.com/api/v1/blocks", req.URL.String())
+	if req.URL.String() != "https://example.com/api/v1/blocks/1/releases" {
+		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", "https://example.com/api/v1/blocks/1/releases", req.URL.String())
 	}
 	if req.Header.Get("Content-Type") != "application/json" {
 		t.Errorf("Content-Type header should be 'application/json', was '%s'\n", req.Header.Get("Content-Type"))
