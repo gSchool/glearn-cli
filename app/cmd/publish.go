@@ -17,7 +17,7 @@ const (
 	remoteNameCommand = `git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'`
 )
 
-var buildCmd = &cobra.Command{
+var publishCmd = &cobra.Command{
 	Use:   "build",
 	Short: "Publish master for your curriculum repository",
 	Long: `

@@ -2,7 +2,7 @@
 # Make sure to check the documentation at http://goreleaser.com
 
 builds:
-- binary: glearn
+- binary: learn
   env:
   - CGO_ENABLED=0
 archives:
@@ -23,7 +23,7 @@ changelog:
     - '^test:'
 brews:
   -
-    name: glearn
+    name: learn
     github:
       owner: gSchool
       name: homebrew-glearn
@@ -31,9 +31,9 @@ brews:
       name: goreleaserbot
       email: goreleaser@carlosbecker.com
     folder: Formula
-    description: "Long description for glearn-cli"
+    description: "Learn curriculum publishing tool © Galvanize, Inc."
     dependencies:
       - git
       - zsh
     install: |
-      bin.install "glearn"
+      bin.install "learn"
