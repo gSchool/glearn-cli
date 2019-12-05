@@ -47,19 +47,19 @@ var previewCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			previewCmdError("Please set your API token first with `learn set --api_token=value`")
+			previewCmdError("Please set your API token first with `learn set --api_token=your_token`")
 		}
 
 		// Takes one argument which is the filepath to the directory you want zipped/previewed
 		if len(args) != 1 {
-			previewCmdError("Usage: `learn preview` takes one argument")
+			previewCmdError("Usage: `learn preview` takes just one argument")
 			return
 		}
 
 		// Compress directory, output -> tmpFile
 		err := compressDirectory(args[0], tmpFile)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Error compressing directory %s: %v", args[0], err))
+			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", args[0], err))
 			return
 		}
 
@@ -69,7 +69,7 @@ var previewCmd = &cobra.Command{
 		// Open file so we can get a checksum as well as send to s3
 		f, err := os.Open(tmpFile)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to open file %q, %v", tmpFile, err))
+			previewCmdError(fmt.Sprintf("Failed opening file (%q). Err: %v", tmpFile, err))
 			return
 		}
 		defer f.Close()
@@ -77,12 +77,12 @@ var previewCmd = &cobra.Command{
 		// Create checksum of files in directory
 		checksum, err := createChecksumFromZip(f)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to create checksum for compressed file. Err: %v", err))
+			previewCmdError(fmt.Sprintf("Failed to create a checksum for compressed file. Err: %v", err))
 			return
 		}
 
 		// Send compressed zip file to s3
-		bucketKey, err := uploadToS3(f, checksum)
+		bucketKey, err := uploadToS3(f, checksum, learn.API.Credentials)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to upload zip file to s3. Err: %v", err))
 			return
@@ -141,16 +141,7 @@ func previewCmdError(msg string) {
 }
 
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
-func uploadToS3(file *os.File, checksum string) (string, error) {
-	// Retrieve the application credentials from AWS
-	creds, err := learn.API.RetrieveS3Credentials()
-	if err != nil {
-		return "", fmt.Errorf(
-			"Could not retrieve credentials from Learn. Please ensure you have the right API key in your ~/.glearn-config.yaml %s",
-			file.Name(),
-		)
-	}
-
+func uploadToS3(file *os.File, checksum string, creds *learn.Credentials) (string, error) {
 	// Set up an AWS session with the user's credentials
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("us-west-2"),

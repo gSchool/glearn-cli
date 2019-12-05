@@ -67,12 +67,6 @@ func init() {
 		}
 	}
 
-	apiToken, ok := viper.Get("api_token").(string)
-	if !ok {
-		fmt.Println("Please set your api_token in ~/.glearn-config.yaml")
-		os.Exit(1)
-	}
-
 	client := http.Client{Timeout: 15 * time.Second}
 	baseURL := "https://learn-2.galvanize.com"
 	alternateURL := os.Getenv("LEARN_BASE_URL")
@@ -80,7 +74,14 @@ func init() {
 		baseURL = alternateURL
 	}
 
-	learn.API = learn.NewAPI(apiToken, baseURL, &client)
+	api, err := learn.NewAPI(baseURL, &client)
+	if err != nil {
+		fmt.Printf("Error creating API client. Err: %v", err)
+		os.Exit(1)
+		return
+	}
+
+	learn.API = api
 
 	// Add all the other learn commands defined in cmd/ directory
 	rootCmd.AddCommand(setCmd)
