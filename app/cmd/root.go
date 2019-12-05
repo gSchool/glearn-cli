@@ -17,9 +17,9 @@ import (
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
 var rootCmd = &cobra.Command{
-	Use:   "glearn [command]",
-	Short: "glearn is a CLI tool for communicating with Learn",
-	Long:  `A longer description of what glearn is`,
+	Use:   "learn [command]",
+	Short: "learn is a CLI tool for communicating with Learn",
+	Long:  `learn is a CLI tool for communicating with Learn`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("Requires at least 1 argument")
@@ -28,7 +28,7 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Unknown command. Try `glearn help` for more information")
+		fmt.Println("Unknown command. Try `learn help` for more information")
 	},
 }
 
@@ -82,7 +82,7 @@ func init() {
 
 	learn.API = learn.NewAPI(apiToken, baseURL, &client)
 
-	// Add all the other glearn commands defined in cmd/ directory
+	// Add all the other learn commands defined in cmd/ directory
 	rootCmd.AddCommand(setCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(publishCmd)
@@ -91,7 +91,7 @@ func init() {
 	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
 }
 
-// Execute runs the glearn CLI according to the user's command/subcommand/flags
+// Execute runs the learn CLI according to the user's command/subcommand/flags
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)

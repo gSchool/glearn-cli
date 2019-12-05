@@ -29,7 +29,7 @@ import (
 // tmpFile is used throughout as the temporary zip file target location.
 const tmpFile string = "preview-curriculum.zip"
 
-// previewCmd is executed when the `glearn preview` command is used. Preview's concerns:
+// previewCmd is executed when the `learn preview` command is used. Preview's concerns:
 // 1. Compress directory/file into target location.
 // 2. Defer cleaning up the file after command is finished.
 // 3. Create a checksum for the zip file.
@@ -47,7 +47,7 @@ var previewCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			previewCmdError("Please set your API token first with `glearn set --api_token=value`")
+			previewCmdError("Please set your API token first with `learn set --api_token=value`")
 		}
 
 		// Takes one argument which is the filepath to the directory you want zipped/previewed

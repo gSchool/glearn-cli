@@ -18,7 +18,7 @@ const (
 )
 
 var publishCmd = &cobra.Command{
-	Use:   "build",
+	Use:   "publish",
 	Short: "Publish master for your curriculum repository",
 	Long: `
 		The Learn system recognizes blocks of content held in GitHub respositories.
@@ -29,11 +29,11 @@ var publishCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			previewCmdError("Please set your API token first with `glearn set --api_token=value`")
+			previewCmdError("Please set your API token first with `learn set --api_token=value`")
 		}
 
 		if len(args) != 0 {
-			fmt.Println("Usage: `learn build` takes no arguments, merely pushing latest master and releasing a version to Learn")
+			fmt.Println("Usage: `learn publish` takes no arguments, merely pushing latest master and releasing a version to Learn")
 			os.Exit(1)
 		}
 
@@ -66,7 +66,7 @@ var publishCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if branch != "master" {
-			fmt.Println("You are currently not on branch 'master'- the `learn build` command must be on master branch to push all currently committed work to your 'origin master' remote.")
+			fmt.Println("You are currently not on branch 'master'- the `learn publish` command must be on master branch to push all currently committed work to your 'origin master' remote.")
 			os.Exit(1)
 		}
 
