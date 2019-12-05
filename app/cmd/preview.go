@@ -2,14 +2,17 @@ package cmd
 
 import (
 	"archive/zip"
+	"crypto/md5"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -55,6 +58,9 @@ var previewCmd = &cobra.Command{
 			previewCmdError("Usage: `learn preview` takes one argument")
 			return
 		}
+
+		// Detect config file
+		doesConfigExistOrCreate(args[0])
 
 		// Compress directory, output -> tmpFile
 		err := compressDirectory(args[0], tmpFile)
@@ -313,4 +319,139 @@ func compressDirectory(source, target string) error {
 	})
 
 	return err
+}
+
+func doesConfigExistOrCreate(target string) {
+	configYamlPath := ""
+	if strings.HasSuffix(target, "/") {
+		configYamlPath = target + "config.yaml"
+	} else {
+		configYamlPath = target + "/config.yaml"
+	}
+
+	configYmlPath := ""
+	if strings.HasSuffix(target, "/") {
+		configYmlPath = target + "config.yml"
+	} else {
+		configYmlPath = target + "/config.yml"
+	}
+
+	_, yamlExists := os.Stat(configYamlPath)
+	if yamlExists == nil {
+		log.Printf("WARNING: There is a config present and one will not be generated.")
+	} else if os.IsNotExist(yamlExists) {
+
+		_, ymlExists := os.Stat(configYmlPath)
+		if ymlExists == nil {
+			log.Printf("WARNING: There is a config present and one will not be generated.")
+		} else if os.IsNotExist(ymlExists) {
+			log.Printf("WARNING: No config was found, one will be generated for you.")
+			createAutoConfig(target)
+		}
+	}
+}
+
+func createAutoConfig(target string) {
+	blockRoot := ""
+	if strings.HasSuffix(target, "/") {
+		blockRoot = target
+	} else {
+		blockRoot = target + "/"
+	}
+
+	autoConfigYamlPath := blockRoot + "auto-config.yaml"
+
+	_, autoYamlExists := os.Stat(autoConfigYamlPath)
+	if autoYamlExists == nil {
+		os.Remove(autoConfigYamlPath)
+	}
+
+	var configFile, err = os.Create(autoConfigYamlPath)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer configFile.Close()
+
+	configFile, err = os.OpenFile(autoConfigYamlPath, os.O_RDWR, 0644)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer configFile.Close()
+
+	var mdPaths []string
+
+	unitsDir := blockRoot + "units"
+	_, unitsDirExists := os.Stat(unitsDir)
+	if unitsDirExists == nil {
+
+		err = filepath.Walk(unitsDir,
+			func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+
+				localPath := path[len(blockRoot):len(path)]
+				if strings.HasSuffix(path, ".md") {
+					mdPaths = append(mdPaths, localPath)
+				}
+				return nil
+			})
+
+	} else {
+		err = filepath.Walk(blockRoot,
+			func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+
+				localPath := path[len(blockRoot):len(path)]
+				if strings.HasSuffix(path, ".md") {
+					mdPaths = append(mdPaths, localPath)
+				}
+				return nil
+			})
+	}
+
+	_, err = configFile.WriteString("---\n")
+	_, err = configFile.WriteString("Standards:\n")
+	_, err = configFile.WriteString("  -\n")
+	for _, path := range mdPaths {
+		if path != "README.md" {
+			pathParts := strings.Split(path, "/")
+			pathParts = strings.Split(pathParts[len(pathParts)-1], ".")
+			a := regexp.MustCompile(`\-`)
+			pathParts = a.Split(pathParts[0], -1)
+			a = regexp.MustCompile(`\_`)
+			pathParts = a.Split(strings.Join(pathParts, " "), -1)
+			formattedName := ""
+			for _, piece := range pathParts {
+				formattedName = formattedName + " " + strings.Title(piece)
+			}
+			_, err = configFile.WriteString("    Title: " + formattedName + "\n")
+			var unitUID = []byte(formattedName)
+			var md5unitUID = md5.Sum(unitUID)
+			_, err = configFile.WriteString("    Descripion: " + formattedName + "\n")
+			_, err = configFile.WriteString("    UID: " + hex.EncodeToString(md5unitUID[:]) + "\n")
+			_, err = configFile.WriteString("    SuccessCriteria:\n")
+			_, err = configFile.WriteString("      - success criteria\n")
+			_, err = configFile.WriteString("    ContentFiles:\n")
+			_, err = configFile.WriteString("      -\n")
+			_, err = configFile.WriteString("        Type: Lesson\n")
+			var cfUID = []byte(formattedName + path)
+			var md5cfUID = md5.Sum(cfUID)
+			_, err = configFile.WriteString("        UID: " + hex.EncodeToString(md5cfUID[:]) + "\n")
+			_, err = configFile.WriteString("        Path: /" + path + "\n")
+		}
+	}
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = configFile.Sync()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
