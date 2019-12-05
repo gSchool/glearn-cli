@@ -1,6 +1,6 @@
 # glearn-cli
 
-## Installation
+# Installation
 
 Make sure to set your `api_token` in `~/.glearn-config.yaml`. You can do this by either manually editing the file:
 ```
@@ -39,7 +39,7 @@ go install github.com/gSchool/glearn-cli
 
 This will place the binary in your `go/bin` and is ready to use.
 
-## Development
+# Development
 Build
 ```
 go build -o glearn-cli main.go
@@ -57,20 +57,20 @@ go run main.go [commands...] [flags...]
 
 ### Specifying Learn App URL
 
-By default, the CLI tool will use Learn's base url `https://learn-2.galvanize.com`. This value can be changed by exporting the environment variable `LEARN_BASE_URL` to specify the desired address.
+By default, the CLI tool will use Learn's base url `https://learn-2.galvanize.com`. This value can be changed by exporting the environment variable `LEARN_BASE_URL` to specify the desired address. This is convenient for testing stage/PR environments.
 
 # Releases
 
-Create/add a github token with `repo` access. This gives you the ability to push releases and their binaries.
+Create a github token with `repo` access. This gives you the ability to push releases and their binaries and allows glearn-cli write commits when necessary.
 
 Create a new semantic version tag (ex. 0.1.0)
 ```
-git tag -a v{semantic_version} -m "Some new release commit"
+git tag -a v0.1.0 -m "Some new release commit"
 ```
 
 Push new tag
 ```
-git push origin v{semantic_version}
+git push origin v0.1.0
 ```
 
 To release run:
