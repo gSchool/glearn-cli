@@ -42,7 +42,7 @@ type S3Credentials struct {
 // SlackCredentials represents the credentials we retrieve from Learn for the CLI
 // to operate correctly
 type SlackCredentials struct {
-	DevNotifyUrl string `json:"dev_notify_url"`
+	DevNotifyURL string `json:"dev_notify_url"`
 }
 
 // APIToken is a simple wrapper around an API token
@@ -59,17 +59,20 @@ type CredentialsResponse struct {
 
 // NewAPI is a constructor for the ApiClient
 func NewAPI(baseURL string, client api.Client) (*APIClient, error) {
+	apiClient := &APIClient{
+		client:  client,
+		baseURL: baseURL,
+	}
+
 	// Retrieve the application credentials for the CLI using a user's API token
-	creds, err := API.RetrieveCredentials()
+	creds, err := apiClient.RetrieveCredentials()
 	if err != nil {
 		return nil, errors.New("Could not retrieve credentials from Learn. Please ensure you have the right API token in your ~/.glearn-config.yaml")
 	}
 
-	return &APIClient{
-		client:      client,
-		baseURL:     baseURL,
-		Credentials: creds,
-	}, nil
+	apiClient.Credentials = creds
+
+	return apiClient, nil
 }
 
 // RetrieveCredentials uses a user's api_token to request AWS credentials
@@ -87,7 +90,7 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
 
 	res, err := api.client.Do(req)
 	if err != nil {
@@ -110,7 +113,7 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 			BucketName:      c.S3.BucketName,
 		},
 		SlackCredentials: &SlackCredentials{
-			DevNotifyUrl: c.Slack.DevNotifyUrl,
+			DevNotifyURL: c.Slack.DevNotifyURL,
 		},
 		APIToken: &APIToken{apiToken},
 	}, nil
@@ -119,24 +122,22 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 // NotifySlack is used throughout the CLI for production error handling
 func (api *APIClient) NotifySlack(err error) {
 	// Do not notify slack during development
-	if api.Credentials.DevNotifyUrl == "development" {
+	if api.Credentials.DevNotifyURL == "development" {
 		return
 	}
 
-	go func(err error) {
-		textMsg := struct {
-			Text string `json:"text"`
-		}{
-			Text: fmt.Sprintf("%s: %s", api.baseURL, err),
-		}
+	textMsg := struct {
+		Text string `json:"text"`
+	}{
+		Text: fmt.Sprintf("%s", err),
+	}
 
-		bytePostData, err := json.Marshal(textMsg)
+	bytePostData, err := json.Marshal(textMsg)
 
-		req, err := http.NewRequest("POST", api.Credentials.DevNotifyUrl, bytes.NewReader(bytePostData))
-		if err == nil {
-			req.Header.Add("Content-Type", "application/json; charset=utf-8")
-			client := &http.Client{Timeout: time.Second * 30}
-			client.Do(req)
-		}
-	}(err)
+	req, err := http.NewRequest("POST", api.Credentials.DevNotifyURL, bytes.NewReader(bytePostData))
+	if err == nil {
+		req.Header.Add("Content-Type", "application/json; charset=utf-8")
+		client := &http.Client{Timeout: time.Second * 30}
+		client.Do(req)
+	}
 }
