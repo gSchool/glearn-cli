@@ -12,16 +12,16 @@ import (
 // PreviewResponse is a simple struct defining the shape of data we care about
 // that comes back from notifying Learn for decoding into.
 type PreviewResponse struct {
-	ReleaseID      int            `json:"release_id"`
-	PreviewURL     string         `json:"preview_url"`
-	Errors         string         `json:"errors"`
-	Status         string         `json:"status"`
-	S3Crednentials S3Crednentials `json:"glearn_credentials"`
+	ReleaseID     int           `json:"release_id"`
+	PreviewURL    string        `json:"preview_url"`
+	Errors        string        `json:"errors"`
+	Status        string        `json:"status"`
+	S3Credentials S3Credentials `json:"glearn_credentials"`
 }
 
-// S3Crednentials represents the important AWS credentials we retrieve from Learn
+// S3Credentials represents the important AWS credentials we retrieve from Learn
 // with an api_token
-type S3Crednentials struct {
+type S3Credentials struct {
 	AccessKeyID     string `json:"access_key_id"`
 	SecretAccessKey string `json:"secret_access_key"`
 	KeyPrefix       string `json:"key_prefix"`
@@ -58,14 +58,14 @@ func (api *APIClient) PollForBuildResponse(releaseID int, attempts *uint8) (*Pre
 
 	if p.Status == "processing" || p.Status == "pending" {
 		*attempts--
-		time.Sleep(2 * time.Second)
 
-		if *attempts == uint8(0) {
+		if *attempts <= uint8(0) {
 			return nil, errors.New(
 				"Sorry, we are having trouble requesting your build from Learn. Please try again",
 			)
 		}
 
+		time.Sleep(2 * time.Second)
 		return api.PollForBuildResponse(releaseID, attempts)
 	}
 
@@ -121,8 +121,8 @@ func (api *APIClient) BuildReleaseFromS3(bucketKey string, isDirectory bool) (*P
 }
 
 // RetrieveS3Credentials uses a user's api_token to request AWS credentials
-// from Learn. It returns a populated *S3Crednentials struct or an error
-func (api *APIClient) RetrieveS3Credentials() (*S3Crednentials, error) {
+// from Learn. It returns a populated *S3Credentials struct or an error
+func (api *APIClient) RetrieveS3Credentials() (*S3Credentials, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/users/glearn_credentials", api.baseURL), nil)
 	if err != nil {
 		return nil, err
@@ -143,10 +143,10 @@ func (api *APIClient) RetrieveS3Credentials() (*S3Crednentials, error) {
 		return nil, err
 	}
 
-	return &S3Crednentials{
-		AccessKeyID:     p.S3Crednentials.AccessKeyID,
-		SecretAccessKey: p.S3Crednentials.SecretAccessKey,
-		KeyPrefix:       p.S3Crednentials.KeyPrefix,
-		BucketName:      p.S3Crednentials.BucketName,
+	return &S3Credentials{
+		AccessKeyID:     p.S3Credentials.AccessKeyID,
+		SecretAccessKey: p.S3Credentials.SecretAccessKey,
+		KeyPrefix:       p.S3Credentials.KeyPrefix,
+		BucketName:      p.S3Credentials.BucketName,
 	}, nil
 }
