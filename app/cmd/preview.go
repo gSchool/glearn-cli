@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -137,6 +138,7 @@ var previewCmd = &cobra.Command{
 func previewCmdError(msg string) {
 	fmt.Println(msg)
 	cleanUpFiles()
+	learn.API.NotifySlack(errors.New(msg))
 	os.Exit(1)
 }
 

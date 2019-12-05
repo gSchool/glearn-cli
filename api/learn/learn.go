@@ -1,10 +1,12 @@
 package learn
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gSchool/glearn-cli/api"
 	"github.com/spf13/viper"
@@ -40,8 +42,7 @@ type S3Credentials struct {
 // SlackCredentials represents the credentials we retrieve from Learn for the CLI
 // to operate correctly
 type SlackCredentials struct {
-	Endpoint string `json:"endpoint"`
-	Token    string `json:"token"`
+	DevNotifyUrl string `json:"dev_notify_url"`
 }
 
 // APIToken is a simple wrapper around an API token
@@ -109,9 +110,33 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 			BucketName:      c.S3.BucketName,
 		},
 		SlackCredentials: &SlackCredentials{
-			Endpoint: c.Slack.Endpoint,
-			Token:    c.Slack.Token,
+			DevNotifyUrl: c.Slack.DevNotifyUrl,
 		},
 		APIToken: &APIToken{apiToken},
 	}, nil
+}
+
+// NotifySlack is used throughout the CLI for production error handling
+func (api *APIClient) NotifySlack(err error) {
+	// Do not notify slack during development
+	if api.Credentials.DevNotifyUrl == "development" {
+		return
+	}
+
+	go func(err error) {
+		textMsg := struct {
+			Text string `json:"text"`
+		}{
+			Text: fmt.Sprintf("%s: %s", api.baseURL, err),
+		}
+
+		bytePostData, err := json.Marshal(textMsg)
+
+		req, err := http.NewRequest("POST", api.Credentials.DevNotifyUrl, bytes.NewReader(bytePostData))
+		if err == nil {
+			req.Header.Add("Content-Type", "application/json; charset=utf-8")
+			client := &http.Client{Timeout: time.Second * 30}
+			client.Do(req)
+		}
+	}(err)
 }
