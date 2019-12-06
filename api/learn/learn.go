@@ -126,13 +126,13 @@ func (api *APIClient) NotifySlack(err error) {
 		return
 	}
 
-	textMsg := struct {
+	msg := struct {
 		Text string `json:"text"`
 	}{
 		Text: fmt.Sprintf("%s", err),
 	}
 
-	bytePostData, err := json.Marshal(textMsg)
+	bytePostData, err := json.Marshal(msg)
 
 	req, err := http.NewRequest("POST", api.Credentials.DevNotifyURL, bytes.NewReader(bytePostData))
 	if err == nil {
