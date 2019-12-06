@@ -35,6 +35,9 @@ var rootCmd = &cobra.Command{
 // APIToken is an initialized string used for holding it's flag value
 var APIToken string
 
+// UnitsDirectory is a flag for preview command that denotes a location for the units
+var UnitsDirectory string
+
 func init() {
 	u, err := user.Current()
 	if err != nil {
@@ -89,6 +92,7 @@ func init() {
 
 	// Check for flags set by the user and hyrate their corresponding variables.
 	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
+	previewCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
 }
 
 // Execute runs the learn CLI according to the user's command/subcommand/flags

@@ -60,7 +60,7 @@ var previewCmd = &cobra.Command{
 		}
 
 		// Detect config file
-		doesConfigExistOrCreate(args[0])
+		doesConfigExistOrCreate(args[0], UnitsDirectory)
 
 		// Compress directory, output -> tmpFile
 		err := compressDirectory(args[0], tmpFile)
@@ -321,7 +321,7 @@ func compressDirectory(source, target string) error {
 	return err
 }
 
-func doesConfigExistOrCreate(target string) {
+func doesConfigExistOrCreate(target, unitsDir string) {
 	configYamlPath := ""
 	if strings.HasSuffix(target, "/") {
 		configYamlPath = target + "config.yaml"
@@ -346,12 +346,12 @@ func doesConfigExistOrCreate(target string) {
 			log.Printf("WARNING: There is a config present and one will not be generated.")
 		} else if os.IsNotExist(ymlExists) {
 			log.Printf("WARNING: No config was found, one will be generated for you.")
-			createAutoConfig(target)
+			createAutoConfig(target, unitsDir)
 		}
 	}
 }
 
-func createAutoConfig(target string) {
+func createAutoConfig(target, unitsDir string) {
 	blockRoot := ""
 	if strings.HasSuffix(target, "/") {
 		blockRoot = target
@@ -359,7 +359,7 @@ func createAutoConfig(target string) {
 		blockRoot = target + "/"
 	}
 
-	autoConfigYamlPath := blockRoot + "auto-config.yaml"
+	autoConfigYamlPath := blockRoot + "config.yaml"
 
 	_, autoYamlExists := os.Stat(autoConfigYamlPath)
 	if autoYamlExists == nil {
@@ -382,7 +382,10 @@ func createAutoConfig(target string) {
 
 	var mdPaths []string
 
-	unitsDir := blockRoot + "units"
+	if unitsDir == "" {
+		unitsDir = blockRoot + "units"
+	}
+
 	_, unitsDirExists := os.Stat(unitsDir)
 	if unitsDirExists == nil {
 
