@@ -56,7 +56,7 @@ func (api *APIClient) GetBlockByRepoName(repoName string) (Block, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
 
 	res, err := api.client.Do(req)
 	if err != nil {
@@ -95,7 +95,7 @@ func (api *APIClient) CreateBlockByRepoName(repoName string) (Block, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
 
 	res, err := api.client.Do(req)
 	if err != nil {
@@ -129,7 +129,7 @@ func (api *APIClient) CreateMasterRelease(blockID int) (int, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.token))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
 
 	res, err := api.client.Do(req)
 	if err != nil {

@@ -4,13 +4,15 @@ import (
 	"testing"
 
 	"github.com/gSchool/glearn-cli/api"
+	"github.com/spf13/viper"
 )
 
 const validBlockResponse = `{"blocks":[{"id":1,"repo_name":"blocks-test","sync_errors":["somethin is wrong"],"title":"Blocks Test","cohorts_using":[7,9]}]}`
 
 func Test_GetBlockByRepoName(t *testing.T) {
+	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validBlockResponse)
-	API = NewAPI("apiToken", "https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient)
 
 	block, err := API.GetBlockByRepoName("blocks-test")
 	if err != nil {
@@ -19,11 +21,17 @@ func Test_GetBlockByRepoName(t *testing.T) {
 	testValidBlockSerialization(block, t)
 
 	// verify that requests were made properly
-	if len(mockClient.Requests) != 1 {
-		t.Errorf("fetching the block should make one request")
+	if len(mockClient.Requests) != 2 {
+		t.Errorf("fetching the block should make two requests")
 		return
 	}
+
 	req := mockClient.Requests[0]
+	if req.Method != "GET" {
+		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
+	}
+
+	req = mockClient.Requests[1]
 	if req.Method != "GET" {
 		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
 	}
@@ -39,8 +47,9 @@ func Test_GetBlockByRepoName(t *testing.T) {
 }
 
 func Test_CreateBlockByRepoName(t *testing.T) {
+	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validBlockResponse)
-	API = NewAPI("apiToken", "https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient)
 
 	block, err := API.CreateBlockByRepoName("blocks-test")
 	if err != nil {
@@ -49,11 +58,17 @@ func Test_CreateBlockByRepoName(t *testing.T) {
 	testValidBlockSerialization(block, t)
 
 	// verify that requests were made properly
-	if len(mockClient.Requests) != 1 {
-		t.Errorf("fetching the block should make one request")
+	if len(mockClient.Requests) != 2 {
+		t.Errorf("fetching the block should make two requests")
 		return
 	}
+
 	req := mockClient.Requests[0]
+	if req.Method != "GET" {
+		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
+	}
+
+	req = mockClient.Requests[1]
 	if req.Method != "POST" {
 		t.Errorf("Request made to Learn should be a POST, was %s", req.Method)
 	}
@@ -71,8 +86,9 @@ func Test_CreateBlockByRepoName(t *testing.T) {
 const validMasterReleaseResponse = `{"release_id":9}`
 
 func Test_CreateMasterRelease(t *testing.T) {
+	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validMasterReleaseResponse)
-	API = NewAPI("apiToken", "https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient)
 
 	id, err := API.CreateMasterRelease(1)
 	if err != nil {
@@ -83,11 +99,17 @@ func Test_CreateMasterRelease(t *testing.T) {
 	}
 
 	// verify that requests were made properly
-	if len(mockClient.Requests) != 1 {
-		t.Errorf("fetching the block should make one request")
+	if len(mockClient.Requests) != 2 {
+		t.Errorf("fetching the block should make two requests")
 		return
 	}
+
 	req := mockClient.Requests[0]
+	if req.Method != "GET" {
+		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
+	}
+
+	req = mockClient.Requests[1]
 	if req.Method != "POST" {
 		t.Errorf("Request made to Learn should be a POST, was %s", req.Method)
 	}
