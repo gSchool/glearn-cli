@@ -48,13 +48,14 @@ func (api *APIClient) PollForBuildResponse(releaseID int, attempts *uint8) (*Pre
 
 	if p.Status == "processing" || p.Status == "pending" {
 		*attempts--
-		time.Sleep(2 * time.Second)
 
-		if *attempts == uint8(0) {
+		if *attempts <= uint8(0) {
 			return nil, errors.New(
 				"Sorry, we are having trouble requesting your build from Learn. Please try again",
 			)
 		}
+
+		time.Sleep(2 * time.Second)
 
 		return api.PollForBuildResponse(releaseID, attempts)
 	}
