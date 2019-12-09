@@ -63,11 +63,19 @@ var previewCmd = &cobra.Command{
 		s.Color("blue")
 		s.Start()
 
+		// Start benchmark for compressDirectory
+		start := time.Now()
+
 		// Compress directory, output -> tmpFile
 		err := compressDirectory(args[0], tmpFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", args[0], err))
 			return
+		}
+
+		// Add benchmark in milliseconds for compressDirectory
+		bench := &learn.CLIBenchmark{
+			Compression: time.Since(start).Milliseconds(),
 		}
 
 		// Stop the processing spinner
@@ -92,12 +100,18 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
+		// Start benchmark for uploadToS3
+		start = time.Now()
+
 		// Send compressed zip file to s3
 		bucketKey, err := uploadToS3(f, checksum, learn.API.Credentials)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to upload zip file to s3. Err: %v", err))
 			return
 		}
+
+		// Add benchmark in milliseconds for uploadToS3
+		bench.UploadToS3 = time.Since(start).Milliseconds()
 
 		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
 		fileInfo, err := os.Stat(args[0])
@@ -113,6 +127,9 @@ var previewCmd = &cobra.Command{
 		s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)
 		s.Color("blue")
 		s.Start()
+
+		// Start benchmark for BuildReleaseFromS3 & PollForBuildResponse (Learn build stage)
+		start = time.Now()
 
 		// Let Learn know there is new preview content on s3, where it is, and to build it
 		res, err := learn.API.BuildReleaseFromS3(bucketKey, isDirectory)
@@ -133,6 +150,9 @@ var previewCmd = &cobra.Command{
 			}
 		}
 
+		// Add benchmark in milliseconds for the Learn build stage
+		bench.LearnBuild = time.Since(start).Milliseconds()
+
 		// Set final message for dislpay
 		s.FinalMSG = fmt.Sprintf("Sucessfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
 
@@ -141,6 +161,15 @@ var previewCmd = &cobra.Command{
 		printlnGreen("√")
 
 		exec.Command("bash", "-c", fmt.Sprintf("open %s", res.PreviewURL)).Output()
+
+		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
+			CLIBenchmark: bench,
+		})
+		if err != nil {
+			cleanUpFiles()
+			learn.API.NotifySlack(err)
+			os.Exit(1)
+		}
 	},
 }
 
