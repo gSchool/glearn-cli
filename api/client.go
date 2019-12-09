@@ -25,9 +25,11 @@ type MockClient struct {
 func (mock *MockClient) Do(req *http.Request) (*http.Response, error) {
 	mock.Requests = append(mock.Requests, req)
 	statusCode := 200
+
 	if mock.StatusCode != 0 && mock.StatusCode != 200 {
 		statusCode = mock.StatusCode
 	}
+
 	if len(mock.Response) > 0 {
 		return &http.Response{
 			StatusCode: statusCode,
@@ -41,6 +43,7 @@ func (mock *MockClient) Do(req *http.Request) (*http.Response, error) {
 			Body:       MockBody(mock.Responses[len(mock.Requests)-1]),
 		}, nil
 	}
+
 	return &http.Response{StatusCode: 200}, nil
 }
 

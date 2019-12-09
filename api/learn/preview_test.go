@@ -5,17 +5,17 @@ import (
 	"testing"
 
 	"github.com/gSchool/glearn-cli/api"
+	"github.com/spf13/viper"
 )
 
 const validPreviewResponse = `{"status":"success","release_id":1,"preview_url":"http://example.com"}`
 const pendingPreviewResponse = `{"status":"pending","release_id":1,"preview_url":"http://example.com"}`
-const s3CredentialResponse = `{
-	"glearn_credentials":{"access_key_id":"access_keyin","secret_access_key":"secret_keyin","key_prefix":"keykey's delivery service","bucket_name":"buqet"}
-}`
+const credentialsResponse = `{"s3":{"access_key_id":"access_keyin","secret_access_key":"secret_keyin","key_prefix":"keykey's delivery service","bucket_name":"buqet"}, "slack":{"dev_notify_url": "development"}}`
 
 func Test_PollForBuildResponse(t *testing.T) {
+	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validPreviewResponse)
-	API = NewAPI("apiToken", "https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient)
 
 	attempts := uint8(1)
 	previewResponse, err := API.PollForBuildResponse(1, &attempts)
@@ -27,14 +27,21 @@ func Test_PollForBuildResponse(t *testing.T) {
 	}
 
 	// verify that requests were made properly
-	if len(mockClient.Requests) != 1 {
-		t.Errorf("fetching the block should make one request")
+	if len(mockClient.Requests) != 2 {
+		t.Errorf("fetching the block should make two requests")
 		return
 	}
+
 	req := mockClient.Requests[0]
 	if req.Method != "GET" {
 		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
 	}
+
+	req = mockClient.Requests[1]
+	if req.Method != "GET" {
+		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
+	}
+
 	urlTarget := "https://example.com/api/v1/releases/1/release_polling"
 	if req.URL.String() != urlTarget {
 		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", urlTarget, req.URL.String())
@@ -48,8 +55,9 @@ func Test_PollForBuildResponse(t *testing.T) {
 }
 
 func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
+	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(pendingPreviewResponse)
-	API = NewAPI("apiToken", "https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient)
 
 	attempts := uint8(1)
 	_, err := API.PollForBuildResponse(1, &attempts)
@@ -61,14 +69,21 @@ func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
 	}
 
 	// verify that requests were made properly
-	if len(mockClient.Requests) != 1 {
-		t.Errorf("fetching the block should make one request")
+	if len(mockClient.Requests) != 2 {
+		t.Errorf("fetching the block should make two requests")
 		return
 	}
+
 	req := mockClient.Requests[0]
 	if req.Method != "GET" {
 		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
 	}
+
+	req = mockClient.Requests[1]
+	if req.Method != "GET" {
+		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
+	}
+
 	urlTarget := "https://example.com/api/v1/releases/1/release_polling"
 	if req.URL.String() != urlTarget {
 		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", urlTarget, req.URL.String())
@@ -82,8 +97,9 @@ func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
 }
 
 func Test_BuildReleaseFromS3_Directory(t *testing.T) {
+	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validPreviewResponse)
-	API = NewAPI("apiToken", "https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient)
 
 	previewResponse, err := API.BuildReleaseFromS3("buket", true)
 	if err != nil {
@@ -94,18 +110,26 @@ func Test_BuildReleaseFromS3_Directory(t *testing.T) {
 	}
 
 	// verify that requests were made properly
-	if len(mockClient.Requests) != 1 {
-		t.Errorf("fetching the block should make one request")
+	if len(mockClient.Requests) != 2 {
+		t.Errorf("fetching the block should make two requests")
 		return
 	}
+
 	req := mockClient.Requests[0]
+	if req.Method != "GET" {
+		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
+	}
+
+	req = mockClient.Requests[1]
 	if req.Method != "POST" {
 		t.Errorf("Request made to Learn should be a POST, was %s", req.Method)
 	}
+
 	urlTarget := "https://example.com/api/v1/releases"
 	if req.URL.String() != urlTarget {
 		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", urlTarget, req.URL.String())
 	}
+
 	if req.Header.Get("Content-Type") != "application/json" {
 		t.Errorf("Content-Type header should be 'application/json', was '%s'\n", req.Header.Get("Content-Type"))
 	}
@@ -115,8 +139,9 @@ func Test_BuildReleaseFromS3_Directory(t *testing.T) {
 }
 
 func Test_BuildReleaseFromS3_notDirectory(t *testing.T) {
-	mockClient := api.MockResponse(validPreviewResponse)
-	API = NewAPI("apiToken", "https://example.com", mockClient)
+	viper.Set("api_token", "apiToken")
+	mockClient := api.MockResponses(credentialsResponse, validPreviewResponse)
+	API, _ := NewAPI("https://example.com", mockClient)
 
 	previewResponse, err := API.BuildReleaseFromS3("buket", false)
 	if err != nil {
@@ -127,14 +152,21 @@ func Test_BuildReleaseFromS3_notDirectory(t *testing.T) {
 	}
 
 	// verify that requests were made properly
-	if len(mockClient.Requests) != 1 {
-		t.Errorf("fetching the block should make one request")
+	if len(mockClient.Requests) != 2 {
+		t.Errorf("fetching the block should make two requests for credentials and one for fetching block")
 		return
 	}
+
 	req := mockClient.Requests[0]
+	if req.Method != "GET" {
+		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
+	}
+
+	req = mockClient.Requests[1]
 	if req.Method != "POST" {
 		t.Errorf("Request made to Learn should be a POST, was %s", req.Method)
 	}
+
 	urlTarget := "https://example.com/api/v1/content_files"
 	if req.URL.String() != urlTarget {
 		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", urlTarget, req.URL.String())
@@ -147,37 +179,34 @@ func Test_BuildReleaseFromS3_notDirectory(t *testing.T) {
 	}
 }
 
-func Test_RetrieveS3Credentials(t *testing.T) {
-	mockClient := api.MockResponse(s3CredentialResponse)
-	API = NewAPI("apiToken", "https://example.com", mockClient)
+func Test_RetrieveCredentials(t *testing.T) {
+	viper.Set("api_token", "apiToken")
+	mockClient := api.MockResponse(credentialsResponse)
+	API, _ := NewAPI("https://example.com", mockClient)
 
-	s3Response, err := API.RetrieveS3Credentials()
-	if err != nil {
-		t.Errorf("error should be present if attempts are exausted nil: %s\n", err)
-	}
-	if s3Response.AccessKeyID != "access_keyin" {
+	if API.Credentials.S3Credentials.AccessKeyID != "access_keyin" {
 		t.Errorf("Error unmarshaling S3 Credentials, access_key_id ")
 	}
-	if s3Response.SecretAccessKey != "secret_keyin" {
+	if API.Credentials.SecretAccessKey != "secret_keyin" {
 		t.Errorf("Error unmarshaling S3 Credentials, bad secret_access_key")
 	}
-	if s3Response.KeyPrefix != "keykey's delivery service" {
+	if API.Credentials.KeyPrefix != "keykey's delivery service" {
 		t.Errorf("Error unmarshaling S3 Credentials, bad key_prefix")
 	}
-	if s3Response.BucketName != "buqet" {
+	if API.Credentials.BucketName != "buqet" {
 		t.Errorf("Error unmarshaling S3 Credentials, bad bucket_name")
 	}
 
 	// verify that requests were made properly
 	if len(mockClient.Requests) != 1 {
-		t.Errorf("fetching the block should make one request")
+		t.Errorf("Creating a new api should make two requests to credentials")
 		return
 	}
 	req := mockClient.Requests[0]
 	if req.Method != "GET" {
 		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
 	}
-	urlTarget := "https://example.com/api/v1/users/glearn_credentials"
+	urlTarget := "https://example.com/api/v1/users/learn_cli_credentials"
 	if req.URL.String() != urlTarget {
 		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", urlTarget, req.URL.String())
 	}
