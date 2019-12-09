@@ -57,12 +57,22 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
+		// Start a processing spinner that runs until a user's content is compressed
+		fmt.Println("Compressing your content...")
+		s := spinner.New(spinner.CharSets[26], 100*time.Millisecond)
+		s.Color("blue")
+		s.Start()
+
 		// Compress directory, output -> tmpFile
 		err := compressDirectory(args[0], tmpFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", args[0], err))
 			return
 		}
+
+		// Stop the processing spinner
+		s.Stop()
+		printlnGreen("√")
 
 		// Removes artifacts on user's machine
 		defer cleanUpFiles()
@@ -100,8 +110,8 @@ var previewCmd = &cobra.Command{
 		fmt.Println("\nPlease wait while Learn builds your preview...")
 
 		// Start a processing spinner that runs until Learn is finsihed building the preview
-		s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
-		s.Color("green")
+		s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)
+		s.Color("blue")
 		s.Start()
 
 		// Let Learn know there is new preview content on s3, where it is, and to build it
@@ -128,6 +138,7 @@ var previewCmd = &cobra.Command{
 
 		// Stop the processing spinner
 		s.Stop()
+		printlnGreen("√")
 
 		exec.Command("bash", "-c", fmt.Sprintf("open %s", res.PreviewURL)).Output()
 	},
@@ -140,6 +151,10 @@ func previewCmdError(msg string) {
 	cleanUpFiles()
 	learn.API.NotifySlack(errors.New(msg))
 	os.Exit(1)
+}
+
+func printlnGreen(text string) {
+	fmt.Printf("\033[32m%s\033[0m\n", text)
 }
 
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
@@ -189,6 +204,7 @@ func uploadToS3(file *os.File, checksum string, creds *learn.Credentials) (strin
 	}
 
 	bar.Finish()
+	printlnGreen("√")
 
 	return bucketKey, nil
 }
