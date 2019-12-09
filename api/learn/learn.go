@@ -57,6 +57,23 @@ type CredentialsResponse struct {
 	Slack SlackCredentials `json:"slack"`
 }
 
+// CLIBenchmarkPayload is the shape of the payload to send to Learn's learn_cli_metadata
+// endpoint.
+type CLIBenchmarkPayload struct {
+	*CLIBenchmark `json:"cli_benchmark"`
+}
+
+// CLIBenchmark holds timing in ms for the 3 main actions in the preview command
+type CLIBenchmark struct {
+	// All in millisconds
+	Compression           int64  `json:"time_to_compress,omitempty"`
+	UploadToS3            int64  `json:"time_to_upload_to_s3,omitempty"`
+	LearnBuild            int64  `json:"time_to_build_on_learn,omitempty"`
+	MasterReleaseAndBuild int64  `json:"master_release_and_build,omitempty"`
+	TotalCmdTime          int64  `json:"total_cmd_time,omitempty"`
+	CmdName               string `json:"command_name,omitempty"`
+}
+
 // NewAPI is a constructor for the ApiClient
 func NewAPI(baseURL string, client api.Client) (*APIClient, error) {
 	apiClient := &APIClient{
@@ -117,6 +134,42 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 		},
 		APIToken: &APIToken{apiToken},
 	}, nil
+}
+
+// SendMetadataToLearn takes a *CLIBenchmarkPayload struct payload to send to Learn
+// for monitoring how long everything is taking
+func (api *APIClient) SendMetadataToLearn(timingPayload *CLIBenchmarkPayload) error {
+	payloadBytes, err := json.Marshal(timingPayload)
+	if err != nil {
+		return err
+	}
+
+	endpoint := "/api/v1/users/learn_cli_metadata"
+
+	req, err := http.NewRequest(
+		"POST",
+		fmt.Sprintf("%s%s", api.baseURL, endpoint),
+		bytes.NewBuffer(payloadBytes),
+	)
+	if err != nil {
+		return err
+	}
+	defer req.Body.Close()
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
+
+	res, err := api.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("Error: response status: %d", res.StatusCode)
+	}
+
+	return nil
 }
 
 // NotifySlack is used throughout the CLI for production error handling

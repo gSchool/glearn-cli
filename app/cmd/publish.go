@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/gSchool/glearn-cli/api/learn"
 	"github.com/spf13/cobra"
@@ -36,6 +37,9 @@ var publishCmd = &cobra.Command{
 			fmt.Println("Usage: `learn publish` takes no arguments, merely pushing latest master and releasing a version to Learn")
 			os.Exit(1)
 		}
+
+		// Start benchmarking the total time spent in publish cmd
+		startOfCmd := time.Now()
 
 		remote, err := remoteName()
 		if err != nil {
@@ -79,6 +83,9 @@ var publishCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// Start benchmark for creating master release & building on learn
+		startOfMasterReleaseAndBuild := time.Now()
+
 		// Create a release on learn, notify user
 		releaseID, err := learn.API.CreateMasterRelease(block.ID)
 		if err != nil || releaseID == 0 {
@@ -91,10 +98,24 @@ var publishCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("Failed to fetch the state of your build: %s", err)
 			os.Exit(1)
-			return
+		}
+
+		// Add benchmark in milliseconds for compressDirectory
+		bench := &learn.CLIBenchmark{
+			MasterReleaseAndBuild: time.Since(startOfMasterReleaseAndBuild).Milliseconds(),
+			TotalCmdTime:          time.Since(startOfCmd).Milliseconds(),
+			CmdName:               "publish",
 		}
 
 		fmt.Printf("Block %d released!\n", block.ID)
+
+		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
+			CLIBenchmark: bench,
+		})
+		if err != nil {
+			learn.API.NotifySlack(err)
+			os.Exit(1)
+		}
 	},
 }
 

@@ -57,6 +57,9 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
+		// Start benchmarking the total time spent in preview cmd
+		startOfCmd := time.Now()
+
 		// Start a processing spinner that runs until a user's content is compressed
 		fmt.Println("Compressing your content...")
 		s := spinner.New(spinner.CharSets[26], 100*time.Millisecond)
@@ -64,7 +67,7 @@ var previewCmd = &cobra.Command{
 		s.Start()
 
 		// Start benchmark for compressDirectory
-		start := time.Now()
+		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpFile
 		err := compressDirectory(args[0], tmpFile)
@@ -75,7 +78,8 @@ var previewCmd = &cobra.Command{
 
 		// Add benchmark in milliseconds for compressDirectory
 		bench := &learn.CLIBenchmark{
-			Compression: time.Since(start).Milliseconds(),
+			Compression: time.Since(startOfCompression).Milliseconds(),
+			CmdName:     "preview",
 		}
 
 		// Stop the processing spinner
@@ -101,7 +105,7 @@ var previewCmd = &cobra.Command{
 		}
 
 		// Start benchmark for uploadToS3
-		start = time.Now()
+		startOfUploadToS3 := time.Now()
 
 		// Send compressed zip file to s3
 		bucketKey, err := uploadToS3(f, checksum, learn.API.Credentials)
@@ -111,7 +115,7 @@ var previewCmd = &cobra.Command{
 		}
 
 		// Add benchmark in milliseconds for uploadToS3
-		bench.UploadToS3 = time.Since(start).Milliseconds()
+		bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
 
 		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
 		fileInfo, err := os.Stat(args[0])
@@ -129,7 +133,7 @@ var previewCmd = &cobra.Command{
 		s.Start()
 
 		// Start benchmark for BuildReleaseFromS3 & PollForBuildResponse (Learn build stage)
-		start = time.Now()
+		startBuildAndPollRelease := time.Now()
 
 		// Let Learn know there is new preview content on s3, where it is, and to build it
 		res, err := learn.API.BuildReleaseFromS3(bucketKey, isDirectory)
@@ -150,8 +154,9 @@ var previewCmd = &cobra.Command{
 			}
 		}
 
-		// Add benchmark in milliseconds for the Learn build stage
-		bench.LearnBuild = time.Since(start).Milliseconds()
+		// Add benchmark in milliseconds for the Learn build stage and total time in preview cmd
+		bench.LearnBuild = time.Since(startBuildAndPollRelease).Milliseconds()
+		bench.TotalCmdTime = time.Since(startOfCmd).Milliseconds()
 
 		// Set final message for dislpay
 		s.FinalMSG = fmt.Sprintf("Sucessfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
