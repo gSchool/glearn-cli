@@ -387,12 +387,14 @@ func createAutoConfig(target, requestedUnitsDir string) {
 	// If no unitsDir was passed in, create a Units directory string
 	unitsDir := ""
 	unitsDirName := ""
+	unitsRootDirName := "units"
 	if requestedUnitsDir == "" {
-		unitsDir = blockRoot + "units"
+		unitsDir = blockRoot + unitsRootDirName
 		unitsDirName = "Unit 1"
 	} else {
 		unitsDir = blockRoot + requestedUnitsDir
 		unitsDirName = requestedUnitsDir
+		unitsRootDirName = requestedUnitsDir
 	}
 
 	unitToContentFileMap := map[string][]string{}
@@ -406,7 +408,7 @@ func createAutoConfig(target, requestedUnitsDir string) {
 		allItems, _ := ioutil.ReadDir(whereToLookForUnits)
 		for _, info := range allItems {
 			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
-				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], info.Name())
+				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], unitsRootDirName+"/"+info.Name())
 			}
 		}
 	}
@@ -448,12 +450,12 @@ func createAutoConfig(target, requestedUnitsDir string) {
 
 	configFile.WriteString("---\n")
 	configFile.WriteString("Standards:\n")
-	configFile.WriteString("  -\n")
 	for unit, paths := range unitToContentFileMap {
+		configFile.WriteString("  -\n")
 		configFile.WriteString("    Title: " + formattedName(unit) + "\n")
 		var unitUID = []byte(formattedName(unit))
 		var md5unitUID = md5.Sum(unitUID)
-		configFile.WriteString("    Descripion: " + formattedName(unit) + "\n")
+		configFile.WriteString("    Description: " + formattedName(unit) + "\n")
 		configFile.WriteString("    UID: " + hex.EncodeToString(md5unitUID[:]) + "\n")
 		configFile.WriteString("    SuccessCriteria:\n")
 		configFile.WriteString("      - success criteria\n")
