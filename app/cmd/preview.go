@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -321,7 +322,9 @@ func compressDirectory(source, target string) error {
 	return err
 }
 
+// Check whether or nor a config file exists and if it does not we are going to attempt to create one
 func doesConfigExistOrCreate(target, unitsDir string) {
+	// Configs can be `yaml` or `yml`
 	configYamlPath := ""
 	if strings.HasSuffix(target, "/") {
 		configYamlPath = target + "config.yaml"
@@ -337,115 +340,133 @@ func doesConfigExistOrCreate(target, unitsDir string) {
 	}
 
 	_, yamlExists := os.Stat(configYamlPath)
-	if yamlExists == nil {
+	if yamlExists == nil { // Yaml exists
 		log.Printf("WARNING: There is a config present and one will not be generated.")
 	} else if os.IsNotExist(yamlExists) {
 
 		_, ymlExists := os.Stat(configYmlPath)
-		if ymlExists == nil {
+		if ymlExists == nil { // Yml exists
 			log.Printf("WARNING: There is a config present and one will not be generated.")
 		} else if os.IsNotExist(ymlExists) {
+			// Neither exists so we are going to create one
 			log.Printf("WARNING: No config was found, one will be generated for you.")
 			createAutoConfig(target, unitsDir)
 		}
 	}
 }
 
-func createAutoConfig(target, unitsDir string) {
+// Creates a config file based on three things:
+// 1. Did you give us a units directory?
+// 2. Do you have a units directory?
+// 3. We will use the root (target) directory
+func createAutoConfig(target, requestedUnitsDir string) {
 	blockRoot := ""
+	// Make sure we have an ending slash on the root dir
 	if strings.HasSuffix(target, "/") {
 		blockRoot = target
 	} else {
 		blockRoot = target + "/"
 	}
 
-	autoConfigYamlPath := blockRoot + "config.yaml"
+	// The config file location that we will be creating
+	autoConfigYamlPath := blockRoot + "autoconfig.yaml"
 
+	// Remove the existing one if its around
 	_, autoYamlExists := os.Stat(autoConfigYamlPath)
 	if autoYamlExists == nil {
 		os.Remove(autoConfigYamlPath)
 	}
 
+	// Create the config file
 	var configFile, err = os.Create(autoConfigYamlPath)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	defer configFile.Close()
 
-	configFile, err = os.OpenFile(autoConfigYamlPath, os.O_RDWR, 0644)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer configFile.Close()
-
-	var mdPaths []string
-
-	if unitsDir == "" {
+	// If no unitsDir was passed in, create a Units directory string
+	unitsDir := ""
+	unitsDirName := ""
+	if requestedUnitsDir == "" {
 		unitsDir = blockRoot + "units"
-	}
-
-	_, unitsDirExists := os.Stat(unitsDir)
-	if unitsDirExists == nil {
-
-		err = filepath.Walk(unitsDir,
-			func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-
-				localPath := path[len(blockRoot):len(path)]
-				if strings.HasSuffix(path, ".md") {
-					mdPaths = append(mdPaths, localPath)
-				}
-				return nil
-			})
-
+		unitsDirName = "Unit 1"
 	} else {
-		err = filepath.Walk(blockRoot,
-			func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-
-				localPath := path[len(blockRoot):len(path)]
-				if strings.HasSuffix(path, ".md") {
-					mdPaths = append(mdPaths, localPath)
-				}
-				return nil
-			})
+		unitsDir = blockRoot + requestedUnitsDir
+		unitsDirName = requestedUnitsDir
 	}
 
-	_, err = configFile.WriteString("---\n")
-	_, err = configFile.WriteString("Standards:\n")
-	_, err = configFile.WriteString("  -\n")
-	for _, path := range mdPaths {
-		if path != "README.md" {
-			pathParts := strings.Split(path, "/")
-			pathParts = strings.Split(pathParts[len(pathParts)-1], ".")
-			a := regexp.MustCompile(`\-`)
-			pathParts = a.Split(pathParts[0], -1)
-			a = regexp.MustCompile(`\_`)
-			pathParts = a.Split(strings.Join(pathParts, " "), -1)
-			formattedName := ""
-			for _, piece := range pathParts {
-				formattedName = formattedName + " " + strings.Title(piece)
+	unitToContentFileMap := map[string][]string{}
+
+	// Check to see if units directory exists
+	_, unitsDirExists := os.Stat(unitsDir)
+	whereToLookForUnits := blockRoot
+	if unitsDirExists == nil {
+		whereToLookForUnits = unitsDir
+
+		allItems, _ := ioutil.ReadDir(whereToLookForUnits)
+		for _, info := range allItems {
+			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
+				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], info.Name())
 			}
-			_, err = configFile.WriteString("    Title: " + formattedName + "\n")
-			var unitUID = []byte(formattedName)
-			var md5unitUID = md5.Sum(unitUID)
-			_, err = configFile.WriteString("    Descripion: " + formattedName + "\n")
-			_, err = configFile.WriteString("    UID: " + hex.EncodeToString(md5unitUID[:]) + "\n")
-			_, err = configFile.WriteString("    SuccessCriteria:\n")
-			_, err = configFile.WriteString("      - success criteria\n")
-			_, err = configFile.WriteString("    ContentFiles:\n")
-			_, err = configFile.WriteString("      -\n")
-			_, err = configFile.WriteString("        Type: Lesson\n")
-			var cfUID = []byte(formattedName + path)
-			var md5cfUID = md5.Sum(cfUID)
-			_, err = configFile.WriteString("        UID: " + hex.EncodeToString(md5cfUID[:]) + "\n")
-			_, err = configFile.WriteString("        Path: /" + path + "\n")
+		}
+	}
+
+	// Find all the directories in the block
+	directories := []string{}
+	allDirs, _ := ioutil.ReadDir(whereToLookForUnits)
+	for _, info := range allDirs {
+		if info.IsDir() {
+			directories = append(directories, info.Name())
+		}
+	}
+
+	if len(directories) > 0 {
+		for _, dirName := range directories {
+			nestedFolder := ""
+			if dirName != ".git" {
+				if strings.HasSuffix(whereToLookForUnits, "/") {
+					nestedFolder = whereToLookForUnits + dirName
+				} else {
+					nestedFolder = whereToLookForUnits + "/" + dirName
+				}
+
+				err = filepath.Walk(nestedFolder,
+					func(path string, info os.FileInfo, err error) error {
+						if err != nil {
+							return err
+						}
+
+						localPath := path[len(blockRoot):len(path)]
+						if strings.HasSuffix(path, ".md") {
+							unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
+						}
+						return nil
+					})
+			}
+		}
+	}
+
+	configFile.WriteString("---\n")
+	configFile.WriteString("Standards:\n")
+	configFile.WriteString("  -\n")
+	for unit, paths := range unitToContentFileMap {
+		configFile.WriteString("    Title: " + formattedName(unit) + "\n")
+		var unitUID = []byte(formattedName(unit))
+		var md5unitUID = md5.Sum(unitUID)
+		configFile.WriteString("    Descripion: " + formattedName(unit) + "\n")
+		configFile.WriteString("    UID: " + hex.EncodeToString(md5unitUID[:]) + "\n")
+		configFile.WriteString("    SuccessCriteria:\n")
+		configFile.WriteString("      - success criteria\n")
+		configFile.WriteString("    ContentFiles:\n")
+		for _, path := range paths {
+			if path != "README.md" {
+				configFile.WriteString("      -\n")
+				configFile.WriteString("        Type: Lesson\n")
+				var cfUID = []byte(formattedName(unit) + path)
+				var md5cfUID = md5.Sum(cfUID)
+				configFile.WriteString("        UID: " + hex.EncodeToString(md5cfUID[:]) + "\n")
+				configFile.WriteString("        Path: /" + path + "\n")
+			}
 		}
 	}
 	if err != nil {
@@ -453,8 +474,24 @@ func createAutoConfig(target, unitsDir string) {
 		return
 	}
 	err = configFile.Sync()
+	defer configFile.Close()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+}
+
+func formattedName(name string) string {
+	parts := strings.Split(name, "/")
+	parts = strings.Split(parts[len(parts)-1], ".")
+	a := regexp.MustCompile(`\-`)
+	parts = a.Split(parts[0], -1)
+	a = regexp.MustCompile(`\_`)
+	parts = a.Split(strings.Join(parts, " "), -1)
+	formattedName := ""
+	for _, piece := range parts {
+		formattedName = formattedName + " " + strings.Title(piece)
+	}
+
+	return strings.TrimSpace(formattedName)
 }
