@@ -375,8 +375,8 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	autoConfigYamlPath := blockRoot + "autoconfig.yaml"
 
 	// Remove the existing one if its around
-	autoYamlExists, err := os.Stat(autoConfigYamlPath)
-	if autoYamlExists.Name() == "autoconfig.yaml" && err == nil {
+	_, err := os.Stat(autoConfigYamlPath)
+	if err == nil {
 		os.Remove(autoConfigYamlPath)
 	}
 
