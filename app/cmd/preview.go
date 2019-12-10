@@ -62,10 +62,14 @@ var previewCmd = &cobra.Command{
 		}
 
 		// Detect config file
-		doesConfigExistOrCreate(args[0], UnitsDirectory)
+		err := doesConfigExistOrCreate(args[0], UnitsDirectory)
+		if err != nil {
+			previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", args[0], err))
+			return
+		}
 
 		// Compress directory, output -> tmpFile
-		err := compressDirectory(args[0], tmpFile)
+		err = compressDirectory(args[0], tmpFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", args[0], err))
 			return
@@ -316,7 +320,7 @@ func compressDirectory(source, target string) error {
 }
 
 // Check whether or nor a config file exists and if it does not we are going to attempt to create one
-func doesConfigExistOrCreate(target, unitsDir string) {
+func doesConfigExistOrCreate(target, unitsDir string) error {
 	// Configs can be `yaml` or `yml`
 	configYamlPath := ""
 	if strings.HasSuffix(target, "/") {
@@ -335,24 +339,30 @@ func doesConfigExistOrCreate(target, unitsDir string) {
 	_, yamlExists := os.Stat(configYamlPath)
 	if yamlExists == nil { // Yaml exists
 		log.Printf("WARNING: There is a config present and one will not be generated.")
+		return nil
 	} else if os.IsNotExist(yamlExists) {
 
 		_, ymlExists := os.Stat(configYmlPath)
 		if ymlExists == nil { // Yml exists
 			log.Printf("WARNING: There is a config present and one will not be generated.")
+			return nil
 		} else if os.IsNotExist(ymlExists) {
 			// Neither exists so we are going to create one
 			log.Printf("WARNING: No config was found, one will be generated for you.")
-			createAutoConfig(target, unitsDir)
+			err := createAutoConfig(target, unitsDir)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 // Creates a config file based on three things:
 // 1. Did you give us a units directory?
 // 2. Do you have a units directory?
-// 3. We will use the root (target) directory
-func createAutoConfig(target, requestedUnitsDir string) {
+// Units must exist in units dir or one provided!
+func createAutoConfig(target, requestedUnitsDir string) error {
 	blockRoot := ""
 	// Make sure we have an ending slash on the root dir
 	if strings.HasSuffix(target, "/") {
@@ -365,17 +375,18 @@ func createAutoConfig(target, requestedUnitsDir string) {
 	autoConfigYamlPath := blockRoot + "autoconfig.yaml"
 
 	// Remove the existing one if its around
-	_, autoYamlExists := os.Stat(autoConfigYamlPath)
-	if autoYamlExists == nil {
+	autoYamlExists, err := os.Stat(autoConfigYamlPath)
+	if autoYamlExists.Name() == "autoconfig.yaml" && err == nil {
 		os.Remove(autoConfigYamlPath)
 	}
 
 	// Create the config file
-	var configFile, err = os.Create(autoConfigYamlPath)
+	configFile, err := os.Create(autoConfigYamlPath)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
+	defer configFile.Sync()
+	defer configFile.Close()
 
 	// If no unitsDir was passed in, create a Units directory string
 	unitsDir := ""
@@ -393,12 +404,15 @@ func createAutoConfig(target, requestedUnitsDir string) {
 	unitToContentFileMap := map[string][]string{}
 
 	// Check to see if units directory exists
-	_, unitsDirExists := os.Stat(unitsDir)
+	_, err = os.Stat(unitsDir)
 	whereToLookForUnits := blockRoot
-	if unitsDirExists == nil {
+	if err == nil {
 		whereToLookForUnits = unitsDir
 
-		allItems, _ := ioutil.ReadDir(whereToLookForUnits)
+		allItems, err := ioutil.ReadDir(whereToLookForUnits)
+		if err != nil {
+			return err
+		}
 		for _, info := range allItems {
 			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
 				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], unitsRootDirName+"/"+info.Name())
@@ -408,7 +422,10 @@ func createAutoConfig(target, requestedUnitsDir string) {
 
 	// Find all the directories in the block
 	directories := []string{}
-	allDirs, _ := ioutil.ReadDir(whereToLookForUnits)
+	allDirs, err := ioutil.ReadDir(whereToLookForUnits)
+	if err != nil {
+		return err
+	}
 	for _, info := range allDirs {
 		if info.IsDir() {
 			directories = append(directories, info.Name())
@@ -431,12 +448,16 @@ func createAutoConfig(target, requestedUnitsDir string) {
 							return err
 						}
 
-						localPath := path[len(blockRoot):len(path)]
-						if strings.HasSuffix(path, ".md") {
+						if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
+							localPath := path[len(blockRoot):len(path)]
 							unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
 						}
+
 						return nil
 					})
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -465,15 +486,9 @@ func createAutoConfig(target, requestedUnitsDir string) {
 		}
 	}
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
-	err = configFile.Sync()
-	defer configFile.Close()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	return nil
 }
 
 func formattedName(name string) string {
