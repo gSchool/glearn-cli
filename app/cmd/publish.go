@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/gSchool/glearn-cli/api/learn"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -40,7 +42,7 @@ var publishCmd = &cobra.Command{
 
 		remote, err := remoteName()
 		if err != nil {
-			log.Printf("Cannot run git remote detection with command: git remote get-url --push origin\n%s\n", err)
+			log.Printf("Cannot run git remote detection with command: %s\n%s\n", pushRemoteCommand, err)
 			os.Exit(1)
 		}
 		if remote == "" {
@@ -81,6 +83,12 @@ var publishCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// Start a processing spinner that runs until Learn is finsihed building the preview
+		fmt.Println("\nPlease wait while Learn builds your release...")
+		s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
+		s.Color("green")
+		s.Start()
+
 		// Create a release on learn, notify user
 		releaseID, err := learn.API.CreateMasterRelease(block.ID)
 		if err != nil || releaseID == 0 {
@@ -96,7 +104,8 @@ var publishCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Printf("Block %d released!\n", block.ID)
+		s.FinalMSG = fmt.Sprintf("Block %d released!\n", block.ID)
+		s.Stop()
 	},
 }
 
@@ -120,15 +129,6 @@ func remoteName() (string, error) {
 	return parts[len(parts)-1], nil
 }
 
-func runBashCommand(command string) (string, error) {
-	out, err := exec.Command("bash", "-c", command).Output()
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(string(out)), nil
-}
-
 func pushToRemote(branch string) error {
 	_, err := exec.Command("bash", "-c", fmt.Sprintf("git push origin %s", branch)).CombinedOutput()
 	if err != nil {
@@ -136,4 +136,13 @@ func pushToRemote(branch string) error {
 	}
 
 	return nil
+}
+
+func runBashCommand(command string) (string, error) {
+	out, err := exec.Command("bash", "-c", command).Output()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(out)), nil
 }
