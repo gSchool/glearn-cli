@@ -269,49 +269,50 @@ func compressDirectory(source, target string) error {
 
 	// Walk the whole filepath
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Creates a partially-populated FileHeader from an os.FileInfo
-		header, err := zip.FileInfoHeader(info)
-		if err != nil {
-			return err
-		}
-
-		// Check if baseDir has been set (from the IsDir check) and if it has not been
-		// set, update the header.Name to reflect the correct path
-		if baseDir != "" {
-			header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
-		}
-
-		// Check if the file we are iterating is a directory and update the header.Name
-		// or the header.Method appropriately
-		if info.IsDir() {
-			header.Name += "/"
-		} else {
-			header.Method = zip.Deflate
-		}
-
-		//  Add a file to the zip archive using the provided FileHeader for the file metadata
-		writer, err := archive.CreateHeader(header)
-		if err != nil {
-			return err
-		}
-
-		// Return nil if at this point if info is a directory
-		if info.IsDir() {
-			return nil
-		}
-
-		// If it was not a directory, we open the file and copy it into the archive writer
-		file, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
 		if strings.HasSuffix(path, ".zip") == false {
+			if err != nil {
+				return err
+			}
+
+			// Creates a partially-populated FileHeader from an os.FileInfo
+			header, err := zip.FileInfoHeader(info)
+			if err != nil {
+				return err
+			}
+
+			// Check if baseDir has been set (from the IsDir check) and if it has not been
+			// set, update the header.Name to reflect the correct path
+			if baseDir != "" {
+				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
+			}
+
+			// Check if the file we are iterating is a directory and update the header.Name
+			// or the header.Method appropriately
+			if info.IsDir() {
+				header.Name += "/"
+			} else {
+				header.Method = zip.Deflate
+			}
+
+			//  Add a file to the zip archive using the provided FileHeader for the file metadata
+			writer, err := archive.CreateHeader(header)
+			if err != nil {
+				return err
+			}
+
+			// Return nil if at this point if info is a directory
+			if info.IsDir() {
+				return nil
+			}
+
+			// If it was not a directory, we open the file and copy it into the archive writer
+			// ingore zip files
+
+			file, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
 			_, err = io.Copy(writer, file)
 		}
 
