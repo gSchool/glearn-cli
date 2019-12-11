@@ -17,3 +17,5 @@
 .env
 
 dist
+
+autoconfig.yaml
