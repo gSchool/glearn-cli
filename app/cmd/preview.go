@@ -311,7 +311,9 @@ func compressDirectory(source, target string) error {
 		}
 		defer file.Close()
 
-		_, err = io.Copy(writer, file)
+		if strings.HasSuffix(path, ".zip") == false {
+			_, err = io.Copy(writer, file)
+		}
 
 		return err
 	})
