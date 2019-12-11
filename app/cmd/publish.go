@@ -14,7 +14,7 @@ import (
 
 const (
 	branchCommand     = `git branch | grep \* | cut -d ' ' -f2`
-	remoteNameCommand = `git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'`
+	pushRemoteCommand = `git remote get-url --push origin`
 )
 
 var publishCmd = &cobra.Command{
@@ -34,19 +34,20 @@ var publishCmd = &cobra.Command{
 		}
 
 		if len(args) != 0 {
-			fmt.Println("Usage: `learn publish` takes no arguments, merely pushing latest master and releasing a version to Learn")
+			fmt.Println("Usage: `learn publish` takes no arguments, merely pushing latest master and releasing a version to Learn. Use the command from inside a block repository.")
 			os.Exit(1)
 		}
 
 		remote, err := remoteName()
 		if err != nil {
-			log.Printf("Cannot run git remote detection with command: git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'\n%s", err)
+			log.Printf("Cannot run git remote detection with command: git remote get-url --push origin\n%s\n", err)
 			os.Exit(1)
 		}
 		if remote == "" {
 			log.Println("no fetch remote detected")
 			os.Exit(1)
 		}
+		fmt.Printf("Publishing block with repo name %s\n", remote)
 
 		block, err := learn.API.GetBlockByRepoName(remote)
 		if err != nil {
@@ -104,7 +105,19 @@ func currentBranch() (string, error) {
 }
 
 func remoteName() (string, error) {
-	return runBashCommand(remoteNameCommand)
+	s, err := runBashCommand(pushRemoteCommand)
+	if err != nil {
+		return "", err
+	}
+	parts := strings.Split(s, ".git") // isolate url from .git
+	if len(parts) < 1 {
+		return "", fmt.Errorf("Error parsing remote name from %s\n", s)
+	}
+	parts = strings.Split(parts[0], "/") // select final part of the url
+	if len(parts) < 1 {
+		return "", fmt.Errorf("Error parsing remote name from %s\n", s)
+	}
+	return parts[len(parts)-1], nil
 }
 
 func runBashCommand(command string) (string, error) {
