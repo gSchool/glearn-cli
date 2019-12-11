@@ -40,6 +40,9 @@ var publishCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// Start benchmarking the total time spent in publish cmd
+		startOfCmd := time.Now()
+
 		remote, err := remoteName()
 		if err != nil {
 			log.Printf("Cannot run git remote detection with command: %s\n%s\n", pushRemoteCommand, err)
@@ -83,6 +86,9 @@ var publishCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// Start benchmark for creating master release & building on learn
+		startOfMasterReleaseAndBuild := time.Now()
+
 		// Start a processing spinner that runs until Learn is finsihed building the preview
 		fmt.Println("\nPlease wait while Learn builds your release...")
 		s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
@@ -111,12 +117,26 @@ var publishCmd = &cobra.Command{
 				fmt.Println(e)
 			}
 			os.Exit(1)
-			return
+		}
+
+		// Add benchmark in milliseconds for compressDirectory
+		bench := &learn.CLIBenchmark{
+			MasterReleaseAndBuild: time.Since(startOfMasterReleaseAndBuild).Milliseconds(),
+			TotalCmdTime:          time.Since(startOfCmd).Milliseconds(),
+			CmdName:               "publish",
 		}
 
 		s.FinalMSG = fmt.Sprintf("Block %d released!\n", block.ID)
 		s.Stop()
-		return
+		fmt.Printf("Block %d released!\n", block.ID)
+
+		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
+			CLIBenchmark: bench,
+		})
+		if err != nil {
+			learn.API.NotifySlack(err)
+			os.Exit(1)
+		}
 	},
 }
 
