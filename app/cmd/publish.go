@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/gSchool/glearn-cli/api/learn"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -14,7 +16,7 @@ import (
 
 const (
 	branchCommand     = `git branch | grep \* | cut -d ' ' -f2`
-	remoteNameCommand = `git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'`
+	pushRemoteCommand = `git remote get-url --push origin`
 )
 
 var publishCmd = &cobra.Command{
@@ -34,29 +36,33 @@ var publishCmd = &cobra.Command{
 		}
 
 		if len(args) != 0 {
-			fmt.Println("Usage: `learn publish` takes no arguments, merely pushing latest master and releasing a version to Learn")
+			fmt.Println("Usage: `learn publish` takes no arguments, merely pushing latest master and releasing a version to Learn. Use the command from inside a block repository.")
 			os.Exit(1)
 		}
 
+		// Start benchmarking the total time spent in publish cmd
+		startOfCmd := time.Now()
+
 		remote, err := remoteName()
 		if err != nil {
-			log.Printf("Cannot run git remote detection with command: git remote -v | grep push | cut -f2- -d/ | sed 's/[.].*$//'\n%s", err)
+			log.Printf("Cannot run git remote detection with command: %s\n%s\n", pushRemoteCommand, err)
 			os.Exit(1)
 		}
 		if remote == "" {
 			log.Println("no fetch remote detected")
 			os.Exit(1)
 		}
+		fmt.Printf("Publishing block with repo name %s\n", remote)
 
 		block, err := learn.API.GetBlockByRepoName(remote)
 		if err != nil {
-			log.Printf("Error fetchng block from learn: %s", err)
+			log.Printf("Error fetchng block from learn: %s\n", err)
 			os.Exit(1)
 		}
 		if !block.Exists() {
 			block, err = learn.API.CreateBlockByRepoName(remote)
 			if err != nil {
-				log.Printf("Error creating block from learn: %s", err)
+				log.Printf("Error creating block from learn: %s\n", err)
 				os.Exit(1)
 			}
 		}
@@ -95,26 +101,61 @@ var publishCmd = &cobra.Command{
 		// TODO what happens when they do not have work in remote and push fails?
 		err = pushToRemote(branch)
 		if err != nil {
-			fmt.Printf("Error pushing to origin remote on branch: %s", err)
+			fmt.Printf("Error pushing to origin remote on branch: %s\n", err)
 			os.Exit(1)
 		}
+
+		// Start benchmark for creating master release & building on learn
+		startOfMasterReleaseAndBuild := time.Now()
+
+		// Start a processing spinner that runs until Learn is finsihed building the preview
+		fmt.Println("\nPlease wait while Learn builds your release...")
+		s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
+		s.Color("green")
+		s.Start()
 
 		// Create a release on learn, notify user
 		releaseID, err := learn.API.CreateMasterRelease(block.ID)
 		if err != nil || releaseID == 0 {
-			fmt.Printf("error creating master release for releaseID: %d. Error: %s", releaseID, err)
+			fmt.Printf("error creating master release for releaseID: %d. Error: %s\n", releaseID, err)
 			os.Exit(1)
 		}
 
 		var attempts uint8 = 20
 		_, err = learn.API.PollForBuildResponse(releaseID, &attempts)
 		if err != nil {
-			fmt.Printf("Failed to fetch the state of your build: %s", err)
+			s.Stop()
+
+			block, err := learn.API.GetBlockByRepoName(remote)
+			if err != nil {
+				log.Printf("Error fetchng block from learn: %s\n", err)
+				os.Exit(1)
+			}
+			fmt.Println("Errors on block:")
+			for _, e := range block.SyncErrors {
+				fmt.Println(e)
+			}
 			os.Exit(1)
-			return
 		}
 
+		// Add benchmark in milliseconds for compressDirectory
+		bench := &learn.CLIBenchmark{
+			MasterReleaseAndBuild: time.Since(startOfMasterReleaseAndBuild).Milliseconds(),
+			TotalCmdTime:          time.Since(startOfCmd).Milliseconds(),
+			CmdName:               "publish",
+		}
+
+		s.FinalMSG = fmt.Sprintf("Block %d released!\n", block.ID)
+		s.Stop()
 		fmt.Printf("Block %d released!\n", block.ID)
+
+		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
+			CLIBenchmark: bench,
+		})
+		if err != nil {
+			learn.API.NotifySlack(err)
+			os.Exit(1)
+		}
 	},
 }
 
@@ -123,16 +164,19 @@ func currentBranch() (string, error) {
 }
 
 func remoteName() (string, error) {
-	return runBashCommand(remoteNameCommand)
-}
-
-func runBashCommand(command string) (string, error) {
-	out, err := exec.Command("bash", "-c", command).Output()
+	s, err := runBashCommand(pushRemoteCommand)
 	if err != nil {
 		return "", err
 	}
-
-	return strings.TrimSpace(string(out)), nil
+	parts := strings.Split(s, ".git") // isolate url from .git
+	if len(parts) < 1 {
+		return "", fmt.Errorf("Error parsing remote name from %s\n", s)
+	}
+	parts = strings.Split(parts[0], "/") // select final part of the url
+	if len(parts) < 1 {
+		return "", fmt.Errorf("Error parsing remote name from %s\n", s)
+	}
+	return parts[len(parts)-1], nil
 }
 
 func pushToRemote(branch string) error {
@@ -155,4 +199,13 @@ func addAutoConfigAndCommit() error {
 	}
 
 	return nil
+}
+
+func runBashCommand(command string) (string, error) {
+	out, err := exec.Command("bash", "-c", command).Output()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(string(out)), nil
 }
