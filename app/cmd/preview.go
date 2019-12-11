@@ -2,15 +2,19 @@ package cmd
 
 import (
 	"archive/zip"
+	"crypto/md5"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -60,6 +64,13 @@ var previewCmd = &cobra.Command{
 		// Start benchmarking the total time spent in preview cmd
 		startOfCmd := time.Now()
 
+		// Detect config file
+		err := doesConfigExistOrCreate(args[0], UnitsDirectory)
+		if err != nil {
+			previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", args[0], err))
+			return
+		}
+
 		// Start a processing spinner that runs until a user's content is compressed
 		fmt.Println("Compressing your content...")
 		s := spinner.New(spinner.CharSets[26], 100*time.Millisecond)
@@ -70,7 +81,7 @@ var previewCmd = &cobra.Command{
 		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpFile
-		err := compressDirectory(args[0], tmpFile)
+		err = compressDirectory(args[0], tmpFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", args[0], err))
 			return
@@ -356,4 +367,200 @@ func compressDirectory(source, target string) error {
 	})
 
 	return err
+}
+
+// Check whether or nor a config file exists and if it does not we are going to attempt to create one
+func doesConfigExistOrCreate(target, unitsDir string) error {
+	// Configs can be `yaml` or `yml`
+	configYamlPath := ""
+	if strings.HasSuffix(target, "/") {
+		configYamlPath = target + "config.yaml"
+	} else {
+		configYamlPath = target + "/config.yaml"
+	}
+
+	configYmlPath := ""
+	if strings.HasSuffix(target, "/") {
+		configYmlPath = target + "config.yml"
+	} else {
+		configYmlPath = target + "/config.yml"
+	}
+
+	_, yamlExists := os.Stat(configYamlPath)
+	if yamlExists == nil { // Yaml exists
+		log.Printf("WARNING: There is a config present and one will not be generated.")
+		return nil
+	} else if os.IsNotExist(yamlExists) {
+		_, ymlExists := os.Stat(configYmlPath)
+		if ymlExists == nil { // Yml exists
+			log.Printf("WARNING: There is a config present and one will not be generated.")
+			return nil
+		} else if os.IsNotExist(ymlExists) {
+			// Neither exists so we are going to create one
+			log.Printf("WARNING: No config was found, one will be generated for you.")
+			err := createAutoConfig(target, unitsDir)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// Creates a config file based on three things:
+// 1. Did you give us a units directory?
+// 2. Do you have a units directory?
+// Units must exist in units dir or one provided!
+func createAutoConfig(target, requestedUnitsDir string) error {
+	blockRoot := ""
+	// Make sure we have an ending slash on the root dir
+	if strings.HasSuffix(target, "/") {
+		blockRoot = target
+	} else {
+		blockRoot = target + "/"
+	}
+
+	// The config file location that we will be creating
+	autoConfigYamlPath := blockRoot + "autoconfig.yaml"
+
+	// Remove the existing one if its around
+	_, err := os.Stat(autoConfigYamlPath)
+	if err == nil {
+		os.Remove(autoConfigYamlPath)
+	}
+
+	// Create the config file
+	configFile, err := os.Create(autoConfigYamlPath)
+	if err != nil {
+		return err
+	}
+	defer configFile.Sync()
+	defer configFile.Close()
+
+	// If no unitsDir was passed in, create a Units directory string
+	unitsDir := ""
+	unitsDirName := ""
+	unitsRootDirName := "units"
+	if requestedUnitsDir == "" {
+		unitsDir = blockRoot + unitsRootDirName
+		unitsDirName = "Unit 1"
+	} else {
+		unitsDir = blockRoot + requestedUnitsDir
+		unitsDirName = requestedUnitsDir
+		unitsRootDirName = requestedUnitsDir
+	}
+
+	unitToContentFileMap := map[string][]string{}
+
+	// Check to see if units directory exists
+	_, err = os.Stat(unitsDir)
+	whereToLookForUnits := blockRoot
+	if err == nil {
+		whereToLookForUnits = unitsDir
+
+		allItems, err := ioutil.ReadDir(whereToLookForUnits)
+		if err != nil {
+			return err
+		}
+
+		for _, info := range allItems {
+			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
+				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], unitsRootDirName+"/"+info.Name())
+			}
+		}
+	}
+
+	// Find all the directories in the block
+	directories := []string{}
+
+	allDirs, err := ioutil.ReadDir(whereToLookForUnits)
+	if err != nil {
+		return err
+	}
+
+	for _, info := range allDirs {
+		if info.IsDir() {
+			directories = append(directories, info.Name())
+		}
+	}
+
+	if len(directories) > 0 {
+		for _, dirName := range directories {
+			nestedFolder := ""
+			if dirName != ".git" {
+				if strings.HasSuffix(whereToLookForUnits, "/") {
+					nestedFolder = whereToLookForUnits + dirName
+				} else {
+					nestedFolder = whereToLookForUnits + "/" + dirName
+				}
+
+				err = filepath.Walk(nestedFolder,
+					func(path string, info os.FileInfo, err error) error {
+						if err != nil {
+							return err
+						}
+
+						if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
+							localPath := path[len(blockRoot):len(path)]
+							unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
+						}
+
+						return nil
+					})
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	configFile.WriteString("# This file is auto-generated and orders your content based on the file structure of your repo.\n")
+	configFile.WriteString("# Do not edit this file; it will be replaced the next time you run the preview command.\n")
+	configFile.WriteString("\n")
+	configFile.WriteString("# To manually order the contents of this curriculum rather than using the auto-generated file,\n")
+	configFile.WriteString("# include a config.yaml in your repo following the same conventions as this auto-generated file.\n")
+	configFile.WriteString("# A user-created config.yaml will have priority over the auto-generated one.\n")
+	configFile.WriteString("\n")
+	configFile.WriteString("---\n")
+	configFile.WriteString("Standards:\n")
+	for unit, paths := range unitToContentFileMap {
+		configFile.WriteString("  -\n")
+		configFile.WriteString("    Title: " + formattedName(unit) + "\n")
+		var unitUID = []byte(formattedName(unit))
+		var md5unitUID = md5.Sum(unitUID)
+		configFile.WriteString("    Description: " + formattedName(unit) + "\n")
+		configFile.WriteString("    UID: " + hex.EncodeToString(md5unitUID[:]) + "\n")
+		configFile.WriteString("    SuccessCriteria:\n")
+		configFile.WriteString("      - success criteria\n")
+		configFile.WriteString("    ContentFiles:\n")
+		for _, path := range paths {
+			if path != "README.md" {
+				configFile.WriteString("      -\n")
+				configFile.WriteString("        Type: Lesson\n")
+				var cfUID = []byte(formattedName(unit) + path)
+				var md5cfUID = md5.Sum(cfUID)
+				configFile.WriteString("        UID: " + hex.EncodeToString(md5cfUID[:]) + "\n")
+				configFile.WriteString("        Path: /" + path + "\n")
+			}
+		}
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func formattedName(name string) string {
+	parts := strings.Split(name, "/")
+	parts = strings.Split(parts[len(parts)-1], ".")
+	a := regexp.MustCompile(`\-`)
+	parts = a.Split(parts[0], -1)
+	a = regexp.MustCompile(`\_`)
+	parts = a.Split(strings.Join(parts, " "), -1)
+	formattedName := ""
+	for _, piece := range parts {
+		formattedName = formattedName + " " + strings.Title(piece)
+	}
+
+	return strings.TrimSpace(formattedName)
 }
