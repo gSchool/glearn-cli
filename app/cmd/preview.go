@@ -61,6 +61,9 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
+		// Start benchmarking the total time spent in preview cmd
+		startOfCmd := time.Now()
+
 		// Detect config file
 		err := doesConfigExistOrCreate(args[0], UnitsDirectory)
 		if err != nil {
@@ -68,12 +71,31 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
+		// Start a processing spinner that runs until a user's content is compressed
+		fmt.Println("Compressing your content...")
+		s := spinner.New(spinner.CharSets[26], 100*time.Millisecond)
+		s.Color("blue")
+		s.Start()
+
+		// Start benchmark for compressDirectory
+		startOfCompression := time.Now()
+
 		// Compress directory, output -> tmpFile
 		err = compressDirectory(args[0], tmpFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", args[0], err))
 			return
 		}
+
+		// Add benchmark in milliseconds for compressDirectory
+		bench := &learn.CLIBenchmark{
+			Compression: time.Since(startOfCompression).Milliseconds(),
+			CmdName:     "preview",
+		}
+
+		// Stop the processing spinner
+		s.Stop()
+		printlnGreen("√")
 
 		// Removes artifacts on user's machine
 		defer cleanUpFiles()
@@ -93,12 +115,18 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
+		// Start benchmark for uploadToS3
+		startOfUploadToS3 := time.Now()
+
 		// Send compressed zip file to s3
 		bucketKey, err := uploadToS3(f, checksum, learn.API.Credentials)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to upload zip file to s3. Err: %v", err))
 			return
 		}
+
+		// Add benchmark in milliseconds for uploadToS3
+		bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
 
 		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
 		fileInfo, err := os.Stat(args[0])
@@ -111,9 +139,12 @@ var previewCmd = &cobra.Command{
 		fmt.Println("\nPlease wait while Learn builds your preview...")
 
 		// Start a processing spinner that runs until Learn is finsihed building the preview
-		s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
-		s.Color("green")
+		s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)
+		s.Color("blue")
 		s.Start()
+
+		// Start benchmark for BuildReleaseFromS3 & PollForBuildResponse (Learn build stage)
+		startBuildAndPollRelease := time.Now()
 
 		// Let Learn know there is new preview content on s3, where it is, and to build it
 		res, err := learn.API.BuildReleaseFromS3(bucketKey, isDirectory)
@@ -134,13 +165,27 @@ var previewCmd = &cobra.Command{
 			}
 		}
 
+		// Add benchmark in milliseconds for the Learn build stage and total time in preview cmd
+		bench.LearnBuild = time.Since(startBuildAndPollRelease).Milliseconds()
+		bench.TotalCmdTime = time.Since(startOfCmd).Milliseconds()
+
 		// Set final message for dislpay
 		s.FinalMSG = fmt.Sprintf("Sucessfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
 
 		// Stop the processing spinner
 		s.Stop()
+		printlnGreen("√")
 
 		exec.Command("bash", "-c", fmt.Sprintf("open %s", res.PreviewURL)).Output()
+
+		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
+			CLIBenchmark: bench,
+		})
+		if err != nil {
+			cleanUpFiles()
+			learn.API.NotifySlack(err)
+			os.Exit(1)
+		}
 	},
 }
 
@@ -151,6 +196,10 @@ func previewCmdError(msg string) {
 	cleanUpFiles()
 	learn.API.NotifySlack(errors.New(msg))
 	os.Exit(1)
+}
+
+func printlnGreen(text string) {
+	fmt.Printf("\033[32m%s\033[0m\n", text)
 }
 
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
@@ -200,6 +249,7 @@ func uploadToS3(file *os.File, checksum string, creds *learn.Credentials) (strin
 	}
 
 	bar.Finish()
+	printlnGreen("√")
 
 	return bucketKey, nil
 }
@@ -344,7 +394,6 @@ func doesConfigExistOrCreate(target, unitsDir string) error {
 		log.Printf("WARNING: There is a config present and one will not be generated.")
 		return nil
 	} else if os.IsNotExist(yamlExists) {
-
 		_, ymlExists := os.Stat(configYmlPath)
 		if ymlExists == nil { // Yml exists
 			log.Printf("WARNING: There is a config present and one will not be generated.")
@@ -416,6 +465,7 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 		if err != nil {
 			return err
 		}
+
 		for _, info := range allItems {
 			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
 				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], unitsRootDirName+"/"+info.Name())
@@ -425,10 +475,12 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 
 	// Find all the directories in the block
 	directories := []string{}
+
 	allDirs, err := ioutil.ReadDir(whereToLookForUnits)
 	if err != nil {
 		return err
 	}
+
 	for _, info := range allDirs {
 		if info.IsDir() {
 			directories = append(directories, info.Name())
