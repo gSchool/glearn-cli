@@ -61,10 +61,6 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
-		if args[0] == "." {
-			args[0], _ = os.Getwd()
-		}
-
 		// Detect config file
 		_, err := doesConfigExistOrCreate(args[0], UnitsDirectory)
 		if err != nil {
