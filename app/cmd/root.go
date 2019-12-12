@@ -32,6 +32,25 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+var fileExtWhitelist = map[string]bool{
+	".md":    true,
+	".pdf":   true,
+	".ipynb": true,
+	".jpg":   true,
+	".jpeg":  true,
+	".jpe":   true,
+	".jif":   true,
+	".jfif":  true,
+	".jfi":   true,
+	".png":   true,
+	".gif":   true,
+	".tiff":  true,
+	".tif":   true,
+	".bmp":   true,
+	".svg":   true,
+	".svgz":  true,
+}
+
 // APIToken is an initialized string used for holding it's flag value
 var APIToken string
 
