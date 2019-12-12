@@ -319,7 +319,7 @@ func compressDirectory(source, target string) error {
 
 	// Walk the whole filepath
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".zip") == false {
+		if strings.HasSuffix(path, ".zip") == false || strings.Contains(path, "/.git") || strings.Contains(path, "DS_Store") {
 			if err != nil {
 				return err
 			}
