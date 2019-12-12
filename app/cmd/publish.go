@@ -123,8 +123,8 @@ new block. If the block already exists, it will update the existing block.
 			os.Exit(1)
 		}
 
-		var attempts uint8 = 20
-		p, err := learn.API.PollForBuildResponse(releaseID, &attempts)
+		var attempts uint8 = 30
+		_, err = learn.API.PollForBuildResponse(releaseID, &attempts)
 		if err != nil {
 			s.Stop()
 

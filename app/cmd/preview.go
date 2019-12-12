@@ -166,7 +166,7 @@ preview and return/open the preview URL when it is complete.
 		// can take much longer to build, however single files build instantly so we do not need to
 		// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
 		if isDirectory {
-			var attempts uint8 = 20
+			var attempts uint8 = 30
 			res, err = learn.API.PollForBuildResponse(res.ReleaseID, &attempts)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
@@ -328,7 +328,10 @@ func compressDirectory(source, target string) error {
 
 	// Walk the whole filepath
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".zip") == false || strings.Contains(path, "/.git") || strings.Contains(path, "DS_Store") {
+		ext := filepath.Ext(path)
+		_, ok := fileExtWhitelist[ext]
+
+		if ok || (info.IsDir() && ext != ".git") {
 			if err != nil {
 				return err
 			}
