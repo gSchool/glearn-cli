@@ -84,7 +84,9 @@ func NewAPI(baseURL string, client api.Client) (*APIClient, error) {
 	// Retrieve the application credentials for the CLI using a user's API token
 	creds, err := apiClient.RetrieveCredentials()
 	if err != nil {
-		return nil, errors.New("Could not retrieve credentials from Learn. Please ensure you have the right API token in your ~/.glearn-config.yaml")
+		return nil, errors.New(
+			"Could not retrieve credentials from Learn. Please ensure you have the right API token in your ~/.glearn-config.yaml",
+		)
 	}
 
 	apiClient.Credentials = creds
@@ -114,6 +116,10 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 		return nil, err
 	}
 	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
+	}
 
 	var c CredentialsResponse
 
