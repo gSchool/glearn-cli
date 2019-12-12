@@ -38,6 +38,8 @@ var rootCmd = &cobra.Command{
 }
 
 var fileExtWhitelist = map[string]struct{}{
+	".yaml":  struct{}{},
+	".yml":   struct{}{},
 	".md":    struct{}{},
 	".pdf":   struct{}{},
 	".ipynb": struct{}{},
