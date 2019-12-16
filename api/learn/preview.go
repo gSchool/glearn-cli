@@ -12,10 +12,11 @@ import (
 // PreviewResponse is a simple struct defining the shape of data we care about
 // that comes back from notifying Learn for decoding into.
 type PreviewResponse struct {
-	ReleaseID  int    `json:"release_id"`
-	PreviewURL string `json:"preview_url"`
-	Errors     string `json:"errors"`
-	Status     string `json:"status"`
+	ReleaseID    int      `json:"release_id"`
+	PreviewURL   string   `json:"preview_url"`
+	Errors       string   `json:"errors"`
+	Status       string   `json:"status"`
+	SyncWarnings []string `json:"sync_warnings"`
 }
 
 // PollForBuildResponse attempts to check if a release has finished building every 2 seconds.
