@@ -319,7 +319,7 @@ func compressDirectory(source, target string) error {
 
 	// Walk the whole filepath
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".zip") == false {
+		if strings.HasSuffix(path, ".zip") == false || strings.Contains(path, "/.git") || strings.Contains(path, "DS_Store") {
 			if err != nil {
 				return err
 			}
@@ -505,7 +505,10 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 						}
 
 						if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
-							localPath := path[len(blockRoot):len(path)]
+							localPath := path
+							if blockRoot != "./" {
+								localPath = path[len(blockRoot):len(path)]
+							}
 							unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
 						}
 
