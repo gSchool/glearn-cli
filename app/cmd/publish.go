@@ -122,7 +122,7 @@ var publishCmd = &cobra.Command{
 		}
 
 		var attempts uint8 = 20
-		_, err = learn.API.PollForBuildResponse(releaseID, &attempts)
+		p, err := learn.API.PollForBuildResponse(releaseID, &attempts)
 		if err != nil {
 			s.Stop()
 
@@ -147,7 +147,13 @@ var publishCmd = &cobra.Command{
 
 		s.FinalMSG = fmt.Sprintf("Block %d released!\n", block.ID)
 		s.Stop()
-		fmt.Printf("Block %d released!\n", block.ID)
+
+		if len(p.SyncWarnings) > 0 {
+			fmt.Println("Warnings on new release:")
+			for _, warning := range p.SyncWarnings {
+				fmt.Println(warning)
+			}
+		}
 
 		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
 			CLIBenchmark: bench,
