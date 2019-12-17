@@ -135,7 +135,7 @@ var previewCmd = &cobra.Command{
 		printlnGreen("√")
 
 		// Removes artifacts on user's machine
-		defer cleanUpFiles()
+		defer removeArtifacts()
 
 		// Open file so we can get a checksum as well as send to s3
 		f, err := os.Open(tmpZipFile)
@@ -211,7 +211,7 @@ var previewCmd = &cobra.Command{
 			CLIBenchmark: bench,
 		})
 		if err != nil {
-			cleanUpFiles()
+			removeArtifacts()
 			learn.API.NotifySlack(err)
 			os.Exit(1)
 		}
@@ -255,7 +255,7 @@ func maybeCreateNewTarget(target string, singleFileImagePaths []string) (string,
 			// Create appropriate directory for each image
 			err := os.MkdirAll(newSrcPath+imageDirs, os.FileMode(0777))
 			if err != nil {
-				fmt.Printf("\nERROR: %v\n", err)
+				return "", err
 			}
 
 			// Get "oneDirBackFromTarget" because target will be an .md file with relative
@@ -265,11 +265,17 @@ func maybeCreateNewTarget(target string, singleFileImagePaths []string) (string,
 			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
 
 			// Copy the actual image into our new temp directory in their same spots
-			Copy(oneDirBackFromTarget+imgPath, newSrcPath+imageDirs+"/"+imageName)
+			err = Copy(oneDirBackFromTarget+imgPath, newSrcPath+imageDirs+"/"+imageName)
+			if err != nil {
+				return "", err
+			}
 		}
 
 		// Copy original single markdown file into the base of our new tmp dir
-		Copy(target, newSrcPath+"/"+srcMDFile)
+		err := Copy(target, newSrcPath+"/"+srcMDFile)
+		if err != nil {
+			return "", err
+		}
 
 		return newSrcPath, nil
 	}
@@ -278,10 +284,10 @@ func maybeCreateNewTarget(target string, singleFileImagePaths []string) (string,
 }
 
 // previewCmdError is a small wrapper for all errors within the preview command. It ensures
-// artifacts are cleaned up with a call to cleanUpFiles
+// artifacts are cleaned up with a call to removeArtifacts
 func previewCmdError(msg string) {
 	fmt.Println(msg)
-	cleanUpFiles()
+	removeArtifacts()
 	learn.API.NotifySlack(errors.New(msg))
 	os.Exit(1)
 }
@@ -381,12 +387,21 @@ func createChecksumFromZip(file *os.File) (string, error) {
 	return checksum, nil
 }
 
-// cleanUpFiles removes the tmp zipfile that was created for uploading to s3. We
-// wouldn't want to leave artifacts on user's machines
-func cleanUpFiles() {
+// removeArtifacts removes the tmp zipfile and the tmp single file upload directory (if there
+// was one) that were created for uploading to s3 and including local images. We wouldn't
+// want to leave artifacts on user's machines
+func removeArtifacts() {
 	err := os.Remove(tmpZipFile)
 	if err != nil {
 		fmt.Println("Sorry, we had trouble cleaning up the zip file created for curriculum preview")
+	}
+
+	// Remove tmpSingleFileDir if it exists at this point
+	if _, err := os.Stat(tmpSingleFileDir); !os.IsNotExist(err) {
+		err = os.RemoveAll(tmpSingleFileDir)
+		if err != nil {
+			fmt.Println("Sorry, we had trouble cleaning up the tmp single file upload directory")
+		}
 	}
 }
 
