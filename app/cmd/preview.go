@@ -95,19 +95,17 @@ var previewCmd = &cobra.Command{
 		// AND singleFileImagePaths is > 0 that means it is now a dir again (tmp one we created)
 		isDirectory = isDirectory || (!isDirectory && len(singleFileImagePaths) > 0)
 
+		target, err = maybeCreateNewTarget(target, singleFileImagePaths)
+		if err != nil {
+			previewCmdError(fmt.Sprintf("Failed build tmp files around single file upload for: (%s). Err: %v", target, err))
+			return
+		}
+
 		// Detect config file
-		if len(singleFileImagePaths) > 0 {
-			err = doesConfigExistOrCreate(tmpSingleFileDir, UnitsDirectory)
-			if err != nil {
-				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
-				return
-			}
-		} else {
-			err = doesConfigExistOrCreate(target, UnitsDirectory)
-			if err != nil {
-				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
-				return
-			}
+		err = doesConfigExistOrCreate(target, UnitsDirectory)
+		if err != nil {
+			previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
+			return
 		}
 
 		// Start a processing spinner that runs until a user's content is compressed
@@ -120,7 +118,7 @@ var previewCmd = &cobra.Command{
 		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpZipFile
-		err = compressDirectory(target, tmpZipFile, singleFileImagePaths)
+		err = compressDirectory(target, tmpZipFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", target, err))
 			return
@@ -218,6 +216,65 @@ var previewCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
+}
+
+// maybeCreateNewTarget will set up and create everything needed for single file uploads if they are needed.
+// Returns a string representing the source name which if not single file tmp dir is needed, will return the
+// original
+func maybeCreateNewTarget(target string, singleFileImagePaths []string) (string, error) {
+	if len(singleFileImagePaths) > 0 {
+		// Tmp dir so we can build out a new dir with the correct images in their correct
+		// paths based on relative image paths supplied in the single markdown file
+		newSrcPath := tmpSingleFileDir
+
+		// Get the name of the single file
+		srcArray := strings.Split(target, "/")
+		srcMDFile := srcArray[len(srcArray)-1]
+
+		for _, imgPath := range singleFileImagePaths {
+			if !strings.HasPrefix(imgPath, "/") {
+				imgPath = fmt.Sprintf("/%s", imgPath)
+			}
+
+			// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
+			pathArray := strings.Split(imgPath, "/")
+			imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
+
+			var imageDirs string
+
+			if len(pathArray) == 1 {
+				imageDirs = ""
+			} else if len(pathArray) == 2 {
+				imageDirs = pathArray[0]
+			} else {
+				// Collect verything up until the image name (last item) and join it back together
+				// This gives us the name of the directory(ies) to make to put the image in
+				imageDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
+			}
+
+			// Create appropriate directory for each image
+			err := os.MkdirAll(newSrcPath+imageDirs, os.FileMode(0777))
+			if err != nil {
+				fmt.Printf("\nERROR: %v\n", err)
+			}
+
+			// Get "oneDirBackFromTarget" because target will be an .md file with relative
+			// links to images so we need to go one back from "target" so things aren't trying
+			// to be nested in the .md file itself
+			targetArray := strings.Split(target, "/")
+			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
+
+			// Copy the actual image into our new temp directory in their same spots
+			Copy(oneDirBackFromTarget+imgPath, newSrcPath+imageDirs+"/"+imageName)
+		}
+
+		// Copy original single markdown file into the base of our new tmp dir
+		Copy(target, newSrcPath+"/"+srcMDFile)
+
+		return newSrcPath, nil
+	}
+
+	return target, nil
 }
 
 // previewCmdError is a small wrapper for all errors within the preview command. It ensures
@@ -358,63 +415,7 @@ func Copy(src, dst string) error {
 // compressDirectory takes a source file path (where the content you want zipped lives)
 // and a target file path (where to put the zip file) and recursively compresses the source.
 // Source can either be a directory or a single file
-func compressDirectory(source, target string, singleFileImagePaths []string) error {
-	var newSrcPath string
-
-	if len(singleFileImagePaths) > 0 {
-		// Tmp dir so we can build out a new dir with the correct images in their correct
-		// paths based on relative image paths supplied in the single markdown file
-		newSrcPath = tmpSingleFileDir
-
-		// Get the name of the single file
-		srcArray := strings.Split(source, "/")
-		srcMDFile := srcArray[len(srcArray)-1]
-
-		// Copy original single markdown file into the base of our new tmp dir
-		Copy(source, newSrcPath+"/"+srcMDFile)
-
-		for _, imgPath := range singleFileImagePaths {
-			if !strings.HasPrefix(imgPath, "/") {
-				imgPath = fmt.Sprintf("/%s", imgPath)
-			}
-
-			// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
-			pathArray := strings.Split(imgPath, "/")
-			imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
-
-			var imageDirs string
-
-			if len(pathArray) == 1 {
-				imageDirs = ""
-			} else if len(pathArray) == 2 {
-				imageDirs = pathArray[0]
-			} else {
-				// Collect verything up until the image name (last item) and join it back together
-				// This gives us the name of the directory(ies) to make to put the image in
-				imageDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
-			}
-
-			// Create appropriate directory for each image
-			err := os.MkdirAll(newSrcPath+imageDirs, os.FileMode(0777))
-			if err != nil {
-				fmt.Printf("\nERROR: %v\n", err)
-			}
-
-			// Get "oneDirBackFromSource" because source will be an .md file with relative
-			// links to images so we need to go one back from "source" so things aren't trying
-			// to be nested in the .md file itself
-			sourceArray := strings.Split(source, "/")
-			oneDirBackFromSource := strings.Join(sourceArray[:len(sourceArray)-1], "/")
-
-			// Copy the actual image into our new temp directory in their same spots
-			Copy(oneDirBackFromSource+imgPath, newSrcPath+imageDirs+"/"+imageName)
-		}
-	}
-
-	if newSrcPath != "" {
-		source = newSrcPath
-	}
-
+func compressDirectory(source, target string) error {
 	// Create file with target name and defer its closing
 	zipfile, err := os.Create(target)
 	if err != nil {
@@ -525,7 +526,6 @@ func doesConfigExistOrCreate(target, unitsDir string) error {
 			// Neither exists so we are going to create one
 			log.Printf("WARNING: No config was found, one will be generated for you.")
 			if target == tmpSingleFileDir {
-				fmt.Println("here")
 				err := createAutoConfig(target, ".")
 				if err != nil {
 					return err
