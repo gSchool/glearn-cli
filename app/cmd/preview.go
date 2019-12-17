@@ -525,9 +525,17 @@ func doesConfigExistOrCreate(target, unitsDir string) error {
 		} else if os.IsNotExist(ymlExists) {
 			// Neither exists so we are going to create one
 			log.Printf("WARNING: No config was found, one will be generated for you.")
-			err := createAutoConfig(target, unitsDir)
-			if err != nil {
-				return err
+			if target == tmpSingleFileDir {
+				fmt.Println("here")
+				err := createAutoConfig(target, ".")
+				if err != nil {
+					return err
+				}
+			} else {
+				err := createAutoConfig(target, unitsDir)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -556,10 +564,9 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 		os.Remove(autoConfigYamlPath)
 	}
 
-	// Create the single-file-upload tmp dir dir
-	err = os.Mkdir(tmpSingleFileDir, os.FileMode(0777))
-	if err != nil {
-		return err
+	// Create tmpSingleFileDir if it does not exist
+	if _, err := os.Stat(tmpSingleFileDir); os.IsNotExist(err) {
+		os.Mkdir(tmpSingleFileDir, os.FileMode(0777))
 	}
 
 	// Create the config file
@@ -661,10 +668,19 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	configFile.WriteString("Standards:\n")
 	for unit, paths := range unitToContentFileMap {
 		configFile.WriteString("  -\n")
-		configFile.WriteString("    Title: " + formattedName(unit) + "\n")
+		if formattedName(unit) != "" {
+			configFile.WriteString("    Title: " + formattedName(unit) + "\n")
+		} else {
+			configFile.WriteString("    Title: " + formattedName(target) + "\n")
+		}
 		var unitUID = []byte(formattedName(unit))
 		var md5unitUID = md5.Sum(unitUID)
-		configFile.WriteString("    Description: " + formattedName(unit) + "\n")
+
+		if formattedName(unit) != "" {
+			configFile.WriteString("    Description: " + formattedName(unit) + "\n")
+		} else {
+			configFile.WriteString("    Description: " + formattedName(target) + "\n")
+		}
 		configFile.WriteString("    UID: " + hex.EncodeToString(md5unitUID[:]) + "\n")
 		configFile.WriteString("    SuccessCriteria:\n")
 		configFile.WriteString("      - success criteria\n")
@@ -676,7 +692,11 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 				var cfUID = []byte(formattedName(unit) + path)
 				var md5cfUID = md5.Sum(cfUID)
 				configFile.WriteString("        UID: " + hex.EncodeToString(md5cfUID[:]) + "\n")
-				configFile.WriteString("        Path: /" + path + "\n")
+				if strings.HasPrefix(path, "./") {
+					configFile.WriteString("        Path: " + path[1:] + "\n")
+				} else {
+					configFile.WriteString("        Path: /" + path + "\n")
+				}
 			}
 		}
 	}

@@ -151,11 +151,11 @@ func remoteName() (string, error) {
 	}
 	parts := strings.Split(s, ".git") // isolate url from .git
 	if len(parts) < 1 {
-		return "", fmt.Errorf("Error parsing remote name from %s\n", s)
+		return "", fmt.Errorf("Error parsing remote name from %s", s)
 	}
 	parts = strings.Split(parts[0], "/") // select final part of the url
 	if len(parts) < 1 {
-		return "", fmt.Errorf("Error parsing remote name from %s\n", s)
+		return "", fmt.Errorf("Error parsing remote name from %s", s)
 	}
 	return parts[len(parts)-1], nil
 }
