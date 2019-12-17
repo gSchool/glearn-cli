@@ -65,7 +65,6 @@ func (p *MDImageParser) peek() rune {
 
 func (p *MDImageParser) extractLinkFromImage() (string, error) {
 	if p.readPosition >= len(p.input) {
-
 		return "", io.EOF
 	}
 
