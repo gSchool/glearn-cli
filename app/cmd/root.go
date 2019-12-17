@@ -14,6 +14,9 @@ import (
 	"github.com/spf13/viper"
 )
 
+// currentReleaseVersion is used to print the version the user currently has downloaded
+const currentReleaseVersion = "v0.5.0"
+
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
 var rootCmd = &cobra.Command{
@@ -111,6 +114,7 @@ func init() {
 	rootCmd.AddCommand(setCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(publishCmd)
+	rootCmd.AddCommand(versionCmd)
 
 	// Check for flags set by the user and hyrate their corresponding variables.
 	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
