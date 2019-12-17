@@ -69,6 +69,7 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
+		// Set target file path
 		target := args[0]
 
 		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
@@ -93,8 +94,6 @@ var previewCmd = &cobra.Command{
 		// variable holding whether or not source is a dir OR when it is a single file upload
 		// AND singleFileImagePaths is > 0 that means it is now a dir again (tmp one we created)
 		isDirectory = isDirectory || (!isDirectory && len(singleFileImagePaths) > 0)
-
-		// TODO: REMOVE ARTIFACTS
 
 		// Detect config file
 		if len(singleFileImagePaths) > 0 {
