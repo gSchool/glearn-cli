@@ -2,10 +2,8 @@ package cmd
 
 import (
 	"archive/zip"
-	"crypto/md5"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -14,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -273,9 +270,15 @@ func createNewTarget(target string, singleFileImagePaths []string) (string, erro
 		oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
 
 		// Copy the actual image into our new temp directory in it's appropriate spot
-		err = Copy(oneDirBackFromTarget+imgPath, newSrcPath+imageDirs+"/"+imageName)
-		if err != nil {
-			return "", err
+		// skip if target doesn't exist
+		sourceLinkPath := oneDirBackFromTarget + imgPath
+		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
+			fmt.Printf("Link not found with path '%s'\n", sourceLinkPath)
+		} else {
+			err = Copy(sourceLinkPath, newSrcPath+imageDirs+"/"+imageName)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -521,247 +524,4 @@ func compressDirectory(source, target string) error {
 	})
 
 	return err
-}
-
-// Check whether or nor a config file exists and if it does not we are going to attempt to create one
-func doesConfigExistOrCreate(target, unitsDir string) (bool, error) {
-	// Configs can be `yaml` or `yml`
-	configYamlPath := ""
-	if strings.HasSuffix(target, "/") {
-		configYamlPath = target + "config.yaml"
-	} else {
-		configYamlPath = target + "/config.yaml"
-	}
-
-	configYmlPath := ""
-	if strings.HasSuffix(target, "/") {
-		configYmlPath = target + "config.yml"
-	} else {
-		configYmlPath = target + "/config.yml"
-	}
-
-	createdConfig := false
-	_, yamlExists := os.Stat(configYamlPath)
-
-	if yamlExists == nil { // Yaml exists
-		fmt.Printf("INFO: There is a config present so one will not be generated.")
-		return createdConfig, nil
-	} else if os.IsNotExist(yamlExists) {
-		_, ymlExists := os.Stat(configYmlPath)
-
-		if ymlExists == nil { // Yml exists
-			fmt.Printf("INFO: There is a config present so one will not be generated.")
-			return createdConfig, nil
-		} else if os.IsNotExist(ymlExists) {
-			// Neither exists so we are going to create one
-			fmt.Printf("WARNING: No config was found, one will be generated for you.")
-			if target == tmpSingleFileDir {
-				err := createAutoConfig(target, ".")
-				if err != nil {
-					return false, err
-				}
-			} else {
-				err := createAutoConfig(target, unitsDir)
-				if err != nil {
-					return false, err
-				}
-			}
-			createdConfig = true
-		}
-	}
-	return createdConfig, nil
-}
-
-// Creates a config file based on three things:
-// 1. Did you give us a units directory?
-// 2. Do you have a units directory?
-// Units must exist in units dir or one provided!
-func createAutoConfig(target, requestedUnitsDir string) error {
-	blockRoot := ""
-
-	// Make sure we have an ending slash on the root dir
-	if strings.HasSuffix(target, "/") {
-		blockRoot = target
-	} else {
-		blockRoot = target + "/"
-	}
-
-	// The config file location that we will be creating
-	autoConfigYamlPath := blockRoot + "autoconfig.yaml"
-
-	// Remove the existing one if its around
-	_, err := os.Stat(autoConfigYamlPath)
-	if err == nil {
-		os.Remove(autoConfigYamlPath)
-	}
-
-	// Create tmpSingleFileDir if it does not exist
-	if _, err := os.Stat(tmpSingleFileDir); os.IsNotExist(err) {
-		os.Mkdir(tmpSingleFileDir, os.FileMode(0777))
-	}
-
-	// Create the config file
-	configFile, err := os.Create(autoConfigYamlPath)
-	if err != nil {
-		return err
-	}
-	defer configFile.Sync()
-	defer configFile.Close()
-
-	// If no unitsDir was passed in, create a Units directory string
-	unitsDir := ""
-	unitsDirName := ""
-	unitsRootDirName := "units"
-
-	if requestedUnitsDir == "" {
-		unitsDir = blockRoot + unitsRootDirName
-		unitsDirName = "Unit 1"
-	} else {
-		unitsDir = blockRoot + requestedUnitsDir
-		unitsDirName = requestedUnitsDir
-		unitsRootDirName = requestedUnitsDir
-	}
-
-	unitToContentFileMap := map[string][]string{}
-
-	// Check to see if units directory exists
-	_, err = os.Stat(unitsDir)
-
-	whereToLookForUnits := blockRoot
-
-	if err == nil {
-		whereToLookForUnits = unitsDir
-
-		allItems, err := ioutil.ReadDir(whereToLookForUnits)
-		if err != nil {
-			return err
-		}
-
-		for _, info := range allItems {
-			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
-				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], unitsRootDirName+"/"+info.Name())
-			}
-		}
-	}
-
-	// Find all the directories in the block
-	directories := []string{}
-
-	allDirs, err := ioutil.ReadDir(whereToLookForUnits)
-	if err != nil {
-		return err
-	}
-
-	for _, info := range allDirs {
-		if info.IsDir() {
-			directories = append(directories, info.Name())
-		}
-	}
-
-	if len(directories) > 0 {
-		for _, dirName := range directories {
-			nestedFolder := ""
-
-			if dirName != ".git" {
-				if strings.HasSuffix(whereToLookForUnits, "/") {
-					nestedFolder = whereToLookForUnits + dirName
-				} else {
-					nestedFolder = whereToLookForUnits + "/" + dirName
-				}
-
-				err = filepath.Walk(nestedFolder, func(path string, info os.FileInfo, err error) error {
-					if err != nil {
-						return err
-					}
-
-					if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
-						localPath := path
-						if blockRoot != "./" {
-							localPath = path[len(blockRoot):len(path)]
-						}
-						unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
-					}
-
-					return nil
-				})
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	configFile.WriteString("# This file is auto-generated and orders your content based on the file structure of your repo.\n")
-	configFile.WriteString("# Do not edit this file; it will be replaced the next time you run the preview command.\n")
-	configFile.WriteString("\n")
-	configFile.WriteString("# To manually order the contents of this curriculum rather than using the auto-generated file,\n")
-	configFile.WriteString("# include a config.yaml in your repo following the same conventions as this auto-generated file.\n")
-	configFile.WriteString("# A user-created config.yaml will have priority over the auto-generated one.\n")
-	configFile.WriteString("\n")
-	configFile.WriteString("---\n")
-	configFile.WriteString("Standards:\n")
-
-	for unit, paths := range unitToContentFileMap {
-		configFile.WriteString("  -\n")
-
-		if formattedName(unit) != "" {
-			configFile.WriteString("    Title: " + formattedName(unit) + "\n")
-		} else {
-			configFile.WriteString("    Title: " + formattedName(target) + "\n")
-		}
-
-		var unitUID = []byte(formattedName(unit))
-		var md5unitUID = md5.Sum(unitUID)
-
-		if formattedName(unit) != "" {
-			configFile.WriteString("    Description: " + formattedName(unit) + "\n")
-		} else {
-			configFile.WriteString("    Description: " + formattedName(target) + "\n")
-		}
-
-		configFile.WriteString("    UID: " + hex.EncodeToString(md5unitUID[:]) + "\n")
-		configFile.WriteString("    SuccessCriteria:\n")
-		configFile.WriteString("      - success criteria\n")
-		configFile.WriteString("    ContentFiles:\n")
-
-		for _, path := range paths {
-			if path != "README.md" {
-				configFile.WriteString("      -\n")
-				configFile.WriteString("        Type: Lesson\n")
-
-				var cfUID = []byte(formattedName(unit) + path)
-				var md5cfUID = md5.Sum(cfUID)
-
-				configFile.WriteString("        UID: " + hex.EncodeToString(md5cfUID[:]) + "\n")
-
-				if strings.HasPrefix(path, "./") {
-					configFile.WriteString("        Path: " + path[1:] + "\n")
-				} else {
-					configFile.WriteString("        Path: /" + path + "\n")
-				}
-			}
-		}
-	}
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func formattedName(name string) string {
-	parts := strings.Split(name, "/")
-	parts = strings.Split(parts[len(parts)-1], ".")
-
-	a := regexp.MustCompile(`\-`)
-	parts = a.Split(parts[0], -1)
-
-	a = regexp.MustCompile(`\_`)
-	parts = a.Split(strings.Join(parts, " "), -1)
-
-	formattedName := ""
-	for _, piece := range parts {
-		formattedName = formattedName + " " + strings.Title(piece)
-	}
-
-	return strings.TrimSpace(formattedName)
 }

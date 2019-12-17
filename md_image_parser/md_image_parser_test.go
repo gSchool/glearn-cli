@@ -16,6 +16,12 @@ func Test_ParseImage(t *testing.T) {
 [with](links)
 		`: []string{"than", "line", "links"},
 		"[example](linkresult[contains](valid-link))": []string{"linkresult[contains](valid-link"}, // not actually supported, checks terminating link character
+		"[)": []string{""},
+		"[here](./../result)": []string{"./../result"},
+		`var myarr = [];
+myarr[0] = (val != otherval);`: []string{""},
+		`var myarr = [(arg) => { console.log(arg) }];
+myarr[0]("code-test-case");`: []string{"\"code-test-case\""},
 	}
 
 	for k, v := range tableTest {
