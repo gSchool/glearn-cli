@@ -84,9 +84,14 @@ var previewCmd = &cobra.Command{
 		// linking to local images. If there are any, add them to the target
 		var singleFileImagePaths []string
 		if !isDirectory {
-			singleFileImagePaths, err = collectImagePaths(target)
-			if err != nil {
-				previewCmdError(fmt.Sprintf("Failed to attach local images for single file upload for: (%s). Err: %v", target, err))
+			if filepath.Ext(target) == ".md" {
+				singleFileImagePaths, err = collectImagePaths(target)
+				if err != nil {
+					previewCmdError(fmt.Sprintf("Failed to attach local images for single file upload for: (%s). Err: %v", target, err))
+					return
+				}
+			} else {
+				previewCmdError("Sorry we only support markdown files for single file uploads")
 				return
 			}
 		}
