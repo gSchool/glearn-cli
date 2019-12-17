@@ -232,7 +232,7 @@ func maybeCreateNewTarget(target string, singleFileImagePaths []string) (string,
 		// paths based on relative image paths supplied in the single markdown file
 		newSrcPath := tmpSingleFileDir
 
-		// Get the name of the single file
+		// Get the name of the single target file
 		srcArray := strings.Split(target, "/")
 		srcMDFile := srcArray[len(srcArray)-1]
 
@@ -245,6 +245,8 @@ func maybeCreateNewTarget(target string, singleFileImagePaths []string) (string,
 			pathArray := strings.Split(imgPath, "/")
 			imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
 
+			// create an imageDirs var and depending on how long the image file path is, update it to include
+			// everything up to the image itself
 			var imageDirs string
 
 			if len(pathArray) == 1 {
@@ -257,7 +259,7 @@ func maybeCreateNewTarget(target string, singleFileImagePaths []string) (string,
 				imageDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
 			}
 
-			// Create appropriate directory for each image
+			// Create appropriate directory for each image using the imageDirs
 			err := os.MkdirAll(newSrcPath+imageDirs, os.FileMode(0777))
 			if err != nil {
 				return "", err
@@ -269,7 +271,7 @@ func maybeCreateNewTarget(target string, singleFileImagePaths []string) (string,
 			targetArray := strings.Split(target, "/")
 			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
 
-			// Copy the actual image into our new temp directory in their same spots
+			// Copy the actual image into our new temp directory in it's appropriate spot
 			err = Copy(oneDirBackFromTarget+imgPath, newSrcPath+imageDirs+"/"+imageName)
 			if err != nil {
 				return "", err
@@ -297,10 +299,14 @@ func previewCmdError(msg string) {
 	os.Exit(1)
 }
 
+// printlnGreen simply prints a green string
 func printlnGreen(text string) {
 	fmt.Printf("\033[32m%s\033[0m\n", text)
 }
 
+// collectImagePaths takes a target, reads it, and passes it's contents (slice of bytes)
+// to our MDImageParser as a string. All relative/local markdown flavored images are parsed
+// into an array of strings and returned
 func collectImagePaths(target string) ([]string, error) {
 	contents, err := ioutil.ReadFile(target)
 	if err != nil {
@@ -410,8 +416,7 @@ func removeArtifacts() {
 	}
 }
 
-// Copy the src file to target dest. Any existing file will be overwritten and will not
-// copy file attributes.
+// Copy the src file to target dest. Any existing file will be overwritten and will not copy file attributes.
 func Copy(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
@@ -532,19 +537,22 @@ func doesConfigExistOrCreate(target, unitsDir string) (bool, error) {
 	} else {
 		configYmlPath = target + "/config.yml"
 	}
+
 	createdConfig := false
 	_, yamlExists := os.Stat(configYamlPath)
+
 	if yamlExists == nil { // Yaml exists
-		log.Printf("INFO: There is a config present so one will not be generated.")
+		fmt.Printf("INFO: There is a config present so one will not be generated.")
 		return createdConfig, nil
 	} else if os.IsNotExist(yamlExists) {
 		_, ymlExists := os.Stat(configYmlPath)
+
 		if ymlExists == nil { // Yml exists
-			log.Printf("INFO: There is a config present so one will not be generated.")
+			fmt.Printf("INFO: There is a config present so one will not be generated.")
 			return createdConfig, nil
 		} else if os.IsNotExist(ymlExists) {
 			// Neither exists so we are going to create one
-			log.Printf("WARNING: No config was found, one will be generated for you.")
+			fmt.Printf("WARNING: No config was found, one will be generated for you.")
 			if target == tmpSingleFileDir {
 				err := createAutoConfig(target, ".")
 				if err != nil {
@@ -568,6 +576,7 @@ func doesConfigExistOrCreate(target, unitsDir string) (bool, error) {
 // Units must exist in units dir or one provided!
 func createAutoConfig(target, requestedUnitsDir string) error {
 	blockRoot := ""
+
 	// Make sure we have an ending slash on the root dir
 	if strings.HasSuffix(target, "/") {
 		blockRoot = target
@@ -601,6 +610,7 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	unitsDir := ""
 	unitsDirName := ""
 	unitsRootDirName := "units"
+
 	if requestedUnitsDir == "" {
 		unitsDir = blockRoot + unitsRootDirName
 		unitsDirName = "Unit 1"
@@ -614,7 +624,9 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 
 	// Check to see if units directory exists
 	_, err = os.Stat(unitsDir)
+
 	whereToLookForUnits := blockRoot
+
 	if err == nil {
 		whereToLookForUnits = unitsDir
 
@@ -647,6 +659,7 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	if len(directories) > 0 {
 		for _, dirName := range directories {
 			nestedFolder := ""
+
 			if dirName != ".git" {
 				if strings.HasSuffix(whereToLookForUnits, "/") {
 					nestedFolder = whereToLookForUnits + dirName
@@ -654,22 +667,21 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 					nestedFolder = whereToLookForUnits + "/" + dirName
 				}
 
-				err = filepath.Walk(nestedFolder,
-					func(path string, info os.FileInfo, err error) error {
-						if err != nil {
-							return err
-						}
+				err = filepath.Walk(nestedFolder, func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
 
-						if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
-							localPath := path
-							if blockRoot != "./" {
-								localPath = path[len(blockRoot):len(path)]
-							}
-							unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
+					if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
+						localPath := path
+						if blockRoot != "./" {
+							localPath = path[len(blockRoot):len(path)]
 						}
+						unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
+					}
 
-						return nil
-					})
+					return nil
+				})
 				if err != nil {
 					return err
 				}
@@ -686,13 +698,16 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	configFile.WriteString("\n")
 	configFile.WriteString("---\n")
 	configFile.WriteString("Standards:\n")
+
 	for unit, paths := range unitToContentFileMap {
 		configFile.WriteString("  -\n")
+
 		if formattedName(unit) != "" {
 			configFile.WriteString("    Title: " + formattedName(unit) + "\n")
 		} else {
 			configFile.WriteString("    Title: " + formattedName(target) + "\n")
 		}
+
 		var unitUID = []byte(formattedName(unit))
 		var md5unitUID = md5.Sum(unitUID)
 
@@ -701,17 +716,22 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 		} else {
 			configFile.WriteString("    Description: " + formattedName(target) + "\n")
 		}
+
 		configFile.WriteString("    UID: " + hex.EncodeToString(md5unitUID[:]) + "\n")
 		configFile.WriteString("    SuccessCriteria:\n")
 		configFile.WriteString("      - success criteria\n")
 		configFile.WriteString("    ContentFiles:\n")
+
 		for _, path := range paths {
 			if path != "README.md" {
 				configFile.WriteString("      -\n")
 				configFile.WriteString("        Type: Lesson\n")
+
 				var cfUID = []byte(formattedName(unit) + path)
 				var md5cfUID = md5.Sum(cfUID)
+
 				configFile.WriteString("        UID: " + hex.EncodeToString(md5cfUID[:]) + "\n")
+
 				if strings.HasPrefix(path, "./") {
 					configFile.WriteString("        Path: " + path[1:] + "\n")
 				} else {
@@ -729,10 +749,13 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 func formattedName(name string) string {
 	parts := strings.Split(name, "/")
 	parts = strings.Split(parts[len(parts)-1], ".")
+
 	a := regexp.MustCompile(`\-`)
 	parts = a.Split(parts[0], -1)
+
 	a = regexp.MustCompile(`\_`)
 	parts = a.Split(strings.Join(parts, " "), -1)
+
 	formattedName := ""
 	for _, piece := range parts {
 		formattedName = formattedName + " " + strings.Title(piece)

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -45,31 +44,31 @@ var publishCmd = &cobra.Command{
 
 		remote, err := remoteName()
 		if err != nil {
-			log.Printf("Cannot run git remote detection with command: %s\n%s\n", pushRemoteCommand, err)
+			fmt.Printf("Cannot run git remote detection with command: %s\n%s\n", pushRemoteCommand, err)
 			os.Exit(1)
 		}
 		if remote == "" {
-			log.Println("no fetch remote detected")
+			fmt.Println("no fetch remote detected")
 			os.Exit(1)
 		}
 		fmt.Printf("Publishing block with repo name %s\n", remote)
 
 		block, err := learn.API.GetBlockByRepoName(remote)
 		if err != nil {
-			log.Printf("Error fetchng block from learn: %s\n", err)
+			fmt.Printf("Error fetchng block from learn: %s\n", err)
 			os.Exit(1)
 		}
 		if !block.Exists() {
 			block, err = learn.API.CreateBlockByRepoName(remote)
 			if err != nil {
-				log.Printf("Error creating block from learn: %s\n", err)
+				fmt.Printf("Error creating block from learn: %s\n", err)
 				os.Exit(1)
 			}
 		}
 
 		branch, err := currentBranch()
 		if err != nil {
-			log.Println("Cannot run git branch detection with bash:", err)
+			fmt.Println("Cannot run git branch detection with bash:", err)
 			os.Exit(1)
 		}
 
@@ -77,7 +76,7 @@ var publishCmd = &cobra.Command{
 		path, _ := os.Getwd()
 		createdConfig, err := doesConfigExistOrCreate(path+"/", UnitsDirectory)
 		if err != nil {
-			log.Printf(fmt.Sprintf("Failed to find or create a config file for repo: (%s). Err: %v", branch, err))
+			fmt.Printf(fmt.Sprintf("Failed to find or create a config file for repo: (%s). Err: %v", branch, err))
 			os.Exit(1)
 		}
 
@@ -129,7 +128,7 @@ var publishCmd = &cobra.Command{
 
 			block, err := learn.API.GetBlockByRepoName(remote)
 			if err != nil {
-				log.Printf("Error fetchng block from learn: %s\n", err)
+				fmt.Printf("Error fetchng block from learn: %s\n", err)
 				os.Exit(1)
 			}
 			fmt.Println("Errors on block:")
