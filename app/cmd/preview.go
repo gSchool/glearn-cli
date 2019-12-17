@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
-	proxyReader "github.com/gSchool/glearn-cli/app/proxy_reader"
+	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 	MDImageParser "github.com/gSchool/glearn-cli/md_image_parser"
 )
 
