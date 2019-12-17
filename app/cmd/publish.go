@@ -72,9 +72,28 @@ var publishCmd = &cobra.Command{
 			log.Println("Cannot run git branch detection with bash:", err)
 			os.Exit(1)
 		}
+
+		// Detect config file
+		path, _ := os.Getwd()
+		createdConfig, err := doesConfigExistOrCreate(path+"/", UnitsDirectory)
+		if err != nil {
+			log.Printf(fmt.Sprintf("Failed to find or create a config file for repo: (%s). Err: %v", branch, err))
+			os.Exit(1)
+		}
+
 		if branch != "master" {
 			fmt.Println("You are currently not on branch 'master'- the `learn publish` command must be on master branch to push all currently committed work to your 'origin master' remote.")
 			os.Exit(1)
+		}
+
+		if createdConfig {
+			fmt.Println("We are going to attempt to commit the autoconfig.yaml to", branch)
+			err = addAutoConfigAndCommit()
+
+			if err != nil {
+				fmt.Printf("Error committing the autoconfig.yaml to origin remote on branch: %s", err)
+				os.Exit(1)
+			}
 		}
 
 		fmt.Println("Pushing work to remote origin", branch)
@@ -103,7 +122,8 @@ var publishCmd = &cobra.Command{
 		}
 
 		var attempts uint8 = 30
-		_, err = learn.API.PollForBuildResponse(releaseID, &attempts)
+		p, err := learn.API.PollForBuildResponse(releaseID, &attempts)
+
 		if err != nil {
 			s.Stop()
 
@@ -128,7 +148,13 @@ var publishCmd = &cobra.Command{
 
 		s.FinalMSG = fmt.Sprintf("Block %d released!\n", block.ID)
 		s.Stop()
-		fmt.Printf("Block %d released!\n", block.ID)
+
+		if len(p.SyncWarnings) > 0 {
+			fmt.Println("Warnings on new release:")
+			for _, warning := range p.SyncWarnings {
+				fmt.Println(warning)
+			}
+		}
 
 		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
 			CLIBenchmark: bench,
@@ -162,6 +188,19 @@ func remoteName() (string, error) {
 
 func pushToRemote(branch string) error {
 	_, err := exec.Command("bash", "-c", fmt.Sprintf("git push origin %s", branch)).CombinedOutput()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func addAutoConfigAndCommit() error {
+	_, err := exec.Command("bash", "-c", "git add autoconfig.yaml").Output()
+	if err != nil {
+		return err
+	}
+	_, err = exec.Command("bash", "-c", "git commit -m \"learn cli tool publish command: adding autoconfig.yaml\"").Output()
 	if err != nil {
 		return err
 	}

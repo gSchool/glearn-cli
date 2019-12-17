@@ -107,7 +107,7 @@ var previewCmd = &cobra.Command{
 		}
 
 		// Detect config file
-		err = doesConfigExistOrCreate(target, UnitsDirectory)
+		_, err = doesConfigExistOrCreate(target, UnitsDirectory)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
 			return
@@ -517,7 +517,7 @@ func compressDirectory(source, target string) error {
 }
 
 // Check whether or nor a config file exists and if it does not we are going to attempt to create one
-func doesConfigExistOrCreate(target, unitsDir string) error {
+func doesConfigExistOrCreate(target, unitsDir string) (bool, error) {
 	// Configs can be `yaml` or `yml`
 	configYamlPath := ""
 	if strings.HasSuffix(target, "/") {
@@ -532,33 +532,34 @@ func doesConfigExistOrCreate(target, unitsDir string) error {
 	} else {
 		configYmlPath = target + "/config.yml"
 	}
-
+	createdConfig := false
 	_, yamlExists := os.Stat(configYamlPath)
 	if yamlExists == nil { // Yaml exists
-		log.Printf("WARNING: There is a config present and one will not be generated.")
-		return nil
+		log.Printf("INFO: There is a config present so one will not be generated.")
+		return createdConfig, nil
 	} else if os.IsNotExist(yamlExists) {
 		_, ymlExists := os.Stat(configYmlPath)
 		if ymlExists == nil { // Yml exists
-			log.Printf("WARNING: There is a config present and one will not be generated.")
-			return nil
+			log.Printf("INFO: There is a config present so one will not be generated.")
+			return createdConfig, nil
 		} else if os.IsNotExist(ymlExists) {
 			// Neither exists so we are going to create one
 			log.Printf("WARNING: No config was found, one will be generated for you.")
 			if target == tmpSingleFileDir {
 				err := createAutoConfig(target, ".")
 				if err != nil {
-					return err
+					return false, err
 				}
 			} else {
 				err := createAutoConfig(target, unitsDir)
 				if err != nil {
-					return err
+					return false, err
 				}
 			}
+			createdConfig = true
 		}
 	}
-	return nil
+	return createdConfig, nil
 }
 
 // Creates a config file based on three things:
