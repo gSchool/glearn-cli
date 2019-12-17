@@ -28,8 +28,8 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
-	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 	MDImageParser "github.com/gSchool/glearn-cli/md_image_parser"
+	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )
 
 // tmpZipFile is used throughout as the temporary zip file target location.
