@@ -29,10 +29,15 @@ import (
 
 	"github.com/gSchool/glearn-cli/api/learn"
 	proxyReader "github.com/gSchool/glearn-cli/app/proxy_reader"
+	MDImageParser "github.com/gSchool/glearn-cli/md_image_parser"
 )
 
-// tmpFile is used throughout as the temporary zip file target location.
-const tmpFile string = "preview-curriculum.zip"
+// tmpZipFile is used throughout as the temporary zip file target location.
+const tmpZipFile string = "preview-curriculum.zip"
+
+// tmpSingleFileDir is used throughout as the temporary single file directory location. This
+// is the name of the tmp dir we build when needing to attach relative links to images.
+const tmpSingleFileDir string = "single-file-upload"
 
 // previewCmd is executed when the `learn preview` command is used. Preview's concerns:
 // 1. Compress directory/file into target location.
@@ -51,6 +56,9 @@ var previewCmd = &cobra.Command{
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		// Start benchmarking the total time spent in preview cmd
+		startOfCmd := time.Now()
+
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
 			previewCmdError("Please set your API token first with `learn set --api_token=your_token`")
 		}
@@ -61,14 +69,46 @@ var previewCmd = &cobra.Command{
 			return
 		}
 
-		// Start benchmarking the total time spent in preview cmd
-		startOfCmd := time.Now()
+		target := args[0]
+
+		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
+		fileInfo, err := os.Stat(target)
+		if err != nil {
+			previewCmdError(fmt.Sprintf("Failed to get stats on file. Err: %v", err))
+			return
+		}
+		isDirectory := fileInfo.IsDir()
+
+		// If it is a single file upload we need to parse the target for any md image tags
+		// linking to local images. If there are any, add them to the target
+		var singleFileImagePaths []string
+		if !isDirectory {
+			singleFileImagePaths, err = collectImagePaths(target)
+			if err != nil {
+				previewCmdError(fmt.Sprintf("Failed to attach local images for single file upload for: (%s). Err: %v", target, err))
+				return
+			}
+		}
+
+		// variable holding whether or not source is a dir OR when it is a single file upload
+		// AND singleFileImagePaths is > 0 that means it is now a dir again (tmp one we created)
+		isDirectory = isDirectory || (!isDirectory && len(singleFileImagePaths) > 0)
+
+		// TODO: REMOVE ARTIFACTS
 
 		// Detect config file
-		err := doesConfigExistOrCreate(args[0], UnitsDirectory)
-		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", args[0], err))
-			return
+		if len(singleFileImagePaths) > 0 {
+			err = doesConfigExistOrCreate(tmpSingleFileDir, UnitsDirectory)
+			if err != nil {
+				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
+				return
+			}
+		} else {
+			err = doesConfigExistOrCreate(target, UnitsDirectory)
+			if err != nil {
+				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
+				return
+			}
 		}
 
 		// Start a processing spinner that runs until a user's content is compressed
@@ -80,10 +120,10 @@ var previewCmd = &cobra.Command{
 		// Start benchmark for compressDirectory
 		startOfCompression := time.Now()
 
-		// Compress directory, output -> tmpFile
-		err = compressDirectory(args[0], tmpFile)
+		// Compress directory, output -> tmpZipFile
+		err = compressDirectory(target, tmpZipFile, singleFileImagePaths)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", args[0], err))
+			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", target, err))
 			return
 		}
 
@@ -101,9 +141,9 @@ var previewCmd = &cobra.Command{
 		defer cleanUpFiles()
 
 		// Open file so we can get a checksum as well as send to s3
-		f, err := os.Open(tmpFile)
+		f, err := os.Open(tmpZipFile)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed opening file (%q). Err: %v", tmpFile, err))
+			previewCmdError(fmt.Sprintf("Failed opening file (%q). Err: %v", tmpZipFile, err))
 			return
 		}
 		defer f.Close()
@@ -127,14 +167,6 @@ var previewCmd = &cobra.Command{
 
 		// Add benchmark in milliseconds for uploadToS3
 		bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
-
-		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
-		fileInfo, err := os.Stat(args[0])
-		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to get stats on file. Err: %v", err))
-			return
-		}
-		isDirectory := fileInfo.IsDir()
 
 		fmt.Println("\nPlease wait while Learn builds your preview...")
 
@@ -202,6 +234,18 @@ func printlnGreen(text string) {
 	fmt.Printf("\033[32m%s\033[0m\n", text)
 }
 
+func collectImagePaths(target string) ([]string, error) {
+	contents, err := ioutil.ReadFile(target)
+	if err != nil {
+		return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+	}
+
+	m := MDImageParser.New(string(contents))
+	m.ParseImages()
+
+	return m.Images, nil
+}
+
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
 func uploadToS3(file *os.File, checksum string, creds *learn.Credentials) (string, error) {
 	// Set up an AWS session with the user's credentials
@@ -221,8 +265,8 @@ func uploadToS3(file *os.File, checksum string, creds *learn.Credentials) (strin
 		u.LeavePartsOnError = false  // If an error occurs during upload to s3, clean up & don't leave partial upload there
 	})
 
-	// Generate the bucket key using the key prefix, checksum, and tmpFile name
-	bucketKey := fmt.Sprintf("%s/%s-%s", creds.KeyPrefix, checksum, tmpFile)
+	// Generate the bucket key using the key prefix, checksum, and tmpZipFile name
+	bucketKey := fmt.Sprintf("%s/%s-%s", creds.KeyPrefix, checksum, tmpZipFile)
 
 	// Obtain FileInfo so we can look at length in bytes
 	fileStats, err := file.Stat()
@@ -284,16 +328,94 @@ func createChecksumFromZip(file *os.File) (string, error) {
 // cleanUpFiles removes the tmp zipfile that was created for uploading to s3. We
 // wouldn't want to leave artifacts on user's machines
 func cleanUpFiles() {
-	err := os.Remove(tmpFile)
+	err := os.Remove(tmpZipFile)
 	if err != nil {
 		fmt.Println("Sorry, we had trouble cleaning up the zip file created for curriculum preview")
 	}
 }
 
+// Copy the src file to target dest. Any existing file will be overwritten and will not
+// copy file attributes.
+func Copy(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	return out.Close()
+}
+
 // compressDirectory takes a source file path (where the content you want zipped lives)
 // and a target file path (where to put the zip file) and recursively compresses the source.
 // Source can either be a directory or a single file
-func compressDirectory(source, target string) error {
+func compressDirectory(source, target string, singleFileImagePaths []string) error {
+	var newSrcPath string
+
+	if len(singleFileImagePaths) > 0 {
+		// Tmp dir so we can build out a new dir with the correct images in their correct
+		// paths based on relative image paths supplied in the single markdown file
+		newSrcPath = tmpSingleFileDir
+
+		// Get the name of the single file
+		srcArray := strings.Split(source, "/")
+		srcMDFile := srcArray[len(srcArray)-1]
+
+		// Copy original single markdown file into the base of our new tmp dir
+		Copy(source, newSrcPath+"/"+srcMDFile)
+
+		for _, imgPath := range singleFileImagePaths {
+			if !strings.HasPrefix(imgPath, "/") {
+				imgPath = fmt.Sprintf("/%s", imgPath)
+			}
+
+			// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
+			pathArray := strings.Split(imgPath, "/")
+			imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
+
+			var imageDirs string
+
+			if len(pathArray) == 1 {
+				imageDirs = ""
+			} else if len(pathArray) == 2 {
+				imageDirs = pathArray[0]
+			} else {
+				// Collect verything up until the image name (last item) and join it back together
+				// This gives us the name of the directory(ies) to make to put the image in
+				imageDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
+			}
+
+			// Create appropriate directory for each image
+			err := os.MkdirAll(newSrcPath+imageDirs, os.FileMode(0777))
+			if err != nil {
+				fmt.Printf("\nERROR: %v\n", err)
+			}
+
+			// Get "oneDirBackFromSource" because source will be an .md file with relative
+			// links to images so we need to go one back from "source" so things aren't trying
+			// to be nested in the .md file itself
+			sourceArray := strings.Split(source, "/")
+			oneDirBackFromSource := strings.Join(sourceArray[:len(sourceArray)-1], "/")
+
+			// Copy the actual image into our new temp directory in their same spots
+			Copy(oneDirBackFromSource+imgPath, newSrcPath+imageDirs+"/"+imageName)
+		}
+	}
+
+	if newSrcPath != "" {
+		source = newSrcPath
+	}
+
 	// Create file with target name and defer its closing
 	zipfile, err := os.Create(target)
 	if err != nil {
@@ -322,7 +444,7 @@ func compressDirectory(source, target string) error {
 		ext := filepath.Ext(path)
 		_, ok := fileExtWhitelist[ext]
 
-		if ok || (info.IsDir() && ext != ".git") {
+		if ok || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
 			if err != nil {
 				return err
 			}
@@ -360,7 +482,6 @@ func compressDirectory(source, target string) error {
 
 			// If it was not a directory, we open the file and copy it into the archive writer
 			// ingore zip files
-
 			file, err := os.Open(path)
 			if err != nil {
 				return err
@@ -433,6 +554,12 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	_, err := os.Stat(autoConfigYamlPath)
 	if err == nil {
 		os.Remove(autoConfigYamlPath)
+	}
+
+	// Create the single-file-upload tmp dir dir
+	err = os.Mkdir(tmpSingleFileDir, os.FileMode(0777))
+	if err != nil {
+		return err
 	}
 
 	// Create the config file
