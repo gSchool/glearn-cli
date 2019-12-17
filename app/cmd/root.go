@@ -87,6 +87,7 @@ func init() {
 	learn.API = api
 
 	// Add all the other learn commands defined in cmd/ directory
+	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(setCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(publishCmd)
