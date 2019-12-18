@@ -16,24 +16,34 @@ var newCmd = &cobra.Command{
 	Long:  "Create a new curriculum repository from a template",
 	Args:  cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		hasConfig := doesCurrentDirHaveConfig()
+		// Get the current directory
+		currentDir, err := os.Getwd()
+		if err != nil {
+			fmt.Println("Could not detect a working directory")
+			os.Exit(1)
+		}
+
+		// Does that directory have a config file
+		hasConfig, _ := doesCurrentDirHaveConfig(currentDir)
 
 		if hasConfig {
 			fmt.Println("WARNING: configuration file detected and cannot continue with `learn new` command.")
 			os.Exit(1)
 		}
 
+		// Clone the template from github
 		fmt.Println("Copying curriculum template from Github")
 		fmt.Println("=======================================")
 		fmt.Println("\nCloning into 'learn-curriculum-init'...")
-		err := cloneTemplate()
+		err = cloneTemplate()
 		if err != nil {
 			fmt.Println("We had trouble cloning into learn-curriculum-init, please check that you have the correct github credentials")
 			os.Exit(1)
 		}
 
+		// Move the files into working dir
 		fmt.Println("Copying curriculum")
-		err = moveClonedMaterials()
+		err = moveClonedMaterials(currentDir)
 		if err != nil {
 			fmt.Println("Could not move template into working repository")
 			os.Exit(1)
@@ -52,12 +62,9 @@ Run 'learn publish' to push to Github and publish to Learn
 	},
 }
 
-func doesCurrentDirHaveConfig() bool {
+func doesCurrentDirHaveConfig(currentDir string) (bool, bool) {
 	configExist := false
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return configExist
-	}
+	autoConfigExist := false
 
 	configYaml := currentDir + "/config.yaml"
 	_, ymlExists := os.Stat(configYaml)
@@ -75,9 +82,10 @@ func doesCurrentDirHaveConfig() bool {
 	_, ymlExists = os.Stat(autoConfigYaml)
 	if ymlExists == nil {
 		configExist = true
+		autoConfigExist = true
 	}
 
-	return configExist
+	return configExist, autoConfigExist
 }
 
 func cloneTemplate() error {
@@ -89,8 +97,7 @@ func cloneTemplate() error {
 	return nil
 }
 
-func moveClonedMaterials() error {
-	currentDir, _ := os.Getwd()
+func moveClonedMaterials(currentDir string) error {
 	initDir := "/learn-curriculum-init"
 	os.RemoveAll(currentDir + initDir + "/.git/")
 	err := filepath.Walk(currentDir+initDir, func(path string, info os.FileInfo, err error) error {
