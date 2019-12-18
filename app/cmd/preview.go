@@ -254,6 +254,9 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 			imgPath = fmt.Sprintf("/%s", imgPath)
 		}
 
+		// Sanitize existing ../ from path
+		// Ex. ../images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
+
 		// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
 		pathArray := strings.Split(imgPath, "/")
 		imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
