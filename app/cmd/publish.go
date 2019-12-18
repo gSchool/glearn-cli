@@ -31,7 +31,7 @@ var publishCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			fmt.Println("Please set your API token first with `learn set --api_token=value`")
+			fmt.Println(setApiTokenMessage)
 			os.Exit(1)
 		}
 

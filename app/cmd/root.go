@@ -14,6 +14,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const setApiTokenMessage = `
+Please set your API token with this command: learn set --api_token=your_api_token 
+You can get your api token at https://learn-2.galvanize.com/api_token
+`
+
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
 var rootCmd = &cobra.Command{

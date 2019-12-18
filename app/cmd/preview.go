@@ -52,7 +52,7 @@ var previewCmd = &cobra.Command{
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			previewCmdError("Please set your API token first with `learn set --api_token=your_token`")
+			previewCmdError(setApiTokenMessage)
 		}
 
 		// Takes one argument which is the filepath to the directory you want zipped/previewed
