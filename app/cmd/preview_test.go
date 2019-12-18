@@ -9,7 +9,7 @@ import (
 )
 
 func Test_createNewTarget(t *testing.T) {
-	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{"./mrsmall-invert.png", "../mrsmall.png", "mkdown.md", "../image/nested-small.png", "deeper/deep-small.png"})
+	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{"./mrsmall-invert.png", "../mrsmall.png", "../image/nested-small.png", "deeper/deep-small.png"})
 	if err != nil {
 		t.Errorf("Attempting to createNewTarget errored: %s\n", err)
 	}
@@ -33,10 +33,6 @@ func Test_createNewTarget(t *testing.T) {
 	}
 	if _, err = os.Stat(fmt.Sprintf("single-file-upload/image/%s", "nested-small.png")); os.IsNotExist(err) {
 		t.Errorf("nested-small.png should have been created and it's image dir moved to the root of the single file directory, was not")
-	}
-
-	if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "mkdown.md")); !os.IsNotExist(err) {
-		t.Errorf("linked markdown files should not copied")
 	}
 
 	b, err := ioutil.ReadFile("single-file-upload/test.md")

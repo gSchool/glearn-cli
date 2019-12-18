@@ -114,7 +114,7 @@ func (p *MDLinkParser) next() {
 			return
 		}
 		// We do not need to worry about hosted links, check for full url (http/https)
-		if strings.HasPrefix(linkPath, "http") || strings.HasPrefix(linkPath, "https") {
+		if strings.HasPrefix(linkPath, "http") || strings.HasPrefix(linkPath, "https") || strings.HasSuffix(linkPath, ".md") {
 			return
 		}
 		p.Links = append(p.Links, linkPath)
