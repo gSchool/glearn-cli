@@ -99,22 +99,6 @@ func init() {
 		}
 	}
 
-	client := http.Client{Timeout: 15 * time.Second}
-	baseURL := "https://learn-2.galvanize.com"
-	alternateURL := os.Getenv("LEARN_BASE_URL")
-	if alternateURL != "" {
-		baseURL = alternateURL
-	}
-
-	api, err := learn.NewAPI(baseURL, &client)
-	if err != nil {
-		fmt.Printf("Error creating API client. Err: %v", err)
-		os.Exit(1)
-		return
-	}
-
-	learn.API = api
-
 	// Add all the other learn commands defined in cmd/ directory
 	rootCmd.AddCommand(newCmd)
 	rootCmd.AddCommand(setCmd)
@@ -134,4 +118,22 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func setupLearnAPI() {
+	client := http.Client{Timeout: 15 * time.Second}
+	baseURL := "https://learn-2.galvanize.com"
+	alternateURL := os.Getenv("LEARN_BASE_URL")
+	if alternateURL != "" {
+		baseURL = alternateURL
+	}
+
+	api, err := learn.NewAPI(baseURL, &client)
+	if err != nil {
+		fmt.Printf("Error creating API client. Err: %v", err)
+		os.Exit(1)
+		return
+	}
+
+	learn.API = api
 }

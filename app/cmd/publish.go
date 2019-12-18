@@ -35,6 +35,8 @@ new block. If the block already exists, it will update the existing block.
 			os.Exit(1)
 		}
 
+		setupLearnAPI()
+
 		if len(args) != 0 {
 			fmt.Println("Usage: `learn publish` takes no arguments, merely pushing latest master and releasing a version to Learn. Use the command from inside a block repository.")
 			os.Exit(1)

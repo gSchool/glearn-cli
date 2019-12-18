@@ -1,11 +1,11 @@
-package mdimageparser
+package mdlinkparser
 
 import (
 	"strings"
 	"testing"
 )
 
-func Test_ParseImage(t *testing.T) {
+func Test_ParseLink(t *testing.T) {
 	tableTest := map[string][]string{
 		"[example](linkresult)":   []string{"linkresult"},
 		"[example]()":             []string{""},
@@ -26,7 +26,7 @@ myarr[0]("code-test-case");`: []string{"\"code-test-case\""},
 
 	for k, v := range tableTest {
 		parser := New(k)
-		parser.ParseImages()
+		parser.ParseLinks()
 		result := parser.Images
 		if strings.Join(result, "") != strings.Join(v, "") {
 			t.Errorf("ParseImages %s expected %v but got %v", k, v, result)

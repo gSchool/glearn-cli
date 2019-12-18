@@ -1,4 +1,4 @@
-package mdimageparser
+package mdlinkparser
 
 import (
 	"errors"
@@ -6,26 +6,25 @@ import (
 	"strings"
 )
 
-// MDImageParser performs our lexical analysis/scanning/parsing. Not a true lexer/parser
-// because right now we don't need tokens, logic, ast, just to collect MD image
-// paths
-type MDImageParser struct {
+// MDLinkParser performs our lexical analysis/scanning/parsing. Not a true lexer/parser
+// because right now we don't need tokens, logic, ast, just to collect MD paths
+type MDLinkParser struct {
 	input        []rune
 	char         rune     // current char under examination
 	position     int      // current position in input (points to current char)
 	readPosition int      // current reading position in input (after current char)
-	Images       []string // collection of image paths
+	Links        []string // collection of links paths
 }
 
-// New creates and returns a pointer to the MDImageParser with it's input attached
-func New(input string) *MDImageParser {
-	p := &MDImageParser{input: []rune(input)}
+// New creates and returns a pointer to the MDLinkParser with it's input attached
+func New(input string) *MDLinkParser {
+	p := &MDLinkParser{input: []rune(input)}
 	p.readChar()
 	return p
 }
 
-// ParseImages takes the input contents and parses it for our MD image links
-func (p *MDImageParser) ParseImages() {
+// ParseLinks takes the input contents and parses it for our MD image links
+func (p *MDLinkParser) ParseLinks() {
 	for p.readPosition < len(p.input) {
 		p.next()
 	}
@@ -33,7 +32,7 @@ func (p *MDImageParser) ParseImages() {
 
 // readChar checks if were at EOF and if we are not, it sets the parser's char to
 // the char at our readPosition and increments position and read position by one
-func (p *MDImageParser) readChar() {
+func (p *MDLinkParser) readChar() {
 	if p.readPosition >= len(p.input) {
 		// End of input (haven't read anything yet or EOF)
 		// 0 is ASCII code for "NUL" character
@@ -48,7 +47,7 @@ func (p *MDImageParser) readChar() {
 
 // skipWhitespace gets called on every iteration of "next" because we do
 // not care about whitespace
-func (p *MDImageParser) skipWhitespace() {
+func (p *MDLinkParser) skipWhitespace() {
 	for p.char == ' ' || p.char == '\t' || p.char == '\n' || p.char == '\r' {
 		p.readChar()
 	}
@@ -56,14 +55,14 @@ func (p *MDImageParser) skipWhitespace() {
 
 // peek checks to see what the next char is by reading the input at our readPosition
 // This does not consume any characters or increment our position
-func (p *MDImageParser) peek() rune {
+func (p *MDLinkParser) peek() rune {
 	if p.readPosition >= len(p.input) {
 		return 0
 	}
 	return p.input[p.readPosition]
 }
 
-func (p *MDImageParser) extractLinkFromImage() (string, error) {
+func (p *MDLinkParser) extractLink() (string, error) {
 	if p.readPosition >= len(p.input) {
 		return "", io.EOF
 	}
@@ -88,7 +87,7 @@ func (p *MDImageParser) extractLinkFromImage() (string, error) {
 	return linkPath, nil
 }
 
-func (p *MDImageParser) readImagePath() (string, error) {
+func (p *MDLinkParser) readImagePath() (string, error) {
 	var path []rune
 
 	for p.char != ')' && p.char != 0 {
@@ -105,20 +104,20 @@ func (p *MDImageParser) readImagePath() (string, error) {
 
 // next switches through the lexer's current char and creates a new token.
 // It then it calls readChar() to advance the lexer and it returns the token
-func (p *MDImageParser) next() {
+func (p *MDLinkParser) next() {
 	p.skipWhitespace()
 
 	switch p.char {
 	case '[':
-		linkPath, err := p.extractLinkFromImage()
+		linkPath, err := p.extractLink()
 		if err != nil {
 			return
 		}
-		// We do not need to worry about hosted images check for full url (http/https)
+		// We do not need to worry about hosted links, check for full url (http/https)
 		if strings.HasPrefix(linkPath, "http") || strings.HasPrefix(linkPath, "https") {
 			return
 		}
-		p.Images = append(p.Images, linkPath)
+		p.Links = append(p.Links, linkPath)
 	case 0:
 		p.readChar()
 		return
