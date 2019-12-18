@@ -25,7 +25,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
-	MDImageParser "github.com/gSchool/glearn-cli/md_image_parser"
+	"github.com/gSchool/glearn-cli/mdlinkparser"
 	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )
 
@@ -33,7 +33,7 @@ import (
 const tmpZipFile string = "preview-curriculum.zip"
 
 // tmpSingleFileDir is used throughout as the temporary single file directory location. This
-// is the name of the tmp dir we build when needing to attach relative links to images.
+// is the name of the tmp dir we build when needing to attach relative links.
 const tmpSingleFileDir string = "single-file-upload"
 
 // previewCmd is executed when the `learn preview` command is used. Preview's concerns:
@@ -56,6 +56,8 @@ var previewCmd = &cobra.Command{
 		// Start benchmarking the total time spent in preview cmd
 		startOfCmd := time.Now()
 
+		setupLearnAPI()
+
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
 			previewCmdError("Please set your API token first with `learn set --api_token=your_token`")
 		}
@@ -77,12 +79,12 @@ var previewCmd = &cobra.Command{
 		}
 		isDirectory := fileInfo.IsDir()
 
-		// If it is a single file preview we need to parse the target for any md image tags
-		// linking to local images. If there are any, add them to the target
-		var singleFileImagePaths []string
+		// If it is a single file preview we need to parse the target for any md link tags
+		// linking to local files. If there are any, add them to the target
+		var singleFileLinkPaths []string
 		if !isDirectory {
 			if filepath.Ext(target) == ".md" {
-				singleFileImagePaths, err = collectImagePaths(target)
+				singleFileLinkPaths, err = collectLinkPaths(target)
 				if err != nil {
 					previewCmdError(fmt.Sprintf("Failed to attach local images for single file preview for: (%s). Err: %v", target, err))
 					return
@@ -94,11 +96,11 @@ var previewCmd = &cobra.Command{
 		}
 
 		// variable holding whether or not source is a dir OR when it is a single file preview
-		// AND singleFileImagePaths is > 0 that means it is now a dir again (tmp one we created)
-		isDirectory = isDirectory || (!isDirectory && len(singleFileImagePaths) > 0)
+		// AND singleFileLinkPaths is > 0 that means it is now a dir again (tmp one we created)
+		isDirectory = isDirectory || (!isDirectory && len(singleFileLinkPaths) > 0)
 
-		if len(singleFileImagePaths) > 0 {
-			target, err = createNewTarget(target, singleFileImagePaths)
+		if len(singleFileLinkPaths) > 0 {
+			target, err = createNewTarget(target, singleFileLinkPaths)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
 				return
@@ -225,16 +227,16 @@ var previewCmd = &cobra.Command{
 // createNewTarget will set up and create everything needed for single file previews if they are needed.
 // Returns a string representing the source name which if not single file tmp dir is needed, will return the
 // original
-func createNewTarget(target string, singleFileImagePaths []string) (string, error) {
-	// Tmp dir so we can build out a new dir with the correct images in their correct
-	// paths based on relative image paths supplied in the single markdown file
+func createNewTarget(target string, singleFileLinkPaths []string) (string, error) {
+	// Tmp dir so we can build out a new dir with the correct links in their correct
+	// paths based on relative link paths supplied in the single markdown file
 	newSrcPath := tmpSingleFileDir
 
 	// Get the name of the single target file
 	srcArray := strings.Split(target, "/")
 	srcMDFile := srcArray[len(srcArray)-1]
 
-	for _, imgPath := range singleFileImagePaths {
+	for _, imgPath := range singleFileLinkPaths {
 		if !strings.HasPrefix(imgPath, "/") {
 			imgPath = fmt.Sprintf("/%s", imgPath)
 		}
@@ -243,39 +245,38 @@ func createNewTarget(target string, singleFileImagePaths []string) (string, erro
 		pathArray := strings.Split(imgPath, "/")
 		imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
 
-		// create an imageDirs var and depending on how long the image file path is, update it to include
+		// create an linkDirs var and depending on how long the image file path is, update it to include
 		// everything up to the image itself
-		var imageDirs string
+		var linkDirs string
 
 		if len(pathArray) == 1 {
-			imageDirs = ""
+			linkDirs = ""
 		} else if len(pathArray) == 2 {
-			imageDirs = pathArray[0]
+			linkDirs = pathArray[0]
 		} else {
 			// Collect verything up until the image name (last item) and join it back together
 			// This gives us the name of the directory(ies) to make to put the image in
-			imageDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
+			linkDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
 		}
 
-		// Create appropriate directory for each image using the imageDirs
-		err := os.MkdirAll(newSrcPath+imageDirs, os.FileMode(0777))
+		// Create appropriate directory for each link using the linkDirs
+		err := os.MkdirAll(newSrcPath+linkDirs, os.FileMode(0777))
 		if err != nil {
 			return "", err
 		}
 
 		// Get "oneDirBackFromTarget" because target will be an .md file with relative
-		// links to images so we need to go one back from "target" so things aren't trying
+		// links so we need to go one back from "target" so things aren't trying
 		// to be nested in the .md file itself
 		targetArray := strings.Split(target, "/")
 		oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
 
-		// Copy the actual image into our new temp directory in it's appropriate spot
-		// skip if target doesn't exist
 		sourceLinkPath := oneDirBackFromTarget + imgPath
 		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
 			fmt.Printf("Link not found with path '%s'\n", sourceLinkPath)
 		} else {
-			err = Copy(sourceLinkPath, newSrcPath+imageDirs+"/"+imageName)
+			// Copy the actual image into our new temp directory in it's appropriate spot
+			err = Copy(sourceLinkPath, newSrcPath+linkDirs+"/"+imageName)
 			if err != nil {
 				return "", err
 			}
@@ -288,7 +289,7 @@ func createNewTarget(target string, singleFileImagePaths []string) (string, erro
 		return "", err
 	}
 
-	if len(singleFileImagePaths) > 0 {
+	if len(singleFileLinkPaths) > 0 {
 		return newSrcPath, nil
 	}
 
@@ -309,19 +310,19 @@ func printlnGreen(text string) {
 	fmt.Printf("\033[32m%s\033[0m\n", text)
 }
 
-// collectImagePaths takes a target, reads it, and passes it's contents (slice of bytes)
-// to our MDImageParser as a string. All relative/local markdown flavored images are parsed
+// collectLinkPaths takes a target, reads it, and passes it's contents (slice of bytes)
+// to our MDLinkParser as a string. All relative/local markdown flavored images are parsed
 // into an array of strings and returned
-func collectImagePaths(target string) ([]string, error) {
+func collectLinkPaths(target string) ([]string, error) {
 	contents, err := ioutil.ReadFile(target)
 	if err != nil {
 		return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
 	}
 
-	m := MDImageParser.New(string(contents))
-	m.ParseImages()
+	m := mdlinkparser.New(string(contents))
+	m.ParseLinks()
 
-	return m.Images, nil
+	return m.Links, nil
 }
 
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
