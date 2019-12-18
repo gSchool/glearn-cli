@@ -80,6 +80,14 @@ var previewCmd = &cobra.Command{
 		// Start benchmark for compressDirectory
 		startOfCompression := time.Now()
 
+		// Is this a directory or a file
+		// If this is a file, is it an acceptable file?
+		info, err := os.Stat(args[0])
+		if err == nil && !info.IsDir() && !strings.HasSuffix(args[0], ".md") {
+			previewCmdError("The preview file that you chose is not able to be rendered as a single file preview in learn")
+			return
+		}
+
 		// Compress directory, output -> tmpFile
 		err = compressDirectory(args[0], tmpFile)
 		if err != nil {
