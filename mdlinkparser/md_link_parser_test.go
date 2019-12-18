@@ -9,6 +9,7 @@ func Test_ParseLink(t *testing.T) {
 	tableTest := map[string][]string{
 		"[example](linkresult)":   []string{"linkresult"},
 		"[example]()":             []string{""},
+		"[example](ends-in.md)":   []string{""},
 		"[](has-no-link-text)":    []string{"has-no-link-text"},
 		"[more](than)[one](link)": []string{"than", "link"},
 		`[more](than)
@@ -27,9 +28,9 @@ myarr[0]("code-test-case");`: []string{"\"code-test-case\""},
 	for k, v := range tableTest {
 		parser := New(k)
 		parser.ParseLinks()
-		result := parser.Images
+		result := parser.Links
 		if strings.Join(result, "") != strings.Join(v, "") {
-			t.Errorf("ParseImages %s expected %v but got %v", k, v, result)
+			t.Errorf("ParseLinks %s expected %v but got %v", k, v, result)
 		}
 	}
 }
