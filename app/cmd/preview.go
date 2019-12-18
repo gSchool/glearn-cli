@@ -235,17 +235,28 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 	// Get the name of the single target file
 	srcArray := strings.Split(target, "/")
 	srcMDFile := srcArray[len(srcArray)-1]
+	substringPaths := []string{}
 
 	for _, imgPath := range singleFileLinkPaths {
 		if !strings.HasPrefix(imgPath, "/") {
 			imgPath = fmt.Sprintf("/%s", imgPath)
 		}
 
-		// Sanitize existing ../ from path
-		// Ex. ../images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
-
 		// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
-		pathArray := strings.Split(imgPath, "/")
+		pathArray := []string{}
+		var containsPeriodPeriod bool
+		for _, dir := range strings.Split(imgPath, "/") {
+			if dir != ".." { // sanitize any .. so we don't have to worry about nexted things
+				containsPeriodPeriod = true
+				pathArray = append(pathArray, dir)
+			}
+		}
+		// We need to modify the actual markdown file so it no longer has `..` in links, since we're putting
+		// everything in the newSrcPath
+		if containsPeriodPeriod {
+			substringPaths = append(substringPaths, imgPath)
+		}
+
 		imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
 
 		// create an linkDirs var and depending on how long the image file path is, update it to include
@@ -287,12 +298,33 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 	}
 
 	// Copy original single markdown file into the base of our new tmp dir
-	err := Copy(target, newSrcPath+"/"+srcMDFile)
+	newTarget := newSrcPath + "/" + srcMDFile
+	err := Copy(target, newTarget)
 	if err != nil {
 		return "", err
 	}
 
 	if len(singleFileLinkPaths) > 0 {
+		if len(substringPaths) > 0 {
+			// open contents of new target
+			b, err := ioutil.ReadFile(newTarget)
+			if err != nil {
+				return "", fmt.Errorf("Could not read copied target file: %s\n", err)
+			}
+			contents := string(b)
+			for _, pathToSub := range substringPaths {
+				if strings.HasPrefix(pathToSub, "/") { // undo the add of a slash we did at the beginning
+					pathToSub = strings.TrimPrefix(pathToSub, "/")
+				}
+				imgPathWithoutPeriodPeriod := strings.Replace(pathToSub, "../", "", -1)
+				contents = strings.ReplaceAll(contents, pathToSub, imgPathWithoutPeriodPeriod)
+			}
+			// overwrite target file with the contents
+			err = ioutil.WriteFile(newTarget, []byte(contents), 0777)
+			if err != nil {
+				return "", fmt.Errorf("Could not write copied target file with cleaned up links: %s\n", err)
+			}
+		}
 		return newSrcPath, nil
 	}
 

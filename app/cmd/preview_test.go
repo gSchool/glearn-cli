@@ -2,15 +2,19 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 )
 
 func Test_createNewTarget(t *testing.T) {
 	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{"./mrsmall-invert.png", "../mrsmall.png", "mkdown.md", "../image/nested-small.png", "deeper/deep-small.png"})
-	fmt.Println(result)
 	if err != nil {
 		t.Errorf("Attempting to createNewTarget errored: %s\n", err)
+	}
+	if result != "single-file-upload" {
+		t.Errorf("result should be the temp directory with the target markdown, '%s'", result)
 	}
 
 	if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
@@ -31,7 +35,22 @@ func Test_createNewTarget(t *testing.T) {
 		t.Errorf("nested-small.png should have been created and it's image dir moved to the root of the single file directory, was not")
 	}
 
-	if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "mkdown.png")); !os.IsNotExist(err) {
+	if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "mkdown.md")); !os.IsNotExist(err) {
 		t.Errorf("linked markdown files should not copied")
+	}
+
+	b, err := ioutil.ReadFile("single-file-upload/test.md")
+	if err != nil {
+		t.Errorf("could not Open test.md")
+	}
+	if strings.Contains(string(b), "../mrsmall.png") {
+		t.Errorf("test.md file should not contain '../mrsmall.png' but does:\n%s\n", string(b))
+	}
+	if strings.Contains(string(b), "../image/nested-small.png") {
+		t.Errorf("test.md file should not contain '../image/nested-small.png' but does:\n%s\n", string(b))
+	}
+	err = os.RemoveAll("single-file-upload")
+	if err != nil {
+		t.Errorf("could not remove single-file-upload directory: %s\n", err)
 	}
 }
