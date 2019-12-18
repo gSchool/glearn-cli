@@ -374,40 +374,23 @@ func compressDirectory(source, target string) error {
 
 // Check whether or nor a config file exists and if it does not we are going to attempt to create one
 func doesConfigExistOrCreate(target, unitsDir string) (bool, error) {
-	// Configs can be `yaml` or `yml`
-	configYamlPath := ""
-	if strings.HasSuffix(target, "/") {
-		configYamlPath = target + "config.yaml"
-	} else {
-		configYamlPath = target + "/config.yaml"
-	}
+	hasConfig, hasAutoconfig := doesCurrentDirHaveConfig(target)
 
-	configYmlPath := ""
-	if strings.HasSuffix(target, "/") {
-		configYmlPath = target + "config.yml"
-	} else {
-		configYmlPath = target + "/config.yml"
-	}
 	createdConfig := false
-	_, yamlExists := os.Stat(configYamlPath)
-	if yamlExists == nil { // Yaml exists
+
+	if hasConfig && hasAutoconfig == false { // Yaml exists
 		log.Printf("INFO: There is a config present so one will not be generated.")
 		return createdConfig, nil
-	} else if os.IsNotExist(yamlExists) {
-		_, ymlExists := os.Stat(configYmlPath)
-		if ymlExists == nil { // Yml exists
-			log.Printf("INFO: There is a config present so one will not be generated.")
-			return createdConfig, nil
-		} else if os.IsNotExist(ymlExists) {
-			// Neither exists so we are going to create one
-			log.Printf("WARNING: No config was found, an autoconfig.yaml will be generated for you.")
-			err := createAutoConfig(target, unitsDir)
-			if err != nil {
-				return createdConfig, nil
-			}
-			createdConfig = true
-		}
 	}
+
+	// Neither exists so we are going to create one
+	log.Printf("WARNING: No config was found, an autoconfig.yaml will be generated for you.")
+	err := createAutoConfig(target, unitsDir)
+	if err != nil {
+		return createdConfig, nil
+	}
+	createdConfig = true
+
 	return createdConfig, nil
 }
 
