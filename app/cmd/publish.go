@@ -23,15 +23,16 @@ var publishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "Publish master for your curriculum repository",
 	Long: `
-		The Learn system recognizes blocks of content held in GitHub respositories.
-		This command pushes the latest commit for the remote origin master (which
-		should be GitHub), then attemptes the release of a new Learn block version
-		at the HEAD of master.
+The Learn system recognizes blocks of content held in GitHub respositories. This
+command pushes the latest commit for the remote origin master (which should be
+GitHub), then attempts the release of a new Learn block version at the HEAD of
+master. If the block doesn't exist, running the publish command will create a
+new block. If the block already exists, it will update the existing block.
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			fmt.Println(setApiTokenMessage)
+			fmt.Println(setAPITokenMessage)
 			os.Exit(1)
 		}
 

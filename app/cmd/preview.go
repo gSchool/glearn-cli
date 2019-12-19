@@ -45,14 +45,14 @@ var previewCmd = &cobra.Command{
 	Use:   "preview [file_path]",
 	Short: "Uploads content and builds a preview.",
 	Long: `
-		The preview command takes a path to either a directory or a single file and
-		uploads the content to Learn through the Learn API. Learn will build the preview
-		and return/open the preview URL when it is complete.
+The preview command takes a path to either a directory or a single file and
+uploads the content to Learn through the Learn API. Learn will build the
+preview and return/open the preview URL when it is complete.
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			previewCmdError(setApiTokenMessage)
+			previewCmdError(setAPITokenMessage)
 		}
 
 		// Takes one argument which is the filepath to the directory you want zipped/previewed

@@ -12,8 +12,8 @@ var setCmd = &cobra.Command{
 	Use:   "set [...flags]",
 	Short: "Set your your credentials for ~/.glearn-config.yaml",
 	Long: `
-		In order to use learn resources through our CLI you
-		must set your credentials inside ~/.glearn-config.yaml
+In order to use learn resources through our CLI you must set your
+credentials inside ~/.glearn-config.yaml
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
