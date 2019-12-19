@@ -83,7 +83,8 @@ preview and return/open the preview URL when it is complete.
 		// Is this a directory or a file
 		// If this is a file, is it an acceptable file?
 		info, err := os.Stat(args[0])
-		if err == nil && !info.IsDir() && !strings.HasSuffix(args[0], ".md") {
+
+		if err == nil && !info.IsDir() && (!strings.HasSuffix(args[0], ".md") && !strings.HasSuffix(args[0], ".ipynb")) {
 			previewCmdError("The preview file that you chose is not able to be rendered as a single file preview in learn")
 			return
 		}
