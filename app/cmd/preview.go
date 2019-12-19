@@ -45,14 +45,14 @@ var previewCmd = &cobra.Command{
 	Use:   "preview [file_path]",
 	Short: "Uploads content and builds a preview.",
 	Long: `
-		The preview command takes a path to either a directory or a single file and
-		uploads the content to Learn through the Learn API. Learn will build the preview
-		and return/open the preview URL when it is complete.
+The preview command takes a path to either a directory or a single file and
+uploads the content to Learn through the Learn API. Learn will build the
+preview and return/open the preview URL when it is complete.
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			previewCmdError("Please set your API token first with `learn set --api_token=your_token`")
+			previewCmdError(setAPITokenMessage)
 		}
 
 		// Takes one argument which is the filepath to the directory you want zipped/previewed
@@ -79,6 +79,14 @@ var previewCmd = &cobra.Command{
 
 		// Start benchmark for compressDirectory
 		startOfCompression := time.Now()
+
+		// Is this a directory or a file
+		// If this is a file, is it an acceptable file?
+		info, err := os.Stat(args[0])
+		if err == nil && !info.IsDir() && !strings.HasSuffix(args[0], ".md") {
+			previewCmdError("The preview file that you chose is not able to be rendered as a single file preview in learn")
+			return
+		}
 
 		// Compress directory, output -> tmpFile
 		err = compressDirectory(args[0], tmpFile)
@@ -136,7 +144,7 @@ var previewCmd = &cobra.Command{
 		}
 		isDirectory := fileInfo.IsDir()
 
-		fmt.Println("\nPlease wait while Learn builds your preview...")
+		fmt.Println("\nBuilding preview...")
 
 		// Start a processing spinner that runs until Learn is finsihed building the preview
 		s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)

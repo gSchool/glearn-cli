@@ -14,12 +14,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+const setAPITokenMessage = `
+Please set your API token with this command: learn set --api_token=your_api_token 
+You can get your api token at https://learn-2.galvanize.com/api_token
+`
+
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
 var rootCmd = &cobra.Command{
 	Use:   "learn [command]",
 	Short: "learn is a CLI tool for communicating with Learn",
-	Long:  `learn is a CLI tool for communicating with Learn`,
+	Long:  "learn is a CLI tool for communicating with Learn",
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("Requires at least 1 argument")
