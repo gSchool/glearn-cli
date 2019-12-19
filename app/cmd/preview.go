@@ -144,7 +144,7 @@ var previewCmd = &cobra.Command{
 		}
 		isDirectory := fileInfo.IsDir()
 
-		fmt.Println("\nPlease wait while Learn builds your preview...")
+		fmt.Println("\nBuilding preview...")
 
 		// Start a processing spinner that runs until Learn is finsihed building the preview
 		s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)
