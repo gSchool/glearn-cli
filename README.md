@@ -9,7 +9,7 @@ api_token: YOUR_API_TOKEN
 
 Or by using the set command:
 ```
-learn set --api_token=neat_token_123
+learn set --api_token=my_neat_token_123
 ```
 
 _**Option A:**_
