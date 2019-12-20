@@ -57,7 +57,7 @@ new block. If the block already exists, it will update the existing block.
 
 		block, err := learn.API.GetBlockByRepoName(remote)
 		if err != nil {
-			log.Printf("Error fetchng block from learn: %s\n", err)
+			log.Printf("Error fetching block from learn: %s\n", err)
 			os.Exit(1)
 		}
 		if !block.Exists() {
@@ -130,7 +130,7 @@ new block. If the block already exists, it will update the existing block.
 
 			block, err := learn.API.GetBlockByRepoName(remote)
 			if err != nil {
-				log.Printf("Error fetchng block from learn: %s\n", err)
+				log.Printf("Error fetching block from learn: %s\n", err)
 				os.Exit(1)
 			}
 			fmt.Println("Errors on block:")
