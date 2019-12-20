@@ -102,12 +102,12 @@ func (api *APIClient) BuildReleaseFromS3(bucketKey string, isDirectory bool) (*P
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Error: response status: %d", res.StatusCode)
-	}
-
 	p := &PreviewResponse{}
 	json.NewDecoder(res.Body).Decode(p)
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Error: %s, response status: %d", p.Errors, res.StatusCode)
+	}
 
 	return p, nil
 }
