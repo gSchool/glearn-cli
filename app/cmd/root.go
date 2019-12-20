@@ -62,6 +62,10 @@ var APIToken string
 // UnitsDirectory is a flag for preview command that denotes a location for the units
 var UnitsDirectory string
 
+// FileOnly is the flag boolean which will force a single file upload to ignore any images
+// and only upload the markdown file
+var FileOnly bool
+
 func init() {
 	u, err := user.Current()
 	if err != nil {
@@ -103,6 +107,7 @@ func init() {
 	// Check for flags set by the user and hyrate their corresponding variables.
 	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
 	previewCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
+	previewCmd.Flags().BoolVarP(&FileOnly, "fileonly", "x", false, "E(x)cludes images when previewing a single file, defaults false")
 	publishCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
 }
 
