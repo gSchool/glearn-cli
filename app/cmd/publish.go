@@ -125,7 +125,7 @@ new block. If the block already exists, it will update the existing block.
 		}
 
 		var attempts uint8 = 30
-		_, err = learn.API.PollForBuildResponse(releaseID, &attempts)
+		p, err := learn.API.PollForBuildResponse(releaseID, &attempts)
 		if err != nil {
 			s.Stop()
 

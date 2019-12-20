@@ -180,14 +180,6 @@ preview and return/open the preview URL when it is complete.
 		// Add benchmark in milliseconds for uploadToS3
 		bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
 
-		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
-		fileInfo, err := os.Stat(args[0])
-		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to get stats on file. Err: %v", err))
-			return
-		}
-		isDirectory := fileInfo.IsDir()
-
 		fmt.Println("\nPlease wait while Learn builds your preview...")
 
 		// Start a processing spinner that runs until Learn is finsihed building the preview
