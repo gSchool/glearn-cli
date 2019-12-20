@@ -158,7 +158,7 @@ preview and return/open the preview URL when it is complete.
 		// Let Learn know there is new preview content on s3, where it is, and to build it
 		res, err := learn.API.BuildReleaseFromS3(bucketKey, isDirectory)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to notify learn of new preview content. Err: %v", err))
+			previewCmdError(fmt.Sprintf("Failed to build new preview content in learn. Err: %v", err))
 			return
 		}
 
