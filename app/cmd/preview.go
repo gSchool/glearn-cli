@@ -78,6 +78,7 @@ preview and return/open the preview URL when it is complete.
 			return
 		}
 		isDirectory := fileInfo.IsDir()
+		includeLinks := !isDirectory && !FileOnly // not a dir, false
 
 		if !isDirectory && (!strings.HasSuffix(target, ".md") && !strings.HasSuffix(target, ".ipynb")) {
 			previewCmdError("The preview file that you chose is not able to be rendered as a single file preview in learn")
@@ -87,7 +88,7 @@ preview and return/open the preview URL when it is complete.
 		// If it is a single file preview we need to parse the target for any md link tags
 		// linking to local files. If there are any, add them to the target
 		var singleFileLinkPaths []string
-		if !isDirectory {
+		if includeLinks {
 			if filepath.Ext(target) == ".md" {
 				singleFileLinkPaths, err = collectLinkPaths(target)
 				if err != nil {
@@ -99,12 +100,13 @@ preview and return/open the preview URL when it is complete.
 				return
 			}
 		}
+		fileContainsLinks := len(singleFileLinkPaths) > 0
 
 		// variable holding whether or not source is a dir OR when it is a single file preview
 		// AND singleFileLinkPaths is > 0 that means it is now a dir again (tmp one we created)
-		isDirectory = isDirectory || (!isDirectory && len(singleFileLinkPaths) > 0)
+		isDirectory = isDirectory || (!isDirectory && fileContainsLinks)
 
-		if len(singleFileLinkPaths) > 0 {
+		if fileContainsLinks {
 			target, err = createNewTarget(target, singleFileLinkPaths)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
@@ -113,10 +115,12 @@ preview and return/open the preview URL when it is complete.
 		}
 
 		// Detect config file
-		err = doesConfigExistOrCreate(target, UnitsDirectory)
-		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
-			return
+		if fileContainsLinks || isDirectory {
+			_, err = doesConfigExistOrCreate(target, UnitsDirectory)
+			if err != nil {
+				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
+				return
+			}
 		}
 
 		// Start a processing spinner that runs until a user's content is compressed
