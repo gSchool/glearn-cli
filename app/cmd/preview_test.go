@@ -3,63 +3,50 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 )
 
-const withConfigFixture = "../../fixtures/test-block-with-config"
-
-func Test_PreviewDetectsConfig(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withConfigFixture, "")
-	if createdConfig {
-		t.Errorf("Created a config when one existed")
-	}
-}
-
-const withNoConfigFixture = "../../fixtures/test-block-no-config"
-
-func Test_PreviewBuildsAutoConfig(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, "")
-	if createdConfig == false {
-		t.Errorf("Should of created a config file")
-	}
-
-	b, err := ioutil.ReadFile(withNoConfigFixture + "/autoconfig.yaml")
+func Test_createNewTarget(t *testing.T) {
+	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{"./mrsmall-invert.png", "../mrsmall.png", "../image/nested-small.png", "deeper/deep-small.png"})
 	if err != nil {
-		fmt.Print(err)
+		t.Errorf("Attempting to createNewTarget errored: %s\n", err)
+	}
+	if result != "single-file-upload" {
+		t.Errorf("result should be the temp directory with the target markdown, '%s'", result)
 	}
 
-	config := string(b)
-
-	if !strings.Contains(config, "Title: Unit 1") {
-		t.Errorf("Autoconfig should have a unit title of Unit 1")
+	if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
+		t.Errorf("test.md should have been created")
+	}
+	if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "mrsmall-invert.png")); os.IsNotExist(err) {
+		t.Errorf("mrsmall-invert should have been created, was not")
+	}
+	if _, err = os.Stat(fmt.Sprintf("single-file-upload/deeper/%s", "deep-small.png")); os.IsNotExist(err) {
+		t.Errorf("deeper/deep-small.png should have been created in its directory, was not")
 	}
 
-	if !strings.Contains(config, "Path: /units/test.md") {
-		t.Errorf("Autoconfig should have a lesson with a path of /units/test.md")
+	// test cases for ,./
+	if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "mrsmall.png")); os.IsNotExist(err) {
+		t.Errorf("mrsmall.png should have been created and moved to the root of the single file directory, was not")
 	}
-}
-
-const withNoUnitsDirFixture = "../../fixtures/test-block-no-units-dir"
-
-func Test_PreviewBuildsAutoConfigDeclaredUnitsDir(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoUnitsDirFixture, "foo")
-	if createdConfig == false {
-		t.Errorf("Should of created a config file")
+	if _, err = os.Stat(fmt.Sprintf("single-file-upload/image/%s", "nested-small.png")); os.IsNotExist(err) {
+		t.Errorf("nested-small.png should have been created and it's image dir moved to the root of the single file directory, was not")
 	}
 
-	b, err := ioutil.ReadFile(withNoUnitsDirFixture + "/autoconfig.yaml")
+	b, err := ioutil.ReadFile("single-file-upload/test.md")
 	if err != nil {
-		fmt.Print(err)
+		t.Errorf("could not Open test.md")
 	}
-
-	config := string(b)
-
-	if !strings.Contains(config, "Title: Foo") {
-		t.Errorf("Autoconfig should have a unit title of Foo")
+	if strings.Contains(string(b), "../mrsmall.png") {
+		t.Errorf("test.md file should not contain '../mrsmall.png' but does:\n%s\n", string(b))
 	}
-
-	if !strings.Contains(config, "Path: /foo/test.md") {
-		t.Errorf("Autoconfig should have a lesson with a path of /foo/test.md")
+	if strings.Contains(string(b), "../image/nested-small.png") {
+		t.Errorf("test.md file should not contain '../image/nested-small.png' but does:\n%s\n", string(b))
+	}
+	err = os.RemoveAll("single-file-upload")
+	if err != nil {
+		t.Errorf("could not remove single-file-upload directory: %s\n", err)
 	}
 }

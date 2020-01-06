@@ -2,10 +2,8 @@ package cmd
 
 import (
 	"archive/zip"
-	"crypto/md5"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -14,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -28,11 +25,16 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
-	proxyReader "github.com/gSchool/glearn-cli/app/proxy_reader"
+	"github.com/gSchool/glearn-cli/mdlinkparser"
+	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )
 
-// tmpFile is used throughout as the temporary zip file target location.
-const tmpFile string = "preview-curriculum.zip"
+// tmpZipFile is used throughout as the temporary zip file target location.
+const tmpZipFile string = "preview-curriculum.zip"
+
+// tmpSingleFileDir is used throughout as the temporary single file directory location. This
+// is the name of the tmp dir we build when needing to attach relative links.
+const tmpSingleFileDir string = "single-file-upload"
 
 // previewCmd is executed when the `learn preview` command is used. Preview's concerns:
 // 1. Compress directory/file into target location.
@@ -51,6 +53,11 @@ preview and return/open the preview URL when it is complete.
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		// Start benchmarking the total time spent in preview cmd
+		startOfCmd := time.Now()
+
+		setupLearnAPI()
+
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
 			previewCmdError(setAPITokenMessage)
 		}
@@ -61,14 +68,59 @@ preview and return/open the preview URL when it is complete.
 			return
 		}
 
-		// Start benchmarking the total time spent in preview cmd
-		startOfCmd := time.Now()
+		// Set target file path
+		target := args[0]
+
+		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
+		fileInfo, err := os.Stat(target)
+		if err != nil {
+			previewCmdError(fmt.Sprintf("Failed to get stats on file. Err: %v", err))
+			return
+		}
+		isDirectory := fileInfo.IsDir()
+		includeLinks := !isDirectory && !FileOnly // not a dir, false
+
+		if !isDirectory && (!strings.HasSuffix(target, ".md") && !strings.HasSuffix(target, ".ipynb")) {
+			previewCmdError("The preview file that you chose is not able to be rendered as a single file preview in learn")
+			return
+		}
+
+		// If it is a single file preview we need to parse the target for any md link tags
+		// linking to local files. If there are any, add them to the target
+		var singleFileLinkPaths []string
+		if includeLinks {
+			if filepath.Ext(target) == ".md" {
+				singleFileLinkPaths, err = collectLinkPaths(target)
+				if err != nil {
+					previewCmdError(fmt.Sprintf("Failed to attach local images for single file preview for: (%s). Err: %v", target, err))
+					return
+				}
+			} else {
+				previewCmdError("Sorry we only support markdown files for single file previews")
+				return
+			}
+		}
+		fileContainsLinks := len(singleFileLinkPaths) > 0
+
+		// variable holding whether or not source is a dir OR when it is a single file preview
+		// AND singleFileLinkPaths is > 0 that means it is now a dir again (tmp one we created)
+		isDirectory = isDirectory || (!isDirectory && fileContainsLinks)
+
+		if fileContainsLinks {
+			target, err = createNewTarget(target, singleFileLinkPaths)
+			if err != nil {
+				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
+				return
+			}
+		}
 
 		// Detect config file
-		_, err := doesConfigExistOrCreate(args[0], UnitsDirectory)
-		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", args[0], err))
-			return
+		if fileContainsLinks || isDirectory {
+			_, err = doesConfigExistOrCreate(target, UnitsDirectory)
+			if err != nil {
+				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
+				return
+			}
 		}
 
 		// Start a processing spinner that runs until a user's content is compressed
@@ -80,19 +132,10 @@ preview and return/open the preview URL when it is complete.
 		// Start benchmark for compressDirectory
 		startOfCompression := time.Now()
 
-		// Is this a directory or a file
-		// If this is a file, is it an acceptable file?
-		info, err := os.Stat(args[0])
-
-		if err == nil && !info.IsDir() && (!strings.HasSuffix(args[0], ".md") && !strings.HasSuffix(args[0], ".ipynb")) {
-			previewCmdError("The preview file that you chose is not able to be rendered as a single file preview in learn")
-			return
-		}
-
-		// Compress directory, output -> tmpFile
-		err = compressDirectory(args[0], tmpFile)
+		// Compress directory, output -> tmpZipFile
+		err = compressDirectory(target, tmpZipFile)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", args[0], err))
+			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", target, err))
 			return
 		}
 
@@ -107,12 +150,12 @@ preview and return/open the preview URL when it is complete.
 		printlnGreen("√")
 
 		// Removes artifacts on user's machine
-		defer cleanUpFiles()
+		defer removeArtifacts()
 
 		// Open file so we can get a checksum as well as send to s3
-		f, err := os.Open(tmpFile)
+		f, err := os.Open(tmpZipFile)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed opening file (%q). Err: %v", tmpFile, err))
+			previewCmdError(fmt.Sprintf("Failed opening file (%q). Err: %v", tmpZipFile, err))
 			return
 		}
 		defer f.Close()
@@ -137,15 +180,7 @@ preview and return/open the preview URL when it is complete.
 		// Add benchmark in milliseconds for uploadToS3
 		bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
 
-		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
-		fileInfo, err := os.Stat(args[0])
-		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to get stats on file. Err: %v", err))
-			return
-		}
-		isDirectory := fileInfo.IsDir()
-
-		fmt.Println("\nBuilding preview...")
+		fmt.Println("\nPlease wait while Learn builds your preview...")
 
 		// Start a processing spinner that runs until Learn is finsihed building the preview
 		s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)
@@ -166,7 +201,7 @@ preview and return/open the preview URL when it is complete.
 		// can take much longer to build, however single files build instantly so we do not need to
 		// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
 		if isDirectory {
-			var attempts uint8 = 20
+			var attempts uint8 = 30
 			res, err = learn.API.PollForBuildResponse(res.ReleaseID, &attempts)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
@@ -191,24 +226,147 @@ preview and return/open the preview URL when it is complete.
 			CLIBenchmark: bench,
 		})
 		if err != nil {
-			cleanUpFiles()
+			removeArtifacts()
 			learn.API.NotifySlack(err)
 			os.Exit(1)
 		}
 	},
 }
 
+// createNewTarget will set up and create everything needed for single file previews if they are needed.
+// Returns a string representing the source name which if not single file tmp dir is needed, will return the
+// original
+func createNewTarget(target string, singleFileLinkPaths []string) (string, error) {
+	// Tmp dir so we can build out a new dir with the correct links in their correct
+	// paths based on relative link paths supplied in the single markdown file
+	newSrcPath := tmpSingleFileDir
+
+	// Get the name of the single target file
+	srcArray := strings.Split(target, "/")
+	srcMDFile := srcArray[len(srcArray)-1]
+	substringPaths := []string{}
+
+	for _, imgPath := range singleFileLinkPaths {
+		if !strings.HasPrefix(imgPath, "/") {
+			imgPath = fmt.Sprintf("/%s", imgPath)
+		}
+
+		// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
+		pathArray := []string{}
+		var containsPeriodPeriod bool
+		for _, dir := range strings.Split(imgPath, "/") {
+			if dir != ".." { // sanitize any .. so we don't have to worry about nexted things
+				containsPeriodPeriod = true
+				pathArray = append(pathArray, dir)
+			}
+		}
+		// We need to modify the actual markdown file so it no longer has `..` in links, since we're putting
+		// everything in the newSrcPath
+		if containsPeriodPeriod {
+			substringPaths = append(substringPaths, imgPath)
+		}
+
+		imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
+
+		// create an linkDirs var and depending on how long the image file path is, update it to include
+		// everything up to the image itself
+		var linkDirs string
+
+		if len(pathArray) == 1 {
+			linkDirs = ""
+		} else if len(pathArray) == 2 {
+			linkDirs = pathArray[0]
+		} else {
+			// Collect verything up until the image name (last item) and join it back together
+			// This gives us the name of the directory(ies) to make to put the image in
+			linkDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
+		}
+
+		// Create appropriate directory for each link using the linkDirs
+		err := os.MkdirAll(newSrcPath+linkDirs, os.FileMode(0777))
+		if err != nil {
+			return "", err
+		}
+
+		// Get "oneDirBackFromTarget" because target will be an .md file with relative
+		// links so we need to go one back from "target" so things aren't trying
+		// to be nested in the .md file itself
+		targetArray := strings.Split(target, "/")
+		oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
+
+		sourceLinkPath := oneDirBackFromTarget + imgPath
+		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
+			fmt.Printf("Link not found with path '%s'\n", sourceLinkPath)
+		} else {
+			// Copy the actual image into our new temp directory in it's appropriate spot
+			err = Copy(sourceLinkPath, newSrcPath+linkDirs+"/"+imageName)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	// Copy original single markdown file into the base of our new tmp dir
+	newTarget := newSrcPath + "/" + srcMDFile
+	err := Copy(target, newTarget)
+	if err != nil {
+		return "", err
+	}
+
+	if len(singleFileLinkPaths) > 0 {
+		if len(substringPaths) > 0 {
+			// open contents of new target
+			b, err := ioutil.ReadFile(newTarget)
+			if err != nil {
+				return "", fmt.Errorf("Could not read copied target file: %s\n", err)
+			}
+			contents := string(b)
+			for _, pathToSub := range substringPaths {
+				if strings.HasPrefix(pathToSub, "/") { // undo the add of a slash we did at the beginning
+					pathToSub = strings.TrimPrefix(pathToSub, "/")
+				}
+				imgPathWithoutPeriodPeriod := strings.Replace(pathToSub, "../", "", -1)
+				contents = strings.ReplaceAll(contents, pathToSub, imgPathWithoutPeriodPeriod)
+			}
+			// overwrite target file with the contents
+			err = ioutil.WriteFile(newTarget, []byte(contents), 0777)
+			if err != nil {
+				return "", fmt.Errorf("Could not write copied target file with cleaned up links: %s\n", err)
+			}
+		}
+		return newSrcPath, nil
+	}
+
+	return target, nil
+}
+
 // previewCmdError is a small wrapper for all errors within the preview command. It ensures
-// artifacts are cleaned up with a call to cleanUpFiles
+// artifacts are cleaned up with a call to removeArtifacts
 func previewCmdError(msg string) {
 	fmt.Println(msg)
-	cleanUpFiles()
+	removeArtifacts()
 	learn.API.NotifySlack(errors.New(msg))
 	os.Exit(1)
 }
 
+// printlnGreen simply prints a green string
 func printlnGreen(text string) {
 	fmt.Printf("\033[32m%s\033[0m\n", text)
+}
+
+// collectLinkPaths takes a target, reads it, and passes it's contents (slice of bytes)
+// to our MDLinkParser as a string. All relative/local markdown flavored images are parsed
+// into an array of strings and returned
+func collectLinkPaths(target string) ([]string, error) {
+	contents, err := ioutil.ReadFile(target)
+	if err != nil {
+		return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+	}
+
+	m := mdlinkparser.New(string(contents))
+	m.ParseLinks()
+
+	return m.Links, nil
 }
 
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
@@ -230,8 +388,8 @@ func uploadToS3(file *os.File, checksum string, creds *learn.Credentials) (strin
 		u.LeavePartsOnError = false  // If an error occurs during upload to s3, clean up & don't leave partial upload there
 	})
 
-	// Generate the bucket key using the key prefix, checksum, and tmpFile name
-	bucketKey := fmt.Sprintf("%s/%s-%s", creds.KeyPrefix, checksum, tmpFile)
+	// Generate the bucket key using the key prefix, checksum, and tmpZipFile name
+	bucketKey := fmt.Sprintf("%s/%s-%s", creds.KeyPrefix, checksum, tmpZipFile)
 
 	// Obtain FileInfo so we can look at length in bytes
 	fileStats, err := file.Stat()
@@ -290,13 +448,43 @@ func createChecksumFromZip(file *os.File) (string, error) {
 	return checksum, nil
 }
 
-// cleanUpFiles removes the tmp zipfile that was created for uploading to s3. We
-// wouldn't want to leave artifacts on user's machines
-func cleanUpFiles() {
-	err := os.Remove(tmpFile)
+// removeArtifacts removes the tmp zipfile and the tmp single file preview directory (if there
+// was one) that were created for uploading to s3 and including local images. We wouldn't
+// want to leave artifacts on user's machines
+func removeArtifacts() {
+	err := os.Remove(tmpZipFile)
 	if err != nil {
 		fmt.Println("Sorry, we had trouble cleaning up the zip file created for curriculum preview")
 	}
+
+	// Remove tmpSingleFileDir if it exists at this point
+	if _, err := os.Stat(tmpSingleFileDir); !os.IsNotExist(err) {
+		err = os.RemoveAll(tmpSingleFileDir)
+		if err != nil {
+			fmt.Println("Sorry, we had trouble cleaning up the tmp single file preview directory")
+		}
+	}
+}
+
+// Copy the src file to target dest. Any existing file will be overwritten and will not copy file attributes.
+func Copy(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	return out.Close()
 }
 
 // compressDirectory takes a source file path (where the content you want zipped lives)
@@ -328,7 +516,10 @@ func compressDirectory(source, target string) error {
 
 	// Walk the whole filepath
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".zip") == false || strings.Contains(path, "/.git") || strings.Contains(path, "DS_Store") {
+		ext := filepath.Ext(path)
+		_, ok := fileExtWhitelist[ext]
+
+		if ok || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
 			if err != nil {
 				return err
 			}
@@ -366,7 +557,6 @@ func compressDirectory(source, target string) error {
 
 			// If it was not a directory, we open the file and copy it into the archive writer
 			// ingore zip files
-
 			file, err := os.Open(path)
 			if err != nil {
 				return err
@@ -379,187 +569,4 @@ func compressDirectory(source, target string) error {
 	})
 
 	return err
-}
-
-// Check whether or nor a config file exists and if it does not we are going to attempt to create one
-func doesConfigExistOrCreate(target, unitsDir string) (bool, error) {
-	hasConfig, hasAutoconfig := doesCurrentDirHaveConfig(target)
-
-	createdConfig := false
-
-	if hasConfig && hasAutoconfig == false { // Yaml exists
-		log.Printf("INFO: There is a config present so one will not be generated.")
-		return createdConfig, nil
-	}
-
-	// Neither exists so we are going to create one
-	log.Printf("WARNING: No config was found, an autoconfig.yaml will be generated for you.")
-	err := createAutoConfig(target, unitsDir)
-	if err != nil {
-		return createdConfig, nil
-	}
-	createdConfig = true
-
-	return createdConfig, nil
-}
-
-// Creates a config file based on three things:
-// 1. Did you give us a units directory?
-// 2. Do you have a units directory?
-// Units must exist in units dir or one provided!
-func createAutoConfig(target, requestedUnitsDir string) error {
-	blockRoot := ""
-	// Make sure we have an ending slash on the root dir
-	if strings.HasSuffix(target, "/") {
-		blockRoot = target
-	} else {
-		blockRoot = target + "/"
-	}
-
-	// The config file location that we will be creating
-	autoConfigYamlPath := blockRoot + "autoconfig.yaml"
-
-	// Remove the existing one if its around
-	_, err := os.Stat(autoConfigYamlPath)
-	if err == nil {
-		os.Remove(autoConfigYamlPath)
-	}
-
-	// Create the config file
-	configFile, err := os.Create(autoConfigYamlPath)
-	if err != nil {
-		return err
-	}
-	defer configFile.Sync()
-	defer configFile.Close()
-
-	// If no unitsDir was passed in, create a Units directory string
-	unitsDir := ""
-	unitsDirName := ""
-	unitsRootDirName := "units"
-	if requestedUnitsDir == "" {
-		unitsDir = blockRoot + unitsRootDirName
-		unitsDirName = "Unit 1"
-	} else {
-		unitsDir = blockRoot + requestedUnitsDir
-		unitsDirName = requestedUnitsDir
-		unitsRootDirName = requestedUnitsDir
-	}
-
-	unitToContentFileMap := map[string][]string{}
-
-	// Check to see if units directory exists
-	_, err = os.Stat(unitsDir)
-	whereToLookForUnits := blockRoot
-	if err == nil {
-		whereToLookForUnits = unitsDir
-
-		allItems, err := ioutil.ReadDir(whereToLookForUnits)
-		if err != nil {
-			return err
-		}
-
-		for _, info := range allItems {
-			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
-				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], unitsRootDirName+"/"+info.Name())
-			}
-		}
-	}
-
-	// Find all the directories in the block
-	directories := []string{}
-
-	allDirs, err := ioutil.ReadDir(whereToLookForUnits)
-	if err != nil {
-		return err
-	}
-
-	for _, info := range allDirs {
-		if info.IsDir() {
-			directories = append(directories, info.Name())
-		}
-	}
-
-	if len(directories) > 0 {
-		for _, dirName := range directories {
-			nestedFolder := ""
-			if dirName != ".git" {
-				if strings.HasSuffix(whereToLookForUnits, "/") {
-					nestedFolder = whereToLookForUnits + dirName
-				} else {
-					nestedFolder = whereToLookForUnits + "/" + dirName
-				}
-
-				err = filepath.Walk(nestedFolder,
-					func(path string, info os.FileInfo, err error) error {
-						if err != nil {
-							return err
-						}
-
-						if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
-							localPath := path
-							if blockRoot != "./" {
-								localPath = path[len(blockRoot):len(path)]
-							}
-							unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
-						}
-
-						return nil
-					})
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	configFile.WriteString("# This file is auto-generated and orders your content based on the file structure of your repo.\n")
-	configFile.WriteString("# Do not edit this file; it will be replaced the next time you run the preview command.\n")
-	configFile.WriteString("\n")
-	configFile.WriteString("# To manually order the contents of this curriculum rather than using the auto-generated file,\n")
-	configFile.WriteString("# include a config.yaml in your repo following the same conventions as this auto-generated file.\n")
-	configFile.WriteString("# A user-created config.yaml will have priority over the auto-generated one.\n")
-	configFile.WriteString("\n")
-	configFile.WriteString("---\n")
-	configFile.WriteString("Standards:\n")
-	for unit, paths := range unitToContentFileMap {
-		configFile.WriteString("  -\n")
-		configFile.WriteString("    Title: " + formattedName(unit) + "\n")
-		var unitUID = []byte(formattedName(unit))
-		var md5unitUID = md5.Sum(unitUID)
-		configFile.WriteString("    Description: " + formattedName(unit) + "\n")
-		configFile.WriteString("    UID: " + hex.EncodeToString(md5unitUID[:]) + "\n")
-		configFile.WriteString("    SuccessCriteria:\n")
-		configFile.WriteString("      - success criteria\n")
-		configFile.WriteString("    ContentFiles:\n")
-		for _, path := range paths {
-			if path != "README.md" {
-				configFile.WriteString("      -\n")
-				configFile.WriteString("        Type: Lesson\n")
-				var cfUID = []byte(formattedName(unit) + path)
-				var md5cfUID = md5.Sum(cfUID)
-				configFile.WriteString("        UID: " + hex.EncodeToString(md5cfUID[:]) + "\n")
-				configFile.WriteString("        Path: /" + path + "\n")
-			}
-		}
-	}
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func formattedName(name string) string {
-	parts := strings.Split(name, "/")
-	parts = strings.Split(parts[len(parts)-1], ".")
-	a := regexp.MustCompile(`\-`)
-	parts = a.Split(parts[0], -1)
-	a = regexp.MustCompile(`\_`)
-	parts = a.Split(strings.Join(parts, " "), -1)
-	formattedName := ""
-	for _, piece := range parts {
-		formattedName = formattedName + " " + strings.Title(piece)
-	}
-
-	return strings.TrimSpace(formattedName)
 }

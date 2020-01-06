@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -36,6 +35,8 @@ new block. If the block already exists, it will update the existing block.
 			os.Exit(1)
 		}
 
+		setupLearnAPI()
+
 		if len(args) != 0 {
 			fmt.Println("Usage: `learn publish` takes no arguments, merely pushing latest master and releasing a version to Learn. Use the command from inside a block repository.")
 			os.Exit(1)
@@ -46,31 +47,31 @@ new block. If the block already exists, it will update the existing block.
 
 		remote, err := remoteName()
 		if err != nil {
-			log.Printf("Cannot run git remote detection with command: %s\n%s\n", pushRemoteCommand, err)
+			fmt.Printf("Cannot run git remote detection with command: %s\n%s\n", pushRemoteCommand, err)
 			os.Exit(1)
 		}
 		if remote == "" {
-			log.Println("no fetch remote detected")
+			fmt.Println("no fetch remote detected")
 			os.Exit(1)
 		}
 		fmt.Printf("Publishing block with repo name %s\n", remote)
 
 		block, err := learn.API.GetBlockByRepoName(remote)
 		if err != nil {
-			log.Printf("Error fetching block from learn: %s\n", err)
+			fmt.Printf("Error fetching block from learn: %s\n", err)
 			os.Exit(1)
 		}
 		if !block.Exists() {
 			block, err = learn.API.CreateBlockByRepoName(remote)
 			if err != nil {
-				log.Printf("Error creating block from learn: %s\n", err)
+				fmt.Printf("Error creating block from learn: %s\n", err)
 				os.Exit(1)
 			}
 		}
 
 		branch, err := currentBranch()
 		if err != nil {
-			log.Println("Cannot run git branch detection with bash:", err)
+			fmt.Println("Cannot run git branch detection with bash:", err)
 			os.Exit(1)
 		}
 
@@ -78,7 +79,7 @@ new block. If the block already exists, it will update the existing block.
 		path, _ := os.Getwd()
 		createdConfig, err := doesConfigExistOrCreate(path+"/", UnitsDirectory)
 		if err != nil {
-			log.Printf(fmt.Sprintf("Failed to find or create a config file for repo: (%s). Err: %v", branch, err))
+			fmt.Printf(fmt.Sprintf("Failed to find or create a config file for repo: (%s). Err: %v", branch, err))
 			os.Exit(1)
 		}
 
@@ -123,14 +124,14 @@ new block. If the block already exists, it will update the existing block.
 			os.Exit(1)
 		}
 
-		var attempts uint8 = 20
+		var attempts uint8 = 30
 		p, err := learn.API.PollForBuildResponse(releaseID, &attempts)
 		if err != nil {
 			s.Stop()
 
 			block, err := learn.API.GetBlockByRepoName(remote)
 			if err != nil {
-				log.Printf("Error fetching block from learn: %s\n", err)
+				fmt.Printf("Error fetching block from learn: %s\n", err)
 				os.Exit(1)
 			}
 			fmt.Println("Errors on block:")

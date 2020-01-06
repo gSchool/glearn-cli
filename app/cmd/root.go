@@ -19,6 +19,9 @@ Please set your API token with this command: learn set --api_token=your_api_toke
 You can get your api token at https://learn-2.galvanize.com/api_token
 `
 
+// currentReleaseVersion is used to print the version the user currently has downloaded
+const currentReleaseVersion = "v0.5.0"
+
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
 var rootCmd = &cobra.Command{
@@ -37,11 +40,36 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+var fileExtWhitelist = map[string]struct{}{
+	".yaml":  struct{}{},
+	".yml":   struct{}{},
+	".md":    struct{}{},
+	".pdf":   struct{}{},
+	".ipynb": struct{}{},
+	".jpg":   struct{}{},
+	".jpeg":  struct{}{},
+	".jpe":   struct{}{},
+	".jif":   struct{}{},
+	".jfif":  struct{}{},
+	".jfi":   struct{}{},
+	".png":   struct{}{},
+	".gif":   struct{}{},
+	".tiff":  struct{}{},
+	".tif":   struct{}{},
+	".bmp":   struct{}{},
+	".svg":   struct{}{},
+	".svgz":  struct{}{},
+}
+
 // APIToken is an initialized string used for holding it's flag value
 var APIToken string
 
 // UnitsDirectory is a flag for preview command that denotes a location for the units
 var UnitsDirectory string
+
+// FileOnly is the flag boolean which will force a single file upload to ignore any images
+// and only upload the markdown file
+var FileOnly bool
 
 func init() {
 	u, err := user.Current()
@@ -75,6 +103,29 @@ func init() {
 		}
 	}
 
+	// Add all the other learn commands defined in cmd/ directory
+	rootCmd.AddCommand(newCmd)
+	rootCmd.AddCommand(setCmd)
+	rootCmd.AddCommand(previewCmd)
+	rootCmd.AddCommand(publishCmd)
+	rootCmd.AddCommand(versionCmd)
+
+	// Check for flags set by the user and hyrate their corresponding variables.
+	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
+	previewCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
+	previewCmd.Flags().BoolVarP(&FileOnly, "fileonly", "x", false, "E(x)cludes images when previewing a single file, defaults false")
+	publishCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
+}
+
+// Execute runs the learn CLI according to the user's command/subcommand/flags
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func setupLearnAPI() {
 	client := http.Client{Timeout: 15 * time.Second}
 	baseURL := "https://learn-2.galvanize.com"
 	alternateURL := os.Getenv("LEARN_BASE_URL")
@@ -90,23 +141,4 @@ func init() {
 	}
 
 	learn.API = api
-
-	// Add all the other learn commands defined in cmd/ directory
-	rootCmd.AddCommand(newCmd)
-	rootCmd.AddCommand(setCmd)
-	rootCmd.AddCommand(previewCmd)
-	rootCmd.AddCommand(publishCmd)
-
-	// Check for flags set by the user and hyrate their corresponding variables.
-	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
-	previewCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
-	publishCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
-}
-
-// Execute runs the learn CLI according to the user's command/subcommand/flags
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 }
