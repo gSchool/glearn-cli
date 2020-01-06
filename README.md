@@ -20,6 +20,11 @@ brew tap gSchool/learn
 brew install gSchool/learn/learn
 ```
 
+Updating:
+```
+brew upgrade gSchool/learn/learn
+```
+
 Uninstalling:
 ```
 brew uninstall gSchool/learn/learn
@@ -27,17 +32,19 @@ brew uninstall gSchool/learn/learn
 
 _**Option B:**_
 
-If you mosey on over to [releases](https://github.com/gSchool/glearn-cli/releases), you'll find binaries for darwin, linux, windows, and amd64. You can download directly from there.
+Use curl on Mac:
+```
+curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Darwin_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
+```
+
+Use curl on Linux:
+```
+curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Linux_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
+```
 
 _**Option C:**_
 
-If you have Go installed on your machine, use `go install`:
-
-```
-go install github.com/gSchool/glearn-cli
-```
-
-This will place the binary in your `go/bin` and is ready to use.
+If you mosey on over to [releases](https://github.com/gSchool/glearn-cli/releases), you'll find binaries for darwin, linux, windows, and amd64. You can download directly from there.
 
 # Development
 Build
