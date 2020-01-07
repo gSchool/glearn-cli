@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -49,4 +51,45 @@ func Test_createNewTarget(t *testing.T) {
 	if err != nil {
 		t.Errorf("could not remove single-file-upload directory: %s\n", err)
 	}
+}
+
+func Test_createNewTargetSingleFile(t *testing.T) {
+	output := captureOutput(func() {
+		result, err := createNewTarget("test.md", []string{"./image/nested-small.png", "image/nested-small.png", "../nested-small.png"})
+		if err != nil {
+			t.Errorf("Attempting to createNewTarget errored: %s\n", err)
+		}
+		if result != "single-file-upload" {
+			t.Errorf("result should be the temp directory with the target markdown, '%s'", result)
+		}
+
+		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
+			t.Errorf("test.md should have been created")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/image/%s", "nested-small.png")); os.IsNotExist(err) {
+			t.Errorf("nested-small.png should have been created and it's image dir moved to the root of the single file directory, was not")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "nested-small.png")); os.IsNotExist(err) {
+			t.Errorf("nested-small.png should have been created and it's image dir moved to the root of the single file directory, was not")
+		}
+
+		err = os.RemoveAll("single-file-upload")
+		if err != nil {
+			t.Errorf("could not remove single-file-upload directory: %s\n", err)
+		}
+	})
+
+	if strings.Contains(output, "Link not found with path") {
+		t.Errorf("output should not print 'Link not found with path', output was:\n%s\n", output)
+	}
+}
+
+func captureOutput(f func()) string {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	f()
+	log.SetOutput(os.Stderr)
+	return buf.String()
 }
