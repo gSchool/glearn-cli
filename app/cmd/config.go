@@ -32,17 +32,17 @@ func doesConfigExistOrCreate(target, unitsDir string) (bool, error) {
 	_, yamlExists := os.Stat(configYamlPath)
 
 	if yamlExists == nil { // Yaml exists
-		fmt.Printf("INFO: There is a config present so one will not be generated.")
+		fmt.Printf("INFO: There is a config present so one will not be generated. ")
 		return createdConfig, nil
 	} else if os.IsNotExist(yamlExists) {
 		_, ymlExists := os.Stat(configYmlPath)
 
 		if ymlExists == nil { // Yml exists
-			fmt.Printf("INFO: There is a config present so one will not be generated.")
+			fmt.Printf("INFO: There is a config present so one will not be generated. ")
 			return createdConfig, nil
 		} else if os.IsNotExist(ymlExists) {
 			// Neither exists so we are going to create one
-			fmt.Printf("WARNING: No config was found, one will be generated for you.")
+			fmt.Printf("WARNING: No config was found, one will be generated for you. ")
 			if target == tmpSingleFileDir {
 				err := createAutoConfig(target, ".")
 				if err != nil {
