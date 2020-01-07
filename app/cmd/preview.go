@@ -180,7 +180,7 @@ preview and return/open the preview URL when it is complete.
 		// Add benchmark in milliseconds for uploadToS3
 		bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
 
-		fmt.Println("\nPlease wait while Learn builds your preview...")
+		fmt.Println("\nBuilding preview...")
 
 		// Start a processing spinner that runs until Learn is finsihed building the preview
 		s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)
