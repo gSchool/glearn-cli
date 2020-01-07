@@ -55,7 +55,7 @@ func Test_createNewTarget(t *testing.T) {
 
 func Test_createNewTargetSingleFile(t *testing.T) {
 	output := captureOutput(func() {
-		result, err := createNewTarget("test.md", []string{"./image/nested-small.png", "image/nested-small.png"})
+		result, err := createNewTarget("test.md", []string{"./image/nested-small.png", "image/nested-small.png", "../nested-small.png"})
 		if err != nil {
 			t.Errorf("Attempting to createNewTarget errored: %s\n", err)
 		}
@@ -65,6 +65,14 @@ func Test_createNewTargetSingleFile(t *testing.T) {
 
 		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
 			t.Errorf("test.md should have been created")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/image/%s", "nested-small.png")); os.IsNotExist(err) {
+			t.Errorf("nested-small.png should have been created and it's image dir moved to the root of the single file directory, was not")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "nested-small.png")); os.IsNotExist(err) {
+			t.Errorf("nested-small.png should have been created and it's image dir moved to the root of the single file directory, was not")
 		}
 
 		err = os.RemoveAll("single-file-upload")
