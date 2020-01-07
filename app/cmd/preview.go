@@ -292,11 +292,14 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 		// links so we need to go one back from "target" so things aren't trying
 		// to be nested in the .md file itself
 		targetArray := strings.Split(target, "/")
-		oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
+		sourceLinkPath := trimFirstRune(imgPath)
+		if len(targetArray[:len(targetArray)-1]) != 0 {
+			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
+			sourceLinkPath = oneDirBackFromTarget + imgPath
+		}
 
-		sourceLinkPath := oneDirBackFromTarget + imgPath
 		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
-			fmt.Printf("Link not found with path '%s'\n", sourceLinkPath)
+			log.Printf("Link not found with path '%s'\n", sourceLinkPath)
 		} else {
 			// Copy the actual image into our new temp directory in it's appropriate spot
 			err = Copy(sourceLinkPath, newSrcPath+linkDirs+"/"+imageName)
@@ -569,4 +572,16 @@ func compressDirectory(source, target string) error {
 	})
 
 	return err
+}
+
+func trimFirstRune(s string) string {
+	for i := range s {
+		if i > 0 {
+			// The value i is the index in s of the second
+			// rune.  Slice to remove the first rune.
+			return s[i:]
+		}
+	}
+	// There are 0 or 1 runes in the string.
+	return ""
 }
