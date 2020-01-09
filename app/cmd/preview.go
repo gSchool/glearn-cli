@@ -104,6 +104,7 @@ preview and return/open the preview URL when it is complete.
 
 		// variable holding whether or not source is a dir OR when it is a single file preview
 		// AND singleFileLinkPaths is > 0 that means it is now a dir again (tmp one we created)
+		isSingleFilePreviewWithLinks := !isDirectory && fileContainsLinks
 		isDirectory = isDirectory || (!isDirectory && fileContainsLinks)
 
 		if fileContainsLinks {
@@ -116,7 +117,7 @@ preview and return/open the preview URL when it is complete.
 
 		// Detect config file
 		if fileContainsLinks || isDirectory {
-			_, err = doesConfigExistOrCreate(target, UnitsDirectory)
+			_, err = doesConfigExistOrCreate(target, UnitsDirectory, isSingleFilePreviewWithLinks)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
 				return
@@ -321,7 +322,7 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 			// open contents of new target
 			b, err := ioutil.ReadFile(newTarget)
 			if err != nil {
-				return "", fmt.Errorf("Could not read copied target file: %s\n", err)
+				return "", fmt.Errorf("Could not read copied target file: %s", err)
 			}
 			contents := string(b)
 			for _, pathToSub := range substringPaths {
@@ -334,7 +335,7 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 			// overwrite target file with the contents
 			err = ioutil.WriteFile(newTarget, []byte(contents), 0777)
 			if err != nil {
-				return "", fmt.Errorf("Could not write copied target file with cleaned up links: %s\n", err)
+				return "", fmt.Errorf("Could not write copied target file with cleaned up links: %s", err)
 			}
 		}
 		return newSrcPath, nil
