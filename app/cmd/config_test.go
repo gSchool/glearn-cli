@@ -10,7 +10,7 @@ import (
 const withConfigFixture = "../../fixtures/test-block-with-config"
 
 func Test_PreviewDetectsConfig(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withConfigFixture, "")
+	createdConfig, _ := doesConfigExistOrCreate(withConfigFixture, "", false)
 	if createdConfig {
 		t.Errorf("Created a config when one existed")
 	}
@@ -19,7 +19,7 @@ func Test_PreviewDetectsConfig(t *testing.T) {
 const withNoConfigFixture = "../../fixtures/test-block-no-config"
 
 func Test_PreviewBuildsAutoConfig(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, "")
+	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, "", false)
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
@@ -43,7 +43,7 @@ func Test_PreviewBuildsAutoConfig(t *testing.T) {
 const withNoUnitsDirFixture = "../../fixtures/test-block-no-units-dir"
 
 func Test_PreviewBuildsAutoConfigDeclaredUnitsDir(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoUnitsDirFixture, "foo")
+	createdConfig, _ := doesConfigExistOrCreate(withNoUnitsDirFixture, "foo", false)
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
