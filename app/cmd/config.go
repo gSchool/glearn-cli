@@ -47,7 +47,7 @@ func doesConfigExistOrCreate(target, unitsDir string, isSingleFilePreview bool) 
 		} else if os.IsNotExist(ymlExists) {
 			if isSingleFilePreview == false {
 				// Neither exists so we are going to create one
-				fmt.Printf("WARNING: No config was found, one will be generated for you. ")
+				fmt.Printf("INFO: No config was found, one will be generated for you. ")
 			}
 			if target == tmpSingleFileDir {
 				err := createAutoConfig(target, ".")
