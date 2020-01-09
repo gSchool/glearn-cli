@@ -91,7 +91,10 @@ func doesCurrentDirHaveConfig(currentDir string) (bool, bool) {
 func cloneTemplate() error {
 	_, err := exec.Command("bash", "-c", "git clone git@github.com:gSchool/learn-curriculum-init.git").CombinedOutput()
 	if err != nil {
-		return err
+		_, errr := exec.Command("bash", "-c", "git clone https://github.com/gSchool/learn-curriculum-init.git").CombinedOutput()
+		if errr != nil {
+			return errr
+		}
 	}
 
 	return nil
