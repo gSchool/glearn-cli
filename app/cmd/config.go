@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -195,22 +196,31 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	configFile.WriteString("---\n")
 	configFile.WriteString("Standards:\n")
 
-	for unit, paths := range unitToContentFileMap {
+	// sort unit keys in lexigraphical order
+	unitKeys := make([]string, 0, len(unitToContentFileMap))
+	for unit := range unitToContentFileMap {
+		unitKeys = append(unitKeys, unit)
+	}
+	sort.Strings(unitKeys)
+
+	formattedTargetName := formattedName(target)
+	for _, unit := range unitKeys {
 		configFile.WriteString("  -\n")
 
-		if formattedName(unit) != "" {
-			configFile.WriteString("    Title: " + formattedName(unit) + "\n")
+		formattedUnitName := formattedName(unit)
+		if formattedUnitName != "" {
+			configFile.WriteString("    Title: " + formattedUnitName + "\n")
 		} else {
-			configFile.WriteString("    Title: " + formattedName(target) + "\n")
+			configFile.WriteString("    Title: " + formattedTargetName + "\n")
 		}
 
-		var unitUID = []byte(formattedName(unit))
+		var unitUID = []byte(formattedUnitName)
 		var md5unitUID = md5.Sum(unitUID)
 
-		if formattedName(unit) != "" {
-			configFile.WriteString("    Description: " + formattedName(unit) + "\n")
+		if formattedUnitName != "" {
+			configFile.WriteString("    Description: " + formattedUnitName + "\n")
 		} else {
-			configFile.WriteString("    Description: " + formattedName(target) + "\n")
+			configFile.WriteString("    Description: " + formattedTargetName + "\n")
 		}
 
 		configFile.WriteString("    UID: " + hex.EncodeToString(md5unitUID[:]) + "\n")
@@ -218,12 +228,12 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 		configFile.WriteString("      - success criteria\n")
 		configFile.WriteString("    ContentFiles:\n")
 
-		for _, path := range paths {
+		for _, path := range unitToContentFileMap[unit] {
 			if path != "README.md" {
 				configFile.WriteString("      -\n")
 				configFile.WriteString("        Type: Lesson\n")
 
-				var cfUID = []byte(formattedName(unit) + path)
+				var cfUID = []byte(formattedUnitName + path)
 				var md5cfUID = md5.Sum(cfUID)
 
 				configFile.WriteString("        UID: " + hex.EncodeToString(md5cfUID[:]) + "\n")
@@ -256,6 +266,8 @@ func formattedName(name string) string {
 	for _, piece := range parts {
 		formattedName = formattedName + " " + strings.Title(piece)
 	}
-
-	return strings.TrimSpace(formattedName)
+	// remove leading numbers like '01'
+	a = regexp.MustCompile(`^([0-9]{1,3} :?)`)
+	parts = a.Split(strings.TrimSpace(formattedName), -1)
+	return strings.TrimSpace(strings.Join(parts, ""))
 }
