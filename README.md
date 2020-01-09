@@ -66,6 +66,8 @@ learn preview my_curriculum_directory
 
 Publishing an entire repo
 * add/commit/push to github
+* if block doesn't exist, create and publish new block
+* if block exists, update existing block and create new release
 ```
 learn publish
 ```
