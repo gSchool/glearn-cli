@@ -1,6 +1,6 @@
 # glearn-cli
 
-This is the command line interface for previewing and publishing Learn curriculum.
+This is the command line interface for previewing and publishing curriculum on Learn.
 
 ## Installation with Homebrew
 
