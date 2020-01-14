@@ -77,7 +77,7 @@ func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
 
 	config := string(b)
 
-	if strings.Contains(config, "Type: Checkpoint") {
+	if !strings.Contains(config, "Type: Checkpoint") {
 		t.Errorf("Autoconfig should have a content path of checkpoint but the type should not of changed")
 	}
 
@@ -93,7 +93,7 @@ func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
 		t.Errorf("Autoconfig should have a content file with a path of /units/instructor.md")
 	}
 
-	if strings.Contains(config, "Type: Resource") {
+	if !strings.Contains(config, "Type: Resource") {
 		t.Errorf("Autoconfig should have a content path of resource but the type should not of changed")
 	}
 

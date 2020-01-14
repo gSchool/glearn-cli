@@ -232,22 +232,20 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 			if path != "README.md" {
 				configFile.WriteString("      -\n")
 
-				contentFileType := "Lesson"
-				if strings.Contains(strings.ToLower(path), ".instructor.") {
-					path = strings.Replace(path, "instructor.", "", 1)
-					contentFileType = "Instructor"
-				} else if strings.Contains(strings.ToLower(path), ".resource.") {
-					path = strings.Replace(path, "resource.", "", 1)
-					contentFileType = "Resource"
-				} else if strings.Contains(strings.ToLower(path), ".checkpoint.") {
-					path = strings.Replace(path, "checkpoint.", "", 1)
-					contentFileType = "Checkpoint"
-				}
+				contentFileType, path := detectContentType(path)
 				configFile.WriteString("        Type: " + contentFileType + "\n")
 
-				if strings.Contains(strings.ToLower(path), ".hidden.") {
-					path = strings.Replace(path, "hidden.", "", 1)
+				if strings.Contains(strings.ToLower(path), "hidden.") {
+					if strings.Contains(strings.ToLower(path), ".hidden") {
+						path = strings.Replace(path, "hidden", "", 1)
+					} else if strings.Contains(strings.ToLower(path), "-hidden") {
+						path = strings.Replace(path, "-hidden", "", 1)
+					}
 					configFile.WriteString("        DefaultVisibility: hidden\n")
+				}
+
+				if strings.Contains(strings.ToLower(path), "..") {
+					path = strings.Replace(path, "..", ".", 1)
 				}
 
 				var cfUID = []byte(formattedUnitName + path)
@@ -269,15 +267,34 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	return nil
 }
 
+func detectContentType(path string) (string, string) {
+	if strings.Contains(strings.ToLower(path), "instructor.") {
+		if strings.Contains(strings.ToLower(path), ".instructor.") {
+			path = strings.Replace(path, ".instructor", "", 1)
+		}
+		return "Instructor", path
+	} else if strings.Contains(strings.ToLower(path), "resource.") {
+		if strings.Contains(strings.ToLower(path), ".resource.") {
+			path = strings.Replace(path, ".resource", "", 1)
+		}
+		return "Resource", path
+	} else if strings.Contains(strings.ToLower(path), "checkpoint.") {
+		if strings.Contains(strings.ToLower(path), ".checkpoint.") {
+			path = strings.Replace(path, ".checkpoint", "", 1)
+		}
+		return "Checkpoint", path
+	}
+	return "Lesson", path
+}
+
 func formattedName(name string) string {
 	parts := strings.Split(name, "/")
-	parts = strings.Split(parts[len(parts)-1], ".")
 
 	a := regexp.MustCompile(`\-`)
-	fmt.Println(strings.Join(parts, " "))
-	if len(parts) >= 2 {
-		parts = a.Split(parts[1], -1)
-	} else {
+	parts = a.Split(parts[0], -1)
+
+	if len(parts) == 1 {
+		a = regexp.MustCompile(`\.`)
 		parts = a.Split(parts[0], -1)
 	}
 

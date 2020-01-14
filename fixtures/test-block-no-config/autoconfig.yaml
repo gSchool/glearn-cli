@@ -15,7 +15,7 @@ Standards:
       - success criteria
     ContentFiles:
       -
-        Type: Lesson
+        Type: Checkpoint
         UID: 9dc2e6ee10eeb8cbfd1689877f3e706e
         Path: /units/01-checkpoint/checkpoint.md
   -
@@ -26,7 +26,7 @@ Standards:
       - success criteria
     ContentFiles:
       -
-        Type: Lesson
+        Type: Resource
         UID: c0cc1a4bc4286fe554479f82f08788d5
         Path: /units/03.resource/resource.md
   -
@@ -42,9 +42,14 @@ Standards:
         UID: 61d23abfa61f488bb43e0fd147767c26
         Path: /units/file.file.md
       -
+        Type: Resource
+        DefaultVisibility: hidden
+        UID: 4bb9acfdd742d9cc74ca00ff4bfe28f3
+        Path: /units/hidden.md
+      -
         Type: Instructor
-        UID: 396360cadb86098a41868c634952dea6
-        Path: /units/teacher.md
+        UID: e2cb916b740d6a949e05ebc1966b121d
+        Path: /units/teacher-instructor.md
       -
         Type: Lesson
         UID: 03295c99fd9e90b8d3cebacf3840b1d7
