@@ -63,3 +63,71 @@ func Test_PreviewBuildsAutoConfigDeclaredUnitsDir(t *testing.T) {
 		t.Errorf("Autoconfig should have a lesson with a path of /foo/test.md")
 	}
 }
+
+func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
+	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, "", false)
+	if createdConfig == false {
+		t.Errorf("Should of created a config file")
+	}
+
+	b, err := ioutil.ReadFile(withNoConfigFixture + "/autoconfig.yaml")
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	config := string(b)
+
+	if !strings.Contains(config, "Type: Checkpoint") {
+		t.Errorf("Autoconfig should have a content path of checkpoint but the type should not of changed")
+	}
+
+	if !strings.Contains(config, "Path: /units/01-checkpoint/checkpoint.md") {
+		t.Errorf("Autoconfig should have a contentfile with a path of /units/01-checkpoint/checkpoint.md")
+	}
+
+	if !strings.Contains(config, "Type: Instructor") {
+		t.Errorf("Autoconfig should have a content file of type Instructor")
+	}
+
+	if !strings.Contains(config, "Path: /units/test.md") {
+		t.Errorf("Autoconfig should have a content file with a path of /units/instructor.md")
+	}
+
+	if !strings.Contains(config, "Type: Resource") {
+		t.Errorf("Autoconfig should have a content path of resource but the type should not of changed")
+	}
+
+	if !strings.Contains(config, "Path: /units/03.resource/resource.md") {
+		t.Errorf("Autoconfig should have a content file with a path of /units/03.resource/resource.md")
+	}
+
+	if !strings.Contains(config, "DefaultVisibility: hidden") {
+		t.Errorf("Autoconfig should have a content file of with a DefaultVisibility of hidden")
+	}
+
+	if !strings.Contains(config, "Path: /units/file.file.md") {
+		t.Errorf("Autoconfig should have a content file with a path of /units/file.file.md")
+	}
+}
+
+func Test_IgnoresFilesAndUnitsThatStartWithTwoUnderscores(t *testing.T) {
+	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, "", false)
+	if createdConfig == false {
+		t.Errorf("Should of created a config file")
+	}
+
+	b, err := ioutil.ReadFile(withNoConfigFixture + "/autoconfig.yaml")
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	config := string(b)
+
+	if strings.Contains(config, "__skip") {
+		t.Errorf("Autoconfig have units that start with __")
+	}
+
+	if strings.Contains(config, "__skipthis.md") {
+		t.Errorf("Autoconfig have contentfiles that start with __")
+	}
+}
