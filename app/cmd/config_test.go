@@ -77,24 +77,24 @@ func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
 
 	config := string(b)
 
-	if !strings.Contains(config, "Type: Checkpoint") {
-		t.Errorf("Autoconfig should have a content file of type checkpoint")
+	if strings.Contains(config, "Type: Checkpoint") {
+		t.Errorf("Autoconfig should have a content path of checkpoint but the type should not of changed")
 	}
 
 	if !strings.Contains(config, "Path: /units/checkpoint.md") {
-		t.Errorf("Autoconfig should have a checkpoint with a path of /units/checkpoint.md")
+		t.Errorf("Autoconfig should have a contentfile with a path of /units/checkpoint.md")
 	}
 
 	if !strings.Contains(config, "Type: Instructor") {
 		t.Errorf("Autoconfig should have a content file of type Instructor")
 	}
 
-	if !strings.Contains(config, "Path: /units/instructor.md") {
+	if !strings.Contains(config, "Path: /units/test.md") {
 		t.Errorf("Autoconfig should have a content file with a path of /units/instructor.md")
 	}
 
-	if !strings.Contains(config, "Type: Resource") {
-		t.Errorf("Autoconfig should have a content file of type resource")
+	if strings.Contains(config, "Type: Resource") {
+		t.Errorf("Autoconfig should have a content path of resource but the type should not of changed")
 	}
 
 	if !strings.Contains(config, "Path: /units/resource.md") {
@@ -105,7 +105,7 @@ func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
 		t.Errorf("Autoconfig should have a content file of with a DefaultVisibility of hidden")
 	}
 
-	if !strings.Contains(config, "Path: /units/hidden.file.md") {
-		t.Errorf("Autoconfig should have a content file with a path of /units/hidden.file.md")
+	if !strings.Contains(config, "Path: /units/file.file.md") {
+		t.Errorf("Autoconfig should have a content file with a path of /units/file.file.md")
 	}
 }

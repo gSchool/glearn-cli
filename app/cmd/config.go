@@ -233,16 +233,20 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 				configFile.WriteString("      -\n")
 
 				contentFileType := "Lesson"
-				if strings.Contains(strings.ToLower(path), "instructor.") {
+				if strings.Contains(strings.ToLower(path), ".instructor.") {
+					path = strings.Replace(path, "instructor.", "", 1)
 					contentFileType = "Instructor"
-				} else if strings.Contains(strings.ToLower(path), "resource.") {
+				} else if strings.Contains(strings.ToLower(path), ".resource.") {
+					path = strings.Replace(path, "resource.", "", 1)
 					contentFileType = "Resource"
-				} else if strings.Contains(strings.ToLower(path), "checkpoint.") {
+				} else if strings.Contains(strings.ToLower(path), ".checkpoint.") {
+					path = strings.Replace(path, "checkpoint.", "", 1)
 					contentFileType = "Checkpoint"
 				}
 				configFile.WriteString("        Type: " + contentFileType + "\n")
 
-				if strings.Contains(strings.ToLower(path), "hidden.") {
+				if strings.Contains(strings.ToLower(path), ".hidden.") {
+					path = strings.Replace(path, "hidden.", "", 1)
 					configFile.WriteString("        DefaultVisibility: hidden\n")
 				}
 
