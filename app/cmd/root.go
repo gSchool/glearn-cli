@@ -71,6 +71,9 @@ var UnitsDirectory string
 // and only upload the markdown file
 var FileOnly bool
 
+// OpenPreview is the flag boolean which will open the preview in browser
+var OpenPreview bool
+
 func init() {
 	u, err := user.Current()
 	if err != nil {
@@ -113,6 +116,7 @@ func init() {
 	// Check for flags set by the user and hyrate their corresponding variables.
 	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
 	previewCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
+	previewCmd.Flags().BoolVarP(&OpenPreview, "open", "o", false, "Open the preview in the browser")
 	previewCmd.Flags().BoolVarP(&FileOnly, "fileonly", "x", false, "E(x)cludes images when previewing a single file, defaults false")
 	publishCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
 }
