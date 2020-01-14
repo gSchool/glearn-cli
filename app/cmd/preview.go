@@ -221,7 +221,9 @@ preview and return/open the preview URL when it is complete.
 		s.Stop()
 		printlnGreen("√")
 
-		exec.Command("bash", "-c", fmt.Sprintf("open %s", res.PreviewURL)).Output()
+		if OpenPreview {
+			exec.Command("bash", "-c", fmt.Sprintf("open %s", res.PreviewURL)).Output()
+		}
 
 		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
 			CLIBenchmark: bench,
