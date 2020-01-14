@@ -15,6 +15,23 @@ Standards:
       - success criteria
     ContentFiles:
       -
+        Type: Checkpoint
+        UID: 3c8c5dcf0a6bd1931a9a7fb98d9ae97c
+        Path: /units/checkpoint.md
+      -
+        Type: Lesson
+        DefaultVisibility: hidden
+        UID: 2a2eef8690be96f7b6fe23d8039e5235
+        Path: /units/hidden.file.md
+      -
+        Type: Instructor
+        UID: 62782169bdbbedffc2a9025a419a774a
+        Path: /units/instructor.md
+      -
+        Type: Resource
+        UID: 8b86b2cc2aeab710d342a8652dd692d5
+        Path: /units/resource.md
+      -
         Type: Lesson
         UID: 03295c99fd9e90b8d3cebacf3840b1d7
         Path: /units/test.md

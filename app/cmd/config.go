@@ -231,7 +231,20 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 		for _, path := range unitToContentFileMap[unit] {
 			if path != "README.md" {
 				configFile.WriteString("      -\n")
-				configFile.WriteString("        Type: Lesson\n")
+
+				contentFileType := "Lesson"
+				if strings.Contains(strings.ToLower(path), "instructor.") {
+					contentFileType = "Instructor"
+				} else if strings.Contains(strings.ToLower(path), "resource.") {
+					contentFileType = "Resource"
+				} else if strings.Contains(strings.ToLower(path), "checkpoint.") {
+					contentFileType = "Checkpoint"
+				}
+				configFile.WriteString("        Type: " + contentFileType + "\n")
+
+				if strings.Contains(strings.ToLower(path), "hidden.") {
+					configFile.WriteString("        DefaultVisibility: hidden\n")
+				}
 
 				var cfUID = []byte(formattedUnitName + path)
 				var md5cfUID = md5.Sum(cfUID)
