@@ -85,7 +85,7 @@ func NewAPI(baseURL string, client api.Client) (*APIClient, error) {
 	creds, err := apiClient.RetrieveCredentials()
 	if err != nil {
 		return nil, errors.New(
-			"Could not retrieve credentials from Learn. Please reset your API token with this command: glearn set --api_token=your-token-from-https://learn-2.galvanize.com/api_token",
+			"Could not retrieve credentials from Learn. Please reset your API token with this command: learn set --api_token=your-token-from-https://learn-2.galvanize.com/api_token",
 		)
 	}
 
@@ -100,7 +100,7 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 	// Early return if user's api_token is not set
 	apiToken, ok := viper.Get("api_token").(string)
 	if !ok {
-		return nil, errors.New("Please set your API token with this command: glearn set --api_token=your-token-from-https://learn-2.galvanize.com/api_token")
+		return nil, errors.New("Please set your API token with this command: learn set --api_token=your-token-from-https://learn-2.galvanize.com/api_token")
 	}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/users/learn_cli_credentials", api.baseURL), nil)
