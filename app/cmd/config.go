@@ -34,7 +34,7 @@ func doesConfigExistOrCreate(target, unitsDir string, isSingleFilePreview bool) 
 
 	if yamlExists == nil { // Yaml exists
 		if isSingleFilePreview == false {
-			fmt.Printf("INFO: There is a config present so one will not be generated. ")
+			fmt.Printf("INFO: Using existing config.yaml. ")
 		}
 		return createdConfig, nil
 	} else if os.IsNotExist(yamlExists) {
@@ -42,13 +42,13 @@ func doesConfigExistOrCreate(target, unitsDir string, isSingleFilePreview bool) 
 
 		if ymlExists == nil { // Yml exists
 			if isSingleFilePreview == false {
-				fmt.Printf("INFO: There is a config present so one will not be generated. ")
+				fmt.Printf("INFO: Using existing config.yaml. ")
 			}
 			return createdConfig, nil
 		} else if os.IsNotExist(ymlExists) {
 			if isSingleFilePreview == false {
 				// Neither exists so we are going to create one
-				fmt.Printf("INFO: No config was found, one will be generated for you. ")
+				fmt.Printf("INFO: No configuration found, generating autoconfig.yaml ")
 			}
 			if target == tmpSingleFileDir {
 				err := createAutoConfig(target, ".")
