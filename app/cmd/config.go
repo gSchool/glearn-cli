@@ -274,7 +274,12 @@ func formattedName(name string) string {
 	parts = strings.Split(parts[len(parts)-1], ".")
 
 	a := regexp.MustCompile(`\-`)
-	parts = a.Split(parts[0], -1)
+	fmt.Println(strings.Join(parts, " "))
+	if len(parts) >= 2 {
+		parts = a.Split(parts[1], -1)
+	} else {
+		parts = a.Split(parts[0], -1)
+	}
 
 	a = regexp.MustCompile(`\_`)
 	parts = a.Split(strings.Join(parts, " "), -1)
