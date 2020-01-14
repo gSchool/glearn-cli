@@ -205,6 +205,10 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 
 	formattedTargetName := formattedName(target)
 	for _, unit := range unitKeys {
+		parts := strings.Split(unit, "/")
+		if strings.HasPrefix(parts[0], "__") {
+			continue
+		}
 		configFile.WriteString("  -\n")
 
 		formattedUnitName := formattedName(unit)
@@ -229,6 +233,10 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 		configFile.WriteString("    ContentFiles:\n")
 
 		for _, path := range unitToContentFileMap[unit] {
+			parts := strings.Split(path, "/")
+			if strings.HasPrefix(parts[len(parts)-1], "__") {
+				continue
+			}
 			if path != "README.md" {
 				configFile.WriteString("      -\n")
 

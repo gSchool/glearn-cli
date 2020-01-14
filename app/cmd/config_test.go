@@ -109,3 +109,25 @@ func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
 		t.Errorf("Autoconfig should have a content file with a path of /units/file.file.md")
 	}
 }
+
+func Test_IgnoresFilesAndUnitsThatStartWithTwoUnderscores(t *testing.T) {
+	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, "", false)
+	if createdConfig == false {
+		t.Errorf("Should of created a config file")
+	}
+
+	b, err := ioutil.ReadFile(withNoConfigFixture + "/autoconfig.yaml")
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	config := string(b)
+
+	if strings.Contains(config, "__skip") {
+		t.Errorf("Autoconfig have units that start with __")
+	}
+
+	if strings.Contains(config, "__skipthis.md") {
+		t.Errorf("Autoconfig have contentfiles that start with __")
+	}
+}
