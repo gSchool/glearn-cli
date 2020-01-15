@@ -84,12 +84,12 @@ new block. If the block already exists, it will update the existing block.
 		}
 
 		if branch != "master" {
-			fmt.Println("You are currently not on branch 'master'- the `learn publish` command must be on master branch to push all currently committed work to your 'origin master' remote.")
+			fmt.Println("This command only supports publishing from branch 'master'. To publish from a branch go to https://learn-2.galvanize.com -> Setup -> Repos.")
 			os.Exit(1)
 		}
 
 		if createdConfig {
-			fmt.Println("We are going to attempt to commit the autoconfig.yaml to", branch)
+			fmt.Println("Committing autoconfig.yaml to", branch)
 			err = addAutoConfigAndCommit()
 
 			if err != nil {
@@ -111,7 +111,7 @@ new block. If the block already exists, it will update the existing block.
 		startOfMasterReleaseAndBuild := time.Now()
 
 		// Start a processing spinner that runs until Learn is finsihed building the preview
-		fmt.Println("\nPlease wait while Learn builds your release...")
+		fmt.Println("\nBuilding release...")
 		s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
 		s.Color("green")
 		s.FinalMSG = fmt.Sprintf("Block %d released!\n", block.ID)
