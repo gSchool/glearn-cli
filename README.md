@@ -8,8 +8,10 @@ Install
 ```
 brew tap gSchool/learn
 brew install learn
-learn set --api_token={your token from https://learn-2.galvanize.com/api_token}
+learn set --api_token=YOUR_LEARN_API_TOKEN
 ```
+
+You can get your Learn API token form https://learn-2.galvanize.com/api_token
 
 Update
 ```
