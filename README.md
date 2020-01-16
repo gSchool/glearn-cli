@@ -11,7 +11,7 @@ brew install learn
 learn set --api_token=YOUR_LEARN_API_TOKEN
 ```
 
-You can get your Learn API token form https://learn-2.galvanize.com/api_token
+You can get your Learn API token from https://learn-2.galvanize.com/api_token
 
 Update
 ```
