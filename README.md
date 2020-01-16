@@ -1,4 +1,4 @@
-# glearn-cli
+# learn-cli
 
 This is the command line interface for previewing and publishing curriculum on Learn.
 
