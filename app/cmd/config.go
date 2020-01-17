@@ -240,15 +240,10 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 			if path != "README.md" {
 				configFile.WriteString("      -\n")
 
-				contentFileType, path := detectContentType(path)
+				contentFileType := detectContentType(path)
 				configFile.WriteString("        Type: " + contentFileType + "\n")
 
-				if strings.Contains(strings.ToLower(path), "hidden.") {
-					if strings.Contains(strings.ToLower(path), ".hidden") {
-						path = strings.Replace(path, "hidden", "", 1)
-					} else if strings.Contains(strings.ToLower(path), "-hidden") {
-						path = strings.Replace(path, "-hidden", "", 1)
-					}
+				if strings.Contains(strings.ToLower(path), "hidden") {
 					configFile.WriteString("        DefaultVisibility: hidden\n")
 				}
 
@@ -275,24 +270,16 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	return nil
 }
 
-func detectContentType(path string) (string, string) {
-	if strings.Contains(strings.ToLower(path), "instructor.") {
-		if strings.Contains(strings.ToLower(path), ".instructor.") {
-			path = strings.Replace(path, ".instructor", "", 1)
-		}
-		return "Instructor", path
-	} else if strings.Contains(strings.ToLower(path), "resource.") {
-		if strings.Contains(strings.ToLower(path), ".resource.") {
-			path = strings.Replace(path, ".resource", "", 1)
-		}
-		return "Resource", path
-	} else if strings.Contains(strings.ToLower(path), "checkpoint.") {
-		if strings.Contains(strings.ToLower(path), ".checkpoint.") {
-			path = strings.Replace(path, ".checkpoint", "", 1)
-		}
-		return "Checkpoint", path
+func detectContentType(path string) string {
+	path = strings.ToLower(path)
+	if strings.Contains(path, "instructor") {
+		return "Instructor"
+	} else if strings.Contains(path, "checkpoint") {
+		return "Checkpoint"
+	} else if strings.Contains(path, "resource") {
+		return "Resource"
 	}
-	return "Lesson", path
+	return "Lesson"
 }
 
 func formattedName(name string) string {

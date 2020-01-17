@@ -539,16 +539,7 @@ func compressDirectory(source, target string) error {
 			// Check if baseDir has been set (from the IsDir check) and if it has not been
 			// set, update the header.Name to reflect the correct path
 			if baseDir != "" {
-				filePath := filepath.Join(baseDir, strings.TrimPrefix(path, source))
-				_, scrubbedType := detectContentType(filePath)
-
-				if strings.Contains(strings.ToLower(scrubbedType), ".hidden") {
-					scrubbedType = strings.Replace(scrubbedType, ".hidden", "", 1)
-				} else if strings.Contains(strings.ToLower(scrubbedType), "-hidden") {
-					scrubbedType = strings.Replace(scrubbedType, "-hidden", "", 1)
-				}
-
-				header.Name = scrubbedType
+				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
 			}
 
 			// Check if the file we are iterating is a directory and update the header.Name
