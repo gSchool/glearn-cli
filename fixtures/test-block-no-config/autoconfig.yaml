@@ -39,13 +39,13 @@ Standards:
       -
         Type: Lesson
         DefaultVisibility: hidden
-        UID: 61d23abfa61f488bb43e0fd147767c26
-        Path: /units/file.file.md
+        UID: fa17889419368b299a1a133d631c2220
+        Path: /units/file.hidden.file.md
       -
         Type: Resource
         DefaultVisibility: hidden
-        UID: 4bb9acfdd742d9cc74ca00ff4bfe28f3
-        Path: /units/hidden.md
+        UID: 2359128cd306beec92d33a11156a993a
+        Path: /units/hidden.resource.md
       -
         Type: Instructor
         UID: e2cb916b740d6a949e05ebc1966b121d
