@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var newCmd = &cobra.Command{
-	Use:   "new",
-	Short: "Create a new curriculum repository from a template",
-	Long:  "Create a new curriculum repository from a template",
+var guideCmd = &cobra.Command{
+	Use:   "guide",
+	Short: "Create a new curriculum repository from a guide template",
+	Long:  "Create a new curriculum repository from a guide template",
 	Args:  cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get the current directory
@@ -27,7 +27,7 @@ var newCmd = &cobra.Command{
 		hasConfig, _ := doesCurrentDirHaveConfig(currentDir)
 
 		if hasConfig {
-			fmt.Println("WARNING: configuration file detected and cannot continue with `learn new` command.")
+			fmt.Println("WARNING: configuration file detected and cannot continue with `learn guide` command.")
 			os.Exit(1)
 		}
 
