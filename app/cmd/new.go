@@ -54,10 +54,9 @@ var newCmd = &cobra.Command{
 Success!
 ========
 
-See repo structure guidelines in readme.md
+A small example curriculum and a getting started guide have been added to this directory.
 
-Run 'learn preview .' to preview curriculum without pushing
-Run 'learn publish' to push to Github and publish to Learn
+Run 'learn preview -o hello-world.md' to begin!
 		`)
 	},
 }
