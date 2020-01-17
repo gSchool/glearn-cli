@@ -4,50 +4,76 @@ This is the command line interface for previewing and publishing curriculum on L
 
 ## Installation with Homebrew
 
-Install
+### Install
 ```
 brew tap gSchool/learn
+```
+```
 brew install learn
+```
+```
 learn set --api_token=YOUR_LEARN_API_TOKEN
 ```
 
 You can get your Learn API token from https://learn-2.galvanize.com/api_token
 
-Update
+### Get Started
+
+Create a temp directory somewhere
+```
+mkdir test-content && cd test-content
+```
+
+Then run
+```
+learn new
+```
+
+### Update
 ```
 brew upgrade learn
 ```
 
-Uninstall
+### Uninstall
 ```
 brew uninstall learn
 ```
 
-## Getting Started
-
-```
-mkdir test-content && cd test-content
-learn new
-```
-Follow directions in `test-content/README.md`
-
 ## Alternatives to Homebrew
 
-Use curl on Mac
+### Install
+
+Option: Use curl on Mac
 ```
 curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Darwin_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
 ```
 
-Use curl on Linux
+Option: Use curl on Linux
 ```
 curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Linux_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
 ```
 
-Download binaries for all platforms directly from
+Option: Download binaries for all platforms directly from
 https://github.com/gSchool/glearn-cli/releases
 
 After using any of these options, set your API token with
-`learn set --api_token={your token from https://learn-2.galvanize.com/api_token}` or setting `api_token` directly in `~/.glearn-config.yaml`.
+```
+learn set --api_token=YOUR_LEARN_API_TOKEN
+```
+
+You can get your Learn API token from https://learn-2.galvanize.com/api_token
+
+### Get Started
+
+Create a temp directory somewhere
+```
+mkdir test-content && cd test-content
+```
+
+Then run
+```
+learn new
+```
 
 ## Example Usage
 
