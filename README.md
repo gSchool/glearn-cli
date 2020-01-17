@@ -26,7 +26,7 @@ mkdir test-content && cd test-content
 
 Then run
 ```
-learn new
+learn guide
 ```
 
 ### Update
