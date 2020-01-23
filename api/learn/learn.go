@@ -15,6 +15,10 @@ import (
 // API is the exported APIClient, it is set during Init
 var API *APIClient
 
+// Learn data used for reporting
+var LearnUserId string
+var LearnUserEmail string
+
 // APIClient makes network API calls to Learn
 type APIClient struct {
 	client      api.Client
@@ -53,8 +57,10 @@ type APIToken struct {
 // CredentialsResponse describes the shape of the return data from the call
 // to RetrieveCredentials
 type CredentialsResponse struct {
-	S3    S3Credentials    `json:"s3"`
-	Slack SlackCredentials `json:"slack"`
+	UserId string           `json:"user_id"`
+	Email  string           `json:"user_email"`
+	S3     S3Credentials    `json:"s3"`
+	Slack  SlackCredentials `json:"slack"`
 }
 
 // CLIBenchmarkPayload is the shape of the payload to send to Learn's learn_cli_metadata
@@ -124,6 +130,10 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 	var c CredentialsResponse
 
 	err = json.NewDecoder(res.Body).Decode(&c)
+
+	LearnUserId = c.UserId
+	LearnUserEmail = c.Email
+
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +198,7 @@ func (api *APIClient) NotifySlack(err error) {
 	msg := struct {
 		Text string `json:"text"`
 	}{
-		Text: fmt.Sprintf("%s", err),
+		Text: fmt.Sprintf("UserId: %s\nUserEmail: %s\n%s", LearnUserId, LearnUserEmail, err),
 	}
 
 	bytePostData, err := json.Marshal(msg)
