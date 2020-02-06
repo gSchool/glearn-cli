@@ -56,7 +56,7 @@ Success!
 
 A small example curriculum and a getting started guide have been added to this directory.
 
-Run 'learn preview -o hello-world.md' to begin!
+Run 'learn preview -o getting-started.md' to begin!
 		`)
 	},
 }
