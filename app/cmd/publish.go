@@ -74,16 +74,16 @@ new block. If the block already exists, it will update the existing block.
 			os.Exit(1)
 		}
 
+		if branch != "master" {
+			fmt.Printf("Branch publishing is cohort-specific. To continue publishing from branch '%s', go to https://learn-2.galvanize.com/cohorts/<cohortID>/setup and click the 'recycle' button for this repo.\n", branch)
+			os.Exit(1)
+		}
+
 		// Detect config file
 		path, _ := os.Getwd()
 		createdConfig, err := doesConfigExistOrCreate(path+"/", UnitsDirectory, false)
 		if err != nil {
 			fmt.Printf(fmt.Sprintf("Failed to find or create a config file for repo: (%s). Err: %v", branch, err))
-			os.Exit(1)
-		}
-
-		if branch != "master" {
-			fmt.Printf("Branch publishing is cohort-specific. To continue publishing from branch '%s', go to https://learn-2.galvanize.com/cohorts/<cohortID>/setup and click the 'recycle' button for this repo.\n", branch)
 			os.Exit(1)
 		}
 		fmt.Printf("Publishing block with repo name %s\n", remote)
