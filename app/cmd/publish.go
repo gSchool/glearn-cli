@@ -54,7 +54,6 @@ new block. If the block already exists, it will update the existing block.
 			fmt.Println("no fetch remote detected")
 			os.Exit(1)
 		}
-		fmt.Printf("Publishing block with repo name %s\n", remote)
 
 		block, err := learn.API.GetBlockByRepoName(remote)
 		if err != nil {
@@ -84,9 +83,10 @@ new block. If the block already exists, it will update the existing block.
 		}
 
 		if branch != "master" {
-			fmt.Println("This command only supports publishing from branch 'master'. To publish from a branch go to https://learn-2.galvanize.com -> Setup -> Repos.")
+			fmt.Printf("Branch publishing is cohort-specific. To continue publishing from branch '%s', go to https://learn-2.galvanize.com/cohorts/<cohortID>/setup and click the 'recycle' button for this repo.\n", branch)
 			os.Exit(1)
 		}
+		fmt.Printf("Publishing block with repo name %s\n", remote)
 
 		if createdConfig {
 			fmt.Println("Committing autoconfig.yaml to", branch)
