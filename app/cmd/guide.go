@@ -11,10 +11,11 @@ import (
 )
 
 var guideCmd = &cobra.Command{
-	Use:   "guide",
-	Short: "Create a new curriculum repository from a guide template",
-	Long:  "Create a new curriculum repository from a guide template",
-	Args:  cobra.MinimumNArgs(0),
+	Use:     "walkthrough",
+	Aliases: []string{"guide"},
+	Short:   "Download examples for use in the walkthrough",
+	Long:    "Download examples for use in the walkthrough",
+	Args:    cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get the current directory
 		currentDir, err := os.Getwd()
@@ -27,7 +28,7 @@ var guideCmd = &cobra.Command{
 		hasConfig, _ := doesCurrentDirHaveConfig(currentDir)
 
 		if hasConfig {
-			fmt.Println("WARNING: configuration file detected and cannot continue with `learn guide` command.")
+			fmt.Println("WARNING: configuration file detected and cannot continue with `learn walkthrough` command.")
 			os.Exit(1)
 		}
 
@@ -54,10 +55,7 @@ var guideCmd = &cobra.Command{
 Success!
 ========
 
-A small example curriculum and a getting started guide have been added to this directory.
-
-Run 'learn preview -o getting-started.md' to begin!
-		`)
+A small example curriculum for use with the walkthrough at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/01-overview.md has been added to this directory.`)
 	},
 }
 

@@ -20,14 +20,25 @@ You can get your api token at https://learn-2.galvanize.com/api_token
 `
 
 // currentReleaseVersion is used to print the version the user currently has downloaded
-const currentReleaseVersion = "v0.6.93"
+const currentReleaseVersion = "v0.6.94"
 
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
 var rootCmd = &cobra.Command{
 	Use:   "learn [command]",
 	Short: "learn is a CLI tool for communicating with Learn",
-	Long:  "learn is a CLI tool for communicating with Learn",
+	Long: `learn is a CLI tool for communicating with Learn
+
+Edit existing curriculum:
+  1. Clone and edit curriculum
+  2. Preview your changes. Run:
+      learn preview -o <directory/filename>
+  3. Add/commit/push
+  4. Publish changes for any cohort in Learn. Run:
+      learn publish
+
+Learn more and build new curriculum:
+  walkthrough at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/01-overview.md`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("Requires at least 1 argument")

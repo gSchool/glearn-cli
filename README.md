@@ -19,14 +19,10 @@ You can get your Learn API token from https://learn-2.galvanize.com/api_token
 
 ### Get Started
 
-Create a temp directory somewhere
-```
-mkdir test-content && cd test-content
-```
+Run
 
-Then run
 ```
-learn guide
+learn help
 ```
 
 ### Update
