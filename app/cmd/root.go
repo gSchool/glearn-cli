@@ -104,7 +104,7 @@ func init() {
 			initialConfig := []byte(`api_token:`)
 
 			// Write a ~/.glearn-config.yaml file with all the needed credential keys to fill in.
-			err = ioutil.WriteFile(configPath, initialConfig, 0666)
+			err = ioutil.WriteFile(configPath, initialConfig, 0600)
 			if err != nil {
 				fmt.Println("Error writing your glearn config file")
 				os.Exit(1)
