@@ -45,7 +45,7 @@ const tmpSingleFileDir string = "single-file-upload"
 // 5. Notify learn that new content is available for building.
 // 6. Handle progress bar for s3 upload.
 var previewCmd = &cobra.Command{
-	Use:   "preview [file_path]",
+	Use:   "preview [options] <directory|file_path>",
 	Short: "Uploads content and builds a preview.",
 	Long: `
 The preview command takes a path to either a directory or a single file and
