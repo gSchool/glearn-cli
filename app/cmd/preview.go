@@ -317,17 +317,14 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 			if strings.HasSuffix(sourceLinkPath, ".sql") {
 				useThisPath := ""
 				parent := "../" + sourceLinkPath
-				parentParent := "../../" + sourceLinkPath
-				parentParentParent := "../../../" + sourceLinkPath
-				_, parentExists := os.Stat(parent)
-				_, parentParentExists := os.Stat(parentParent)
-				_, parentParentParentExists := os.Stat(parentParentParent)
-				if parentExists == nil {
-					useThisPath = parent
-				} else if parentParentExists == nil {
-					useThisPath = parentParent
-				} else if parentParentParentExists == nil {
-					useThisPath = parentParentParent
+				for i := 1; i <= 5; i++ {
+					_, parentExists := os.Stat(parent)
+					if parentExists == nil {
+						useThisPath = parent
+						break
+					} else {
+						parent = "../" + parent
+					}
 				}
 
 				if useThisPath != "" {
