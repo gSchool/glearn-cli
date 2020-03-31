@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"archive/zip"
+	"bufio"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
@@ -88,8 +89,10 @@ preview and return/open the preview URL when it is complete.
 		// If it is a single file preview we need to parse the target for any md link tags
 		// linking to local files. If there are any, add them to the target
 		var singleFileLinkPaths []string
+		var dataPaths []string
 		if includeLinks {
 			if filepath.Ext(target) == ".md" {
+				dataPaths, err = collectDataPaths(target)
 				singleFileLinkPaths, err = collectLinkPaths(target)
 				if err != nil {
 					previewCmdError(fmt.Sprintf("Failed to attach local images for single file preview for: (%s). Err: %v", target, err))
@@ -101,10 +104,11 @@ preview and return/open the preview URL when it is complete.
 			}
 		}
 		fileContainsLinks := len(singleFileLinkPaths) > 0
+		fileContainsSQLPaths := len(dataPaths) > 0
 
 		// variable holding whether or not source is a dir OR when it is a single file preview
 		// AND singleFileLinkPaths is > 0 that means it is now a dir again (tmp one we created)
-		isSingleFilePreviewWithLinks := !isDirectory && fileContainsLinks
+		isSingleFilePreviewWithLinks := !isDirectory && (fileContainsLinks || fileContainsSQLPaths)
 		isDirectory = isDirectory || (!isDirectory && fileContainsLinks)
 
 		if fileContainsLinks {
@@ -115,8 +119,16 @@ preview and return/open the preview URL when it is complete.
 			}
 		}
 
+		if fileContainsSQLPaths {
+			target, err = createNewTarget(target, dataPaths)
+			if err != nil {
+				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
+				return
+			}
+		}
+
 		// Detect config file
-		if fileContainsLinks || isDirectory {
+		if fileContainsLinks || fileContainsSQLPaths || isDirectory {
 			_, err = doesConfigExistOrCreate(target, UnitsDirectory, isSingleFilePreviewWithLinks)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
@@ -192,7 +204,7 @@ preview and return/open the preview URL when it is complete.
 		startBuildAndPollRelease := time.Now()
 
 		// Let Learn know there is new preview content on s3, where it is, and to build it
-		res, err := learn.API.BuildReleaseFromS3(bucketKey, isDirectory)
+		res, err := learn.API.BuildReleaseFromS3(bucketKey, (isDirectory || fileContainsSQLPaths))
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to build new preview content in learn. Err: %v", err))
 			return
@@ -201,7 +213,7 @@ preview and return/open the preview URL when it is complete.
 		// If content is a directory, rewrite the res from polling for build response. Directories
 		// can take much longer to build, however single files build instantly so we do not need to
 		// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
-		if isDirectory {
+		if isDirectory || fileContainsSQLPaths {
 			var attempts uint8 = 30
 			res, err = learn.API.PollForBuildResponse(res.ReleaseID, &attempts)
 			if err != nil {
@@ -296,13 +308,37 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 		// to be nested in the .md file itself
 		targetArray := strings.Split(target, "/")
 		sourceLinkPath := trimFirstRune(imgPath)
-		if len(targetArray[:len(targetArray)-1]) != 0 {
+		if len(targetArray[:len(targetArray)-1]) != 0 && !strings.HasSuffix(sourceLinkPath, ".sql") {
 			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
 			sourceLinkPath = oneDirBackFromTarget + imgPath
 		}
 
 		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
-			log.Printf("Link not found with path '%s'\n", sourceLinkPath)
+			if strings.HasSuffix(sourceLinkPath, ".sql") {
+				useThisPath := ""
+				parent := "../" + sourceLinkPath
+				parentParent := "../../" + sourceLinkPath
+				parentParentParent := "../../../" + sourceLinkPath
+				_, parentExists := os.Stat(parent)
+				_, parentParentExists := os.Stat(parentParent)
+				_, parentParentParentExists := os.Stat(parentParentParent)
+				if parentExists == nil {
+					useThisPath = parent
+				} else if parentParentExists == nil {
+					useThisPath = parentParent
+				} else if parentParentParentExists == nil {
+					useThisPath = parentParentParent
+				}
+
+				if useThisPath != "" {
+					err = Copy(useThisPath, newSrcPath+linkDirs+"/"+imageName)
+					if err != nil {
+						return "", err
+					}
+				}
+			} else {
+				log.Printf("Link not found with path '%s'\n", sourceLinkPath)
+			}
 		} else {
 			// Copy the actual image into our new temp directory in it's appropriate spot
 			err = Copy(sourceLinkPath, newSrcPath+linkDirs+"/"+imageName)
@@ -373,6 +409,39 @@ func collectLinkPaths(target string) ([]string, error) {
 	m.ParseLinks()
 
 	return m.Links, nil
+}
+
+// collectDataPaths takes a target, reads it, and scans the file for data paths and collects them
+func collectDataPaths(target string) ([]string, error) {
+	contents, err := ioutil.ReadFile(target)
+	if err != nil {
+		return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+	}
+
+	if strings.Contains(string(contents), "* data_path: ") {
+		file, err := os.Open(target)
+		defer file.Close()
+		if err != nil {
+			return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+		}
+
+		dataPathsMap := map[string]string{}
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			if strings.Contains(scanner.Text(), "* data_path: ") {
+				s := strings.Replace(scanner.Text(), "* data_path: ", "", 1)
+				dataPathsMap[s] = s
+			}
+		}
+		ret := []string{}
+		for k := range dataPathsMap {
+			ret = append(ret, k)
+		}
+
+		return ret, nil
+	}
+
+	return []string{}, nil
 }
 
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
