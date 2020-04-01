@@ -20,7 +20,7 @@ You can get your api token at https://learn-2.galvanize.com/api_token
 `
 
 // currentReleaseVersion is used to print the version the user currently has downloaded
-const currentReleaseVersion = "v0.6.94"
+const currentReleaseVersion = "v0.7.0"
 
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
