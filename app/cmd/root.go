@@ -70,6 +70,7 @@ var fileExtWhitelist = map[string]struct{}{
 	".bmp":   struct{}{},
 	".svg":   struct{}{},
 	".svgz":  struct{}{},
+	".sql":   struct{}{},
 }
 
 // APIToken is an initialized string used for holding it's flag value

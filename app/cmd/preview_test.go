@@ -53,6 +53,20 @@ func Test_createNewTarget(t *testing.T) {
 	}
 }
 
+func Test_createNewTargetSingleFileThatIsSQL(t *testing.T) {
+	output := captureOutput(func() {
+		_, err := createNewTarget("test.md", []string{"/data/some.sql"})
+		_, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "data/some.sql"))
+		if err == nil {
+			t.Errorf("data/some.sql should have been copied over and it was not")
+		}
+	})
+
+	if strings.Contains(output, "Link not found with path") {
+		t.Errorf("output should not print 'Link not found with path', output was:\n%s\n", output)
+	}
+}
+
 func Test_createNewTargetSingleFile(t *testing.T) {
 	output := captureOutput(func() {
 		result, err := createNewTarget("test.md", []string{"./image/nested-small.png", "image/nested-small.png", "../nested-small.png"})
