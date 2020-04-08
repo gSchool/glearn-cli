@@ -15,7 +15,7 @@ import (
 )
 
 const setAPITokenMessage = `
-Please set your API token with this command: learn set --api_token=your_api_token 
+Please set your API token with this command: learn set --api_token=<your_api_token>
 You can get your api token at https://learn-2.galvanize.com/api_token
 `
 
@@ -32,8 +32,8 @@ var rootCmd = &cobra.Command{
 Edit existing curriculum:
   1. Clone and edit curriculum
   2. Preview your changes. Run:
-      learn preview -o <directory/filename>
-  3. Add/commit/push
+      learn preview -o <directory|file>
+  3. Git add / commit / push changes to the master branch
   4. Publish changes for any cohort in Learn. Run:
       learn publish
 
@@ -125,7 +125,7 @@ func init() {
 	rootCmd.AddCommand(publishCmd)
 	rootCmd.AddCommand(versionCmd)
 
-	// Check for flags set by the user and hyrate their corresponding variables.
+	// Check for flags set by the user and hydrate their corresponding variables.
 	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
 	previewCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
 	previewCmd.Flags().BoolVarP(&OpenPreview, "open", "o", false, "Open the preview in the browser")
