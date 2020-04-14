@@ -119,10 +119,11 @@ func init() {
 	}
 
 	// Add all the other learn commands defined in cmd/ directory
-	rootCmd.AddCommand(guideCmd)
-	rootCmd.AddCommand(setCmd)
+	rootCmd.AddCommand(copyCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(publishCmd)
+	rootCmd.AddCommand(guideCmd)
+	rootCmd.AddCommand(setCmd)
 	rootCmd.AddCommand(versionCmd)
 
 	// Check for flags set by the user and hydrate their corresponding variables.
