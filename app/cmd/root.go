@@ -20,7 +20,7 @@ You can get your api token at https://learn-2.galvanize.com/api_token
 `
 
 // currentReleaseVersion is used to print the version the user currently has downloaded
-const currentReleaseVersion = "v0.7.0"
+const currentReleaseVersion = "v0.8.0"
 
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
@@ -119,10 +119,11 @@ func init() {
 	}
 
 	// Add all the other learn commands defined in cmd/ directory
-	rootCmd.AddCommand(guideCmd)
-	rootCmd.AddCommand(setCmd)
+	rootCmd.AddCommand(markdownCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(publishCmd)
+	rootCmd.AddCommand(guideCmd)
+	rootCmd.AddCommand(setCmd)
 	rootCmd.AddCommand(versionCmd)
 
 	// Check for flags set by the user and hydrate their corresponding variables.
