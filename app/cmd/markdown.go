@@ -130,17 +130,15 @@ const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>
 
 ##### !options
 
-[markdown, replace the list below with the question options]
-* Option 1
-* Option 2
-* Option 3
+* [Option 1]
+* [Option 2]
+* [Option 3, etc]
 
 ##### !end-options
 
 ##### !answer
 
-[markdown, replace the item below with the correct answer]
-* Option 2
+* [Option 2 (the correct answer)]
 
 ##### !end-answer
 
@@ -172,18 +170,16 @@ const checkboxTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 
 ##### !options
 
-[markdown, replace the list below with the question options]
-* Option 1
-* Option 2
-* Option 3
+* [Option 1]
+* [Option 2]
+* [Option 3, etc]
 
 ##### !end-options
 
 ##### !answer
 
-[markdown, replace the list below with the correct set of options]
-* Option 2
-* Option 3
+* [Option 2]
+* [Option 3 (the correct answer set)]
 
 ##### !end-answer
 
@@ -325,8 +321,7 @@ const javascriptTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>
 
 ##### !placeholder
 
-[javascript, replace the block below with placeholder text for the code editor]
-
+[the code below is the starting code in the web editor]
 ~~~js
 // notes on what to return, etc
 function doSomething() {
@@ -338,12 +333,11 @@ function doSomething() {
 
 ##### !tests
 
-[javascript, replace the block below with mocha tests the student code will run against]
-
+[the mocha tests below will run against the student submission]
 ~~~js
 describe('doSomething', function() {
 
-  it("does what it is suposed to do", function() {
+  it("does what it is supposed to do", function() {
     expect(doSomething(), "Error message").to.deep.eq(true)
   })
 })
@@ -380,7 +374,7 @@ const javaTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>
 
 ##### !setup
 
-[java, replace the block below with any code that should be added to the beginning of the student submission]
+[the code below will be added to the beginning of the student submission]
 ~~~java
 // include any imports specific to your tests
 import java.io.IOException;
@@ -397,9 +391,8 @@ class VariableChallenge {
 
 ##### !placeholder
 
-[java, replace the block below with placeholder text for the code editor]
-
 ~~~java
+[the code below is the starting code in the web editor]
 // write code that declares the string foo and sets it to "bar"
 // String foo="bar";
 ~~~
@@ -408,8 +401,7 @@ class VariableChallenge {
 
 ##### !tests
 
-[java, replace the block below with test code that should be added to the end of the student submission]
-
+[the test code below will be added to the end of the student submission]
 ~~~java
   // End Student Code
   return foo;
@@ -457,8 +449,7 @@ const pythonTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 
 ##### !placeholder
 
-[python, replace the block below with placeholder text for the code editor]
-
+[the code below is the starting code in the web editor]
 ~~~py
 def doSomething():
   '''
@@ -473,8 +464,7 @@ def doSomething():
 
 ##### !tests
 
-[python, replace the block below with unit tests the student code will run against]
-
+[the unit tests below will run against the student submission]
 ~~~py
 import unittest
 import main as p
@@ -517,8 +507,7 @@ const sqlTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>
 
 ##### !placeholder
 
-[sql, replace the block below with placeholder text for the code editor]
-
+[the code below is the starting code in the web editor]
 ~~~sql
 -- write a statement to select...
 ~~~
@@ -527,8 +516,7 @@ const sqlTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>
 
 ##### !tests
 
-[sql, replace the block below with a sql statement to returns the correct answer]
-
+[the code below is the sql statement that returns the correct answer]
 ~~~sql
 SELECT these
 FROM that
