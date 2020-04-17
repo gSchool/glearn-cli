@@ -25,46 +25,46 @@ var markdownCmd = &cobra.Command{
 		switch args[0] {
 		case "ls", "lesson":
 			clipboard.WriteAll(lessonTemplate)
-			fmt.Println("Lesson markdown copied to clipboard!")
+			fmt.Println("Lesson markdown generated\nCopied to clipboard!")
 		case "mc", "multiplechoice":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(multiplechoiceTemplate, `~~~`, "```"), id))
-			fmt.Println("Multiple choice markdown copied to clipboard!\nid:", id)
+			fmt.Println("Multiple choice markdown generated with id:", id, "\nCopied to clipboard!")
 		case "cb", "checkbox":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(checkboxTemplate, `~~~`, "```"), id))
-			fmt.Println("Checkbox markdown copied to clipboard!\nid:", id)
+			fmt.Println("Checkbox markdown generated with id:", id, "\nCopied to clipboard!")
 		case "sa", "shortanswer":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(shortanswerTemplate, `~~~`, "```"), id))
-			fmt.Println("Short answer markdown copied to clipboard!\nid:", id)
+			fmt.Println("Short answer markdown generated with id:", id, "\nCopied to clipboard!")
 		case "nb", "number":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(numberTemplate, `~~~`, "```"), id))
-			fmt.Println("Number markdown copied to clipboard!\nid:", id)
+			fmt.Println("Number markdown generated with id:", id, "\nCopied to clipboard!")
 		case "pg", "paragraph":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(paragraphTemplate, `~~~`, "```"), id))
-			fmt.Println("Paragraph markdown copied to clipboard!\nid:", id)
+			fmt.Println("Paragraph markdown generated with id:", id, "\nCopied to clipboard!")
 		case "js", "javascript":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(javascriptTemplate, `~~~`, "```"), id))
-			fmt.Println("Javascript markdown copied to clipboard!\nid:", id)
+			fmt.Println("Javascript markdown generated with id:", id, "\nCopied to clipboard!")
 		case "ja", "java":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(javaTemplate, `~~~`, "```"), id))
-			fmt.Println("Java markdown copied to clipboard!\nid:", id)
+			fmt.Println("Java markdown generated with id:", id, "\nCopied to clipboard!")
 		case "py", "python":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(pythonTemplate, `~~~`, "```"), id))
-			fmt.Println("Python markdown copied to clipboard!\nid:", id)
+			fmt.Println("Python markdown generated with id:", id, "\nCopied to clipboard!")
 		case "sq", "sql":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(sqlTemplate, `~~~`, "```"), id))
-			fmt.Println("Sql markdown copied to clipboard!\nid:", id)
+			fmt.Println("Sql markdown generated with id:", id, "\nCopied to clipboard!")
 		case "pr", "project":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(projectTemplate, `~~~`, "```"), id))
-			fmt.Println("Project markdown copied to clipboard!\nid:", id)
+			fmt.Println("Project markdown generated with id:", id, "\nCopied to clipboard!")
 		case "tpr", "testableproject":
 			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(testableProjectTemplate, `~~~`, "```"), id))
-			fmt.Println("Testable Project markdown copied to clipboard!\nid:", id)
+			fmt.Println("Testable Project markdown generated with id:", id, "\nCopied to clipboard!")
 		case "cfy", "configyaml":
 			clipboard.WriteAll(fmt.Sprintf(configyamlTemplate))
-			fmt.Println("Copied config.yaml syntax to clipboard!")
+			fmt.Println("Config.yaml generated\nCopied to clipboard!")
 		case "cry", "courseyaml":
 			clipboard.WriteAll(fmt.Sprintf(courseyamlTemplate))
-			fmt.Println("Copied course.yaml syntax to clipboard!")
+			fmt.Println("Course.yaml generated\nCopied to clipboard!")
 		default:
 			fmt.Println("Unknown arg " + args[0] + ". Run 'learn cp --help' for options.")
 		}
@@ -105,11 +105,11 @@ By the end of this lesson you will be able to:
 
 ## Lesson Content
 
-[Include a rationale as the first few sentences/paragraph if you feel the lesson requires significant motivation or context.]
+[Can be written content, videos, slides, images, gifs, etc. Think about including a rationale as the first few sentences/paragraph if you feel the lesson requires significant motivation or context.]
 
 ## Challenges
 
-[Each lesson must have one or more challenges. These challenge can be spread out in between content, or can be at the end of the lesson]`
+[It's recommended that each lesson has at least one challenge. Challenges make the content interactive and give instructors visibility into student learning. These challenge can be spread out in between content, or can be at the end of the lesson]`
 
 const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
