@@ -5,60 +5,60 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/atotto/clipboard"
 	"github.com/google/uuid"
+	"github.com/spf13/cobra"
 )
 
 var markdownCmd = &cobra.Command{
-	Use:   "markdown",
+	Use:     "markdown",
 	Aliases: []string{"md"},
-	Short: "Copy curriculum markdown to clipboard",
-	Long: "Copy curriculum markdown to clipboard. Takes one argument, the type of content to copy to clipboard.\n\n" + argList,
-	Args:  cobra.MinimumNArgs(0),
+	Short:   "Copy curriculum markdown to clipboard",
+	Long:    "Copy curriculum markdown to clipboard. Takes one argument, the type of content to copy to clipboard.\n\n" + argList,
+	Args:    cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			fmt.Println(incorrectNumArgs)
 			os.Exit(1)
 		}
-		id := uuid.New()
+		id := uuid.New().String()
 		switch args[0] {
 		case "ls", "lesson":
 			clipboard.WriteAll(lessonTemplate)
 			fmt.Println("Lesson markdown copied to clipboard!")
 		case "mc", "multiplechoice":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(multiplechoiceTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Multiple choice markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(multiplechoiceTemplate, `~~~`, "```"), id))
+			fmt.Println("Multiple choice markdown copied to clipboard!\nid:", id)
 		case "cb", "checkbox":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(checkboxTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Checkbox markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(checkboxTemplate, `~~~`, "```"), id))
+			fmt.Println("Checkbox markdown copied to clipboard!\nid:", id)
 		case "sa", "shortanswer":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(shortanswerTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Short answer markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(shortanswerTemplate, `~~~`, "```"), id))
+			fmt.Println("Short answer markdown copied to clipboard!\nid:", id)
 		case "nb", "number":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(numberTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Number markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(numberTemplate, `~~~`, "```"), id))
+			fmt.Println("Number markdown copied to clipboard!\nid:", id)
 		case "pg", "paragraph":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(paragraphTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Paragraph markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(paragraphTemplate, `~~~`, "```"), id))
+			fmt.Println("Paragraph markdown copied to clipboard!\nid:", id)
 		case "js", "javascript":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(javascriptTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Javascript markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(javascriptTemplate, `~~~`, "```"), id))
+			fmt.Println("Javascript markdown copied to clipboard!\nid:", id)
 		case "ja", "java":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(javaTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Java markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(javaTemplate, `~~~`, "```"), id))
+			fmt.Println("Java markdown copied to clipboard!\nid:", id)
 		case "py", "python":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(pythonTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Python markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(pythonTemplate, `~~~`, "```"), id))
+			fmt.Println("Python markdown copied to clipboard!\nid:", id)
 		case "sq", "sql":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(sqlTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Sql markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(sqlTemplate, `~~~`, "```"), id))
+			fmt.Println("Sql markdown copied to clipboard!\nid:", id)
 		case "pr", "project":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(projectTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Project markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(projectTemplate, `~~~`, "```"), id))
+			fmt.Println("Project markdown copied to clipboard!\nid:", id)
 		case "tpr", "testableproject":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(testableProjectTemplate, `~~~`, "```"), id.String()))
-			fmt.Println("Testable Project markdown copied to clipboard!\nid:" + id.String())
+			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(testableProjectTemplate, `~~~`, "```"), id))
+			fmt.Println("Testable Project markdown copied to clipboard!\nid:", id)
 		case "cfy", "configyaml":
 			clipboard.WriteAll(fmt.Sprintf(configyamlTemplate))
 			fmt.Println("Copied config.yaml syntax to clipboard!")
@@ -93,7 +93,7 @@ Configuration:
   configyaml (cfy)
   courseyaml (cry)`
 
-const lessonTemplate =`# Title
+const lessonTemplate = `# Title
 
 ## Learning Objectives
 
@@ -111,7 +111,7 @@ By the end of this lesson you will be able to:
 
 [Each lesson must have one or more challenges. These challenge can be spread out in between content, or can be at the end of the lesson]`
 
-const multiplechoiceTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -153,7 +153,7 @@ const multiplechoiceTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const checkboxTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const checkboxTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -196,7 +196,7 @@ const checkboxTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const shortanswerTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const shortanswerTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -234,7 +234,7 @@ const shortanswerTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const numberTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const numberTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -273,7 +273,7 @@ const numberTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const paragraphTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const paragraphTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -305,7 +305,7 @@ const paragraphTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const javascriptTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const javascriptTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -360,7 +360,7 @@ describe('doSomething', function() {
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const javaTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const javaTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -437,7 +437,7 @@ public class SnippetTest {
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const pythonTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const pythonTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -496,7 +496,7 @@ class TestPython1(unittest.TestCase):
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const sqlTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const sqlTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -549,7 +549,7 @@ ORDER BY something
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const projectTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -581,7 +581,7 @@ const projectTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const testableProjectTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const testableProjectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
@@ -615,7 +615,7 @@ const testableProjectTemplate =`<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const configyamlTemplate =`# Config.yaml specifies the content and ordering within a curriculum block repo
+const configyamlTemplate = `# Config.yaml specifies the content and ordering within a curriculum block repo
 #
 # Supported Fields
 # ==========================
@@ -655,7 +655,7 @@ Standards:
         Path: /[folder/file.md]
 `
 
-const courseyamlTemplate =`# Course.yaml files specify the grouping and ordering of repos that define a course.
+const courseyamlTemplate = `# Course.yaml files specify the grouping and ordering of repos that define a course.
 #
 # Supported Fields
 # ===================
