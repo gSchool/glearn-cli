@@ -26,8 +26,9 @@ var markdownCmd = &cobra.Command{
 }
 
 type temp struct {
-	Name     string
-	Template string
+	Name      string
+	Template  string
+	RequireId bool
 }
 
 func copyContent(command string) {
@@ -38,56 +39,45 @@ func copyContent(command string) {
 		return
 	}
 
-	if contains(noIdCommands, command) {
-		clipboard.WriteAll(t.Template)
-		fmt.Println(t.Name, "copied to clipboard!")
-	} else {
+	if t.RequireId {
 		id := uuid.New().String()
 		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id))
 		fmt.Println(t.Name, "copied to clipboard!\nid:", id)
+	} else {
+		clipboard.WriteAll(t.Template)
+		fmt.Println(t.Name, "copied to clipboard!")
 	}
 }
-
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-var noIdCommands = []string{"ls", "lesson", "tpr", "testableproject", "cfy", "configyaml", "cry", "courseyaml"}
 
 var templates = map[string]temp{
-	"ls":              {"Lesson markdown", lessonTemplate},
-	"lesson":          {"Lesson markdown", lessonTemplate},
-	"mc":              {"Multiple choice markdown", multiplechoiceTemplate},
-	"multiplechoice":  {"Multiple choice markdown", multiplechoiceTemplate},
-	"cb":              {"Checkbox markdown", checkboxTemplate},
-	"checkbox":        {"Checkbox markdown", checkboxTemplate},
-	"sa":              {"Short answer markdown", shortanswerTemplate},
-	"shortanswer":     {"Short answer markdown", shortanswerTemplate},
-	"nb":              {"Number markdown", numberTemplate},
-	"number":          {"Number markdown", numberTemplate},
-	"pg":              {"Paragraph markdown", paragraphTemplate},
-	"paragraph":       {"Paragraph markdown", paragraphTemplate},
-	"js":              {"Javascript markdown", javascriptTemplate},
-	"javascript":      {"Javascript markdown", javascriptTemplate},
-	"ja":              {"Java markdown", javaTemplate},
-	"java":            {"Java markdown", javaTemplate},
-	"py":              {"Python markdown", pythonTemplate},
-	"python":          {"Python markdown", pythonTemplate},
-	"sq":              {"Sql markdown", sqlTemplate},
-	"sql":             {"Sql markdown", sqlTemplate},
-	"pr":              {"Project markdown", projectTemplate},
-	"project":         {"Project markdown", projectTemplate},
-	"tpr":             {"Testable Project markdown", testableProjectTemplate},
-	"testableproject": {"Testable Project markdown", testableProjectTemplate},
-	"cfy":             {"config.yaml syntax", configyamlTemplate},
-	"configyaml":      {"config.yaml syntax", configyamlTemplate},
-	"cry":             {"course.yaml syntax", courseyamlTemplate},
-	"courseyaml":      {"course.yaml syntax", courseyamlTemplate},
+	"ls":              {"Lesson markdown", lessonTemplate, false},
+	"lesson":          {"Lesson markdown", lessonTemplate, false},
+	"mc":              {"Multiple choice markdown", multiplechoiceTemplate, true},
+	"multiplechoice":  {"Multiple choice markdown", multiplechoiceTemplate, true},
+	"cb":              {"Checkbox markdown", checkboxTemplate, true},
+	"checkbox":        {"Checkbox markdown", checkboxTemplate, true},
+	"sa":              {"Short answer markdown", shortanswerTemplate, true},
+	"shortanswer":     {"Short answer markdown", shortanswerTemplate, true},
+	"nb":              {"Number markdown", numberTemplate, true},
+	"number":          {"Number markdown", numberTemplate, true},
+	"pg":              {"Paragraph markdown", paragraphTemplate, true},
+	"paragraph":       {"Paragraph markdown", paragraphTemplate, true},
+	"js":              {"Javascript markdown", javascriptTemplate, true},
+	"javascript":      {"Javascript markdown", javascriptTemplate, true},
+	"ja":              {"Java markdown", javaTemplate, true},
+	"java":            {"Java markdown", javaTemplate, true},
+	"py":              {"Python markdown", pythonTemplate, true},
+	"python":          {"Python markdown", pythonTemplate, true},
+	"sq":              {"Sql markdown", sqlTemplate, true},
+	"sql":             {"Sql markdown", sqlTemplate, true},
+	"pr":              {"Project markdown", projectTemplate, true},
+	"project":         {"Project markdown", projectTemplate, true},
+	"tpr":             {"Testable Project markdown", testableProjectTemplate, true},
+	"testableproject": {"Testable Project markdown", testableProjectTemplate, true},
+	"cfy":             {"config.yaml syntax", configyamlTemplate, false},
+	"configyaml":      {"config.yaml syntax", configyamlTemplate, false},
+	"cry":             {"course.yaml syntax", courseyamlTemplate, false},
+	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, false},
 }
 
 const incorrectNumArgs = "Incorrect number of args. Takes one argument, the type of content to copy to clipboard.\n\n" + argList
