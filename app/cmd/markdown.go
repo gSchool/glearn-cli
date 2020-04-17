@@ -21,54 +21,73 @@ var markdownCmd = &cobra.Command{
 			fmt.Println(incorrectNumArgs)
 			os.Exit(1)
 		}
-		id := uuid.New().String()
-		switch args[0] {
-		case "ls", "lesson":
-			clipboard.WriteAll(lessonTemplate)
-			fmt.Println("Lesson markdown generated\nCopied to clipboard!")
-		case "mc", "multiplechoice":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(multiplechoiceTemplate, `~~~`, "```"), id))
-			fmt.Println("Multiple choice markdown generated with id:", id, "\nCopied to clipboard!")
-		case "cb", "checkbox":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(checkboxTemplate, `~~~`, "```"), id))
-			fmt.Println("Checkbox markdown generated with id:", id, "\nCopied to clipboard!")
-		case "sa", "shortanswer":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(shortanswerTemplate, `~~~`, "```"), id))
-			fmt.Println("Short answer markdown generated with id:", id, "\nCopied to clipboard!")
-		case "nb", "number":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(numberTemplate, `~~~`, "```"), id))
-			fmt.Println("Number markdown generated with id:", id, "\nCopied to clipboard!")
-		case "pg", "paragraph":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(paragraphTemplate, `~~~`, "```"), id))
-			fmt.Println("Paragraph markdown generated with id:", id, "\nCopied to clipboard!")
-		case "js", "javascript":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(javascriptTemplate, `~~~`, "```"), id))
-			fmt.Println("Javascript markdown generated with id:", id, "\nCopied to clipboard!")
-		case "ja", "java":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(javaTemplate, `~~~`, "```"), id))
-			fmt.Println("Java markdown generated with id:", id, "\nCopied to clipboard!")
-		case "py", "python":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(pythonTemplate, `~~~`, "```"), id))
-			fmt.Println("Python markdown generated with id:", id, "\nCopied to clipboard!")
-		case "sq", "sql":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(sqlTemplate, `~~~`, "```"), id))
-			fmt.Println("Sql markdown generated with id:", id, "\nCopied to clipboard!")
-		case "pr", "project":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(projectTemplate, `~~~`, "```"), id))
-			fmt.Println("Project markdown generated with id:", id, "\nCopied to clipboard!")
-		case "tpr", "testableproject":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(testableProjectTemplate, `~~~`, "```"), id))
-			fmt.Println("Testable Project markdown generated with id:", id, "\nCopied to clipboard!")
-		case "cfy", "configyaml":
-			clipboard.WriteAll(fmt.Sprintf(configyamlTemplate))
-			fmt.Println("Config.yaml generated\nCopied to clipboard!")
-		case "cry", "courseyaml":
-			clipboard.WriteAll(fmt.Sprintf(courseyamlTemplate))
-			fmt.Println("Course.yaml generated\nCopied to clipboard!")
-		default:
-			fmt.Println("Unknown arg " + args[0] + ". Run 'learn cp --help' for options.")
-		}
+		copyContent(args[0])
 	},
+}
+
+type temp struct {
+	Name     string
+	Template string
+}
+
+func copyContent(command string) {
+	t, ok := templates[command]
+
+	if !ok {
+		fmt.Println("Unknown arg " + command + ". Run 'learn md --help' for options.")
+		return
+	}
+
+	if contains(noIdCommands, command) {
+		clipboard.WriteAll(t.Template)
+		fmt.Println(t.Name, "copied to clipboard!")
+	} else {
+		id := uuid.New().String()
+		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id))
+		fmt.Println(t.Name, "copied to clipboard!\nid:", id)
+	}
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
+var noIdCommands = []string{"ls", "lesson", "tpr", "testableproject", "cfy", "configyaml", "cry", "courseyaml"}
+
+var templates = map[string]temp{
+	"ls":              {"Lesson markdown", lessonTemplate},
+	"lesson":          {"Lesson markdown", lessonTemplate},
+	"mc":              {"Multiple choice markdown", multiplechoiceTemplate},
+	"multiplechoice":  {"Multiple choice markdown", multiplechoiceTemplate},
+	"cb":              {"Checkbox markdown", checkboxTemplate},
+	"checkbox":        {"Checkbox markdown", checkboxTemplate},
+	"sa":              {"Short answer markdown", shortanswerTemplate},
+	"shortanswer":     {"Short answer markdown", shortanswerTemplate},
+	"nb":              {"Number markdown", numberTemplate},
+	"number":          {"Number markdown", numberTemplate},
+	"pg":              {"Paragraph markdown", paragraphTemplate},
+	"paragraph":       {"Paragraph markdown", paragraphTemplate},
+	"js":              {"Javascript markdown", javascriptTemplate},
+	"javascript":      {"Javascript markdown", javascriptTemplate},
+	"ja":              {"Java markdown", javaTemplate},
+	"java":            {"Java markdown", javaTemplate},
+	"py":              {"Python markdown", pythonTemplate},
+	"python":          {"Python markdown", pythonTemplate},
+	"sq":              {"Sql markdown", sqlTemplate},
+	"sql":             {"Sql markdown", sqlTemplate},
+	"pr":              {"Project markdown", projectTemplate},
+	"project":         {"Project markdown", projectTemplate},
+	"tpr":             {"Testable Project markdown", testableProjectTemplate},
+	"testableproject": {"Testable Project markdown", testableProjectTemplate},
+	"cfy":             {"config.yaml syntax", configyamlTemplate},
+	"configyaml":      {"config.yaml syntax", configyamlTemplate},
+	"cry":             {"course.yaml syntax", courseyamlTemplate},
+	"courseyaml":      {"course.yaml syntax", courseyamlTemplate},
 }
 
 const incorrectNumArgs = "Incorrect number of args. Takes one argument, the type of content to copy to clipboard.\n\n" + argList
