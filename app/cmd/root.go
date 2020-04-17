@@ -119,7 +119,7 @@ func init() {
 	}
 
 	// Add all the other learn commands defined in cmd/ directory
-	rootCmd.AddCommand(copyCmd)
+	rootCmd.AddCommand(markdownCmd)
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(publishCmd)
 	rootCmd.AddCommand(guideCmd)
