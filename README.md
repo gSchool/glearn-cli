@@ -1,6 +1,6 @@
 # learn-cli
 
-This is the command line interface for previewing and publishing curriculum on Learn.
+This is the command line interface for developing, previewing, and publishing curriculum on Learn.
 
 ## Installation with Homebrew
 
