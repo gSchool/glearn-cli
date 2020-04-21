@@ -10,68 +10,151 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var PrintTemplate bool
+
 var markdownCmd = &cobra.Command{
 	Use:     "markdown",
 	Aliases: []string{"md"},
 	Short:   "Copy curriculum markdown to clipboard",
-	Long:    "Copy curriculum markdown to clipboard. Takes one argument, the type of content to copy to clipboard.\n\n" + argList,
-	Args:    cobra.MinimumNArgs(0),
+	Long:    "Copy curriculum markdown to clipboard. Takes 1-2 arguments, the type of content to copy to clipboard and optionally a file to append.\n\n" + argList,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 1 {
+		if len(args) == 1 {
+			t, err := getTemp(args[0])
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			if PrintTemplate {
+				t.printContent()
+			} else {
+				t.copyContent()
+			}
+
+		} else if len(args) == 2 {
+			t, err := getTemp(args[0])
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			if PrintTemplate {
+				fmt.Println("-o flag skipped when appending...")
+			}
+			if err = t.appendContent(args[1]); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+		} else {
 			fmt.Println(incorrectNumArgs)
 			os.Exit(1)
 		}
-		id := uuid.New().String()
-		switch args[0] {
-		case "ls", "lesson":
-			clipboard.WriteAll(lessonTemplate)
-			fmt.Println("Lesson markdown generated\nCopied to clipboard!")
-		case "mc", "multiplechoice":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(multiplechoiceTemplate, `~~~`, "```"), id))
-			fmt.Println("Multiple choice markdown generated with id:", id, "\nCopied to clipboard!")
-		case "cb", "checkbox":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(checkboxTemplate, `~~~`, "```"), id))
-			fmt.Println("Checkbox markdown generated with id:", id, "\nCopied to clipboard!")
-		case "sa", "shortanswer":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(shortanswerTemplate, `~~~`, "```"), id))
-			fmt.Println("Short answer markdown generated with id:", id, "\nCopied to clipboard!")
-		case "nb", "number":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(numberTemplate, `~~~`, "```"), id))
-			fmt.Println("Number markdown generated with id:", id, "\nCopied to clipboard!")
-		case "pg", "paragraph":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(paragraphTemplate, `~~~`, "```"), id))
-			fmt.Println("Paragraph markdown generated with id:", id, "\nCopied to clipboard!")
-		case "js", "javascript":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(javascriptTemplate, `~~~`, "```"), id))
-			fmt.Println("Javascript markdown generated with id:", id, "\nCopied to clipboard!")
-		case "ja", "java":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(javaTemplate, `~~~`, "```"), id))
-			fmt.Println("Java markdown generated with id:", id, "\nCopied to clipboard!")
-		case "py", "python":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(pythonTemplate, `~~~`, "```"), id))
-			fmt.Println("Python markdown generated with id:", id, "\nCopied to clipboard!")
-		case "sq", "sql":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(sqlTemplate, `~~~`, "```"), id))
-			fmt.Println("Sql markdown generated with id:", id, "\nCopied to clipboard!")
-		case "pr", "project":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(projectTemplate, `~~~`, "```"), id))
-			fmt.Println("Project markdown generated with id:", id, "\nCopied to clipboard!")
-		case "tpr", "testableproject":
-			clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(testableProjectTemplate, `~~~`, "```"), id))
-			fmt.Println("Testable Project markdown generated with id:", id, "\nCopied to clipboard!")
-		case "cfy", "configyaml":
-			clipboard.WriteAll(fmt.Sprintf(configyamlTemplate))
-			fmt.Println("Config.yaml generated\nCopied to clipboard!")
-		case "cry", "courseyaml":
-			clipboard.WriteAll(fmt.Sprintf(courseyamlTemplate))
-			fmt.Println("Course.yaml generated\nCopied to clipboard!")
-		default:
-			fmt.Println("Unknown arg " + args[0] + ". Run 'learn cp --help' for options.")
-		}
+
 	},
 }
 
-const incorrectNumArgs = "Incorrect number of args. Takes one argument, the type of content to copy to clipboard.\n\n" + argList
+func getTemp(command string) (temp, error) {
+	t, ok := templates[command]
+	if !ok {
+		return temp{}, fmt.Errorf("Unknown arg '%s'. Run 'learn md --help' for options.\n", command)
+	}
+	return t, nil
+}
+
+type temp struct {
+	Name      string
+	Template  string
+	RequireId bool
+}
+
+func (t temp) printContent() {
+	if t.RequireId {
+		id := uuid.New().String()
+		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```"), id)
+	} else {
+		fmt.Println(t.Template)
+	}
+}
+
+func (t temp) copyContent() {
+	if t.RequireId {
+		id := uuid.New().String()
+		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id))
+		fmt.Println(t.Name, "copied to clipboard!\nid:", id)
+	} else {
+		clipboard.WriteAll(t.Template)
+		fmt.Println(t.Name, "copied to clipboard!")
+	}
+}
+
+func (t temp) appendContent(target string) error {
+	if !strings.HasSuffix(target, ".md") {
+		return fmt.Errorf("'%s' must have an `.md` extension to append %s content.\n", target, t.Name)
+	}
+
+	targetInfo, err := os.Stat(target)
+	if err != nil {
+		return fmt.Errorf("'%s' is not a file that can be appended!\n%s\n", target, err)
+	}
+	if targetInfo.IsDir() {
+		return fmt.Errorf("'%s' is a directory, please specify a markdown file.\n", target)
+	}
+
+	f, err := os.OpenFile(target, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return fmt.Errorf("Cannot open '%s'!\n%s\n", target, err)
+	}
+	defer f.Close()
+
+	if t.RequireId {
+		id := uuid.New().String()
+		if _, err = f.WriteString(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id) + "\n"); err != nil {
+			return fmt.Errorf("Cannot write to '%s'!\n%s\n", target, err)
+		}
+		fmt.Printf("%s appended to %s!\nid: %s\n", t.Name, target, id)
+	} else {
+		if _, err = f.WriteString(t.Template + "\n"); err != nil {
+			return fmt.Errorf("Cannot write to '%s'!\n%s\n", target, err)
+		}
+		fmt.Printf("%s appended to %s!\n", t.Name, target)
+	}
+
+	return nil
+}
+
+var templates = map[string]temp{
+	"ls":              {"Lesson markdown", lessonTemplate, false},
+	"lesson":          {"Lesson markdown", lessonTemplate, false},
+	"mc":              {"Multiple Choice markdown", multiplechoiceTemplate, true},
+	"multiplechoice":  {"Multiple Choice markdown", multiplechoiceTemplate, true},
+	"cb":              {"Checkbox markdown", checkboxTemplate, true},
+	"checkbox":        {"Checkbox markdown", checkboxTemplate, true},
+	"sa":              {"Short Answer markdown", shortanswerTemplate, true},
+	"shortanswer":     {"Short Answer markdown", shortanswerTemplate, true},
+	"nb":              {"Number markdown", numberTemplate, true},
+	"number":          {"Number markdown", numberTemplate, true},
+	"pg":              {"Paragraph markdown", paragraphTemplate, true},
+	"paragraph":       {"Paragraph markdown", paragraphTemplate, true},
+	"js":              {"Javascript markdown", javascriptTemplate, true},
+	"javascript":      {"Javascript markdown", javascriptTemplate, true},
+	"ja":              {"Java markdown", javaTemplate, true},
+	"java":            {"Java markdown", javaTemplate, true},
+	"py":              {"Python markdown", pythonTemplate, true},
+	"python":          {"Python markdown", pythonTemplate, true},
+	"sq":              {"Sql markdown", sqlTemplate, true},
+	"sql":             {"Sql markdown", sqlTemplate, true},
+	"cs":              {"Custom Snippet markdown", customsnippetTemplate, true},
+	"customsnippet":   {"Custom Snippet markdown", customsnippetTemplate, true},
+	"pr":              {"Project markdown", projectTemplate, true},
+	"project":         {"Project markdown", projectTemplate, true},
+	"tpr":             {"Testable Project markdown", testableProjectTemplate, true},
+	"testableproject": {"Testable Project markdown", testableProjectTemplate, true},
+	"cfy":             {"config.yaml syntax", configyamlTemplate, false},
+	"configyaml":      {"config.yaml syntax", configyamlTemplate, false},
+	"cry":             {"course.yaml syntax", courseyamlTemplate, false},
+	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, false},
+}
+
+const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout.\n\n" + argList
 
 const argList = `Args, full (abbreviation)--
 
@@ -87,6 +170,7 @@ Questions:
   java (ja)
   python (py)
   sql (sq)
+  customsnippet (cs)
   project (pr)
   testableproject (tpr)
 Configuration:
@@ -535,6 +619,33 @@ ORDER BY something
 
 ### !end-challenge
 
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const customsnippetTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+<!-- Replace everything in square brackets [] and remove brackets  -->
+### !challenge
+* type: custom-snippet
+* language: [text, one of: csharp, html, java, javascript, json, markdown, python, or sql]
+* id: %s
+* title: [text, a short question title]
+* docker_directory_path: /[text, the path to the folder with the Docker setup]
+<!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
+<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+##### !question
+[markdown, your question]
+##### !end-question
+##### !placeholder
+[the code below is the starting code in the web editor]
+~~~
+function doSomething() {
+}
+~~~
+##### !end-placeholder
+<!-- other optional sections -->
+<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
+<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+### !end-challenge
 <!-- ======================= END CHALLENGE ======================= -->`
 
 const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->

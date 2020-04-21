@@ -1,6 +1,6 @@
 # learn-cli
 
-This is the command line interface for previewing and publishing curriculum on Learn.
+This is the command line interface for developing, previewing, and publishing curriculum on Learn.
 
 ## Installation with Homebrew
 
@@ -120,7 +120,7 @@ By default, the CLI tool will use Learn's base url `https://learn-2.galvanize.co
 
 Create a github token with `repo` access. This gives you the ability to push releases and their binaries and allows glearn-cli write commits when necessary.
 
-Create a new semantic version tag (ex. 0.1.0)
+Create a new semantic version tag (ex. v0.1.0)
 ```
 git tag -a v0.1.0 -m "Some new release commit"
 ```
