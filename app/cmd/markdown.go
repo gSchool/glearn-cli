@@ -10,18 +10,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var PrintTemplate bool
+
 var markdownCmd = &cobra.Command{
 	Use:     "markdown",
 	Aliases: []string{"md"},
 	Short:   "Copy curriculum markdown to clipboard",
 	Long:    "Copy curriculum markdown to clipboard. Takes one argument, the type of content to copy to clipboard.\n\n" + argList,
-	Args:    cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			fmt.Println(incorrectNumArgs)
 			os.Exit(1)
 		}
-		copyContent(args[0])
+
+		t, ok := templates[args[0]]
+		if !ok {
+			fmt.Println("Unknown arg " + args[0] + ". Run 'learn md --help' for options.")
+			return
+		}
+
+		if PrintTemplate {
+			t.printContent()
+		} else {
+			t.copyContent()
+		}
 	},
 }
 
@@ -31,14 +43,16 @@ type temp struct {
 	RequireId bool
 }
 
-func copyContent(command string) {
-	t, ok := templates[command]
-
-	if !ok {
-		fmt.Println("Unknown arg " + command + ". Run 'learn md --help' for options.")
-		return
+func (t temp) printContent() {
+	if t.RequireId {
+		id := uuid.New().String()
+		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```"), id)
+	} else {
+		fmt.Println(t.Template)
 	}
+}
 
+func (t temp) copyContent() {
 	if t.RequireId {
 		id := uuid.New().String()
 		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id))
@@ -80,7 +94,7 @@ var templates = map[string]temp{
 	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, false},
 }
 
-const incorrectNumArgs = "Incorrect number of args. Takes one argument, the type of content to copy to clipboard.\n\n" + argList
+const incorrectNumArgs = "Incorrect number of args. Takes one argument, the type of content to copy to clipboard. Specify -o to print to sdout.\n\n" + argList
 
 const argList = `Args, full (abbreviation)--
 
