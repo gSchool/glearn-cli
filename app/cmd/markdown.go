@@ -124,12 +124,12 @@ func (t temp) appendContent(target string) error {
 var templates = map[string]temp{
 	"ls":              {"Lesson markdown", lessonTemplate, false},
 	"lesson":          {"Lesson markdown", lessonTemplate, false},
-	"mc":              {"Multiple choice markdown", multiplechoiceTemplate, true},
-	"multiplechoice":  {"Multiple choice markdown", multiplechoiceTemplate, true},
+	"mc":              {"Multiple Choice markdown", multiplechoiceTemplate, true},
+	"multiplechoice":  {"Multiple Choice markdown", multiplechoiceTemplate, true},
 	"cb":              {"Checkbox markdown", checkboxTemplate, true},
 	"checkbox":        {"Checkbox markdown", checkboxTemplate, true},
-	"sa":              {"Short answer markdown", shortanswerTemplate, true},
-	"shortanswer":     {"Short answer markdown", shortanswerTemplate, true},
+	"sa":              {"Short Answer markdown", shortanswerTemplate, true},
+	"shortanswer":     {"Short Answer markdown", shortanswerTemplate, true},
 	"nb":              {"Number markdown", numberTemplate, true},
 	"number":          {"Number markdown", numberTemplate, true},
 	"pg":              {"Paragraph markdown", paragraphTemplate, true},
@@ -142,6 +142,8 @@ var templates = map[string]temp{
 	"python":          {"Python markdown", pythonTemplate, true},
 	"sq":              {"Sql markdown", sqlTemplate, true},
 	"sql":             {"Sql markdown", sqlTemplate, true},
+	"cs":              {"Custom Snippet markdown", customsnippetTemplate, true},
+	"customsnippet":   {"Custom Snippet markdown", customsnippetTemplate, true},
 	"pr":              {"Project markdown", projectTemplate, true},
 	"project":         {"Project markdown", projectTemplate, true},
 	"tpr":             {"Testable Project markdown", testableProjectTemplate, true},
@@ -168,6 +170,7 @@ Questions:
   java (ja)
   python (py)
   sql (sq)
+  customsnippet (cs)
   project (pr)
   testableproject (tpr)
 Configuration:
@@ -616,6 +619,33 @@ ORDER BY something
 
 ### !end-challenge
 
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const customsnippetTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+<!-- Replace everything in square brackets [] and remove brackets  -->
+### !challenge
+* type: custom-snippet
+* language: [text, one of: csharp, html, java, javascript, json, markdown, python, or sql]
+* id: %s
+* title: [text, a short question title]
+* docker_directory_path: /[text, the path to the folder with the Docker setup]
+<!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
+<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+##### !question
+[markdown, your question]
+##### !end-question
+##### !placeholder
+[the code below is the starting code in the web editor]
+~~~
+function doSomething() {
+}
+~~~
+##### !end-placeholder
+<!-- other optional sections -->
+<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
+<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+### !end-challenge
 <!-- ======================= END CHALLENGE ======================= -->`
 
 const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
