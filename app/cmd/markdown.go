@@ -16,25 +16,45 @@ var markdownCmd = &cobra.Command{
 	Use:     "markdown",
 	Aliases: []string{"md"},
 	Short:   "Copy curriculum markdown to clipboard",
-	Long:    "Copy curriculum markdown to clipboard. Takes one argument, the type of content to copy to clipboard.\n\n" + argList,
+	Long:    "Copy curriculum markdown to clipboard. Takes 1-2 arguments, the type of content to copy to clipboard and optionally a file to append.\n\n" + argList,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 1 {
+		if len(args) == 1 {
+			t, err := getTemp(args[0])
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			if PrintTemplate {
+				t.printContent()
+			} else {
+				t.copyContent()
+			}
+
+		} else if len(args) == 2 {
+			t, err := getTemp(args[0])
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+			if err = t.appendContent(args[1]); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+
+		} else {
 			fmt.Println(incorrectNumArgs)
 			os.Exit(1)
 		}
 
-		t, ok := templates[args[0]]
-		if !ok {
-			fmt.Println("Unknown arg " + args[0] + ". Run 'learn md --help' for options.")
-			return
-		}
-
-		if PrintTemplate {
-			t.printContent()
-		} else {
-			t.copyContent()
-		}
 	},
+}
+
+func getTemp(command string) (temp, error) {
+	t, ok := templates[command]
+	if !ok {
+		return temp{}, fmt.Errorf("Unknown arg '%s'. Run 'learn md --help' for options.\n", command)
+	}
+	return t, nil
 }
 
 type temp struct {
@@ -61,6 +81,41 @@ func (t temp) copyContent() {
 		clipboard.WriteAll(t.Template)
 		fmt.Println(t.Name, "copied to clipboard!")
 	}
+}
+
+func (t temp) appendContent(target string) error {
+	if !strings.HasSuffix(target, ".md") {
+		return fmt.Errorf("'%s' must have an `.md` extension to append %s content.\n", target, t.Name)
+	}
+
+	targetInfo, err := os.Stat(target)
+	if err != nil {
+		return fmt.Errorf("'%s' is not a file that can be appended!\n%s\n", target, err)
+	}
+	if targetInfo.IsDir() {
+		return fmt.Errorf("'%s' is a directory, please specify a markdown file.\n", target)
+	}
+
+	f, err := os.OpenFile(target, os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return fmt.Errorf("Cannot open '%s'!\n%s\n", target, err)
+	}
+	defer f.Close()
+
+	if t.RequireId {
+		id := uuid.New().String()
+		if _, err = f.WriteString(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id) + "\n"); err != nil {
+			return fmt.Errorf("Cannot write to '%s'!\n%s\n", target, err)
+		}
+		fmt.Printf("%s appended to %s!\nid: %s\n", t.Name, target, id)
+	} else {
+		if _, err = f.WriteString(t.Template + "\n"); err != nil {
+			return fmt.Errorf("Cannot write to '%s'!\n%s\n", target, err)
+		}
+		fmt.Printf("%s appended to %s!\n", t.Name, target)
+	}
+
+	return nil
 }
 
 var templates = map[string]temp{
@@ -94,7 +149,7 @@ var templates = map[string]temp{
 	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, false},
 }
 
-const incorrectNumArgs = "Incorrect number of args. Takes one argument, the type of content to copy to clipboard. Specify -o to print to sdout.\n\n" + argList
+const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout.\n\n" + argList
 
 const argList = `Args, full (abbreviation)--
 
