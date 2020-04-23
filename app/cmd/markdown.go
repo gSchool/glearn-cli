@@ -152,6 +152,8 @@ var templates = map[string]temp{
 	"configyaml":      {"config.yaml syntax", configyamlTemplate, false},
 	"cry":             {"course.yaml syntax", courseyamlTemplate, false},
 	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, false},
+	"callout":         {"Callout markdown", calloutTemplate, false},
+	"co":              {"Callout markdown", calloutTemplate, false},
 }
 
 const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout.\n\n" + argList
@@ -173,6 +175,8 @@ Questions:
   customsnippet (cs)
   project (pr)
   testableproject (tpr)
+Other Markdown:
+  callout (co)
 Configuration:
   configyaml (cfy)
   courseyaml (cry)`
@@ -787,3 +791,11 @@ Course:
   - Section: [Section name]
     Repos:
       - URL: https://github.com/gSchool/[Repo name]`
+
+const calloutTemplate = `<!-- available callout types: info, success, warning, danger, secondary  -->
+### !callout-info
+
+## title
+body
+
+### !end-callout`
