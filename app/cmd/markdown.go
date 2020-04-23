@@ -69,7 +69,7 @@ type temp struct {
 func (t temp) printContent() {
 	if t.RequireId {
 		id := uuid.New().String()
-		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```"), id)
+		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```") + "\n", id)
 	} else {
 		fmt.Println(t.Template)
 	}
@@ -79,7 +79,7 @@ func (t temp) copyContent() {
 	if t.RequireId {
 		id := uuid.New().String()
 		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id))
-		fmt.Println(t.Name, "copied to clipboard!\nid:", id)
+		fmt.Println(t.Name, "generated with id:", id, "\nCopied to clipboard!")
 	} else {
 		clipboard.WriteAll(t.Template)
 		fmt.Println(t.Name, "copied to clipboard!")
@@ -152,6 +152,8 @@ var templates = map[string]temp{
 	"configyaml":      {"config.yaml syntax", configyamlTemplate, false},
 	"cry":             {"course.yaml syntax", courseyamlTemplate, false},
 	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, false},
+	"callout":         {"Callout markdown", calloutTemplate, false},
+	"co":              {"Callout markdown", calloutTemplate, false},
 }
 
 const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout.\n\n" + argList
@@ -173,6 +175,8 @@ Questions:
   customsnippet (cs)
   project (pr)
   testableproject (tpr)
+Other Markdown:
+  callout (co)
 Configuration:
   configyaml (cfy)
   courseyaml (cry)`
@@ -623,7 +627,9 @@ ORDER BY something
 
 const customsnippetTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
+
 ### !challenge
+
 * type: custom-snippet
 * language: [text, one of: csharp, html, java, javascript, json, markdown, python, or sql]
 * id: %s
@@ -631,21 +637,30 @@ const customsnippetTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>
 * docker_directory_path: /[text, the path to the folder with the Docker setup]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
 <!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+
 ##### !question
+
 [markdown, your question]
+
 ##### !end-question
+
 ##### !placeholder
+
 [the code below is the starting code in the web editor]
 ~~~
 function doSomething() {
 }
 ~~~
+
 ##### !end-placeholder
+
 <!-- other optional sections -->
 <!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
 ### !end-challenge
+
 <!-- ======================= END CHALLENGE ======================= -->`
 
 const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
@@ -776,3 +791,11 @@ Course:
   - Section: [Section name]
     Repos:
       - URL: https://github.com/gSchool/[Repo name]`
+
+const calloutTemplate = `<!-- available callout types: info, success, warning, danger, secondary  -->
+### !callout-info
+
+## title
+body
+
+### !end-callout`
