@@ -2,14 +2,16 @@ package cmd
 
 import "testing"
 
-func Test_DoesDirHaveConfig(t *testing.T) {
-	hasConfig, _ := doesCurrentDirHaveConfig(withConfigFixture)
-	if hasConfig == false {
-		t.Errorf("Should of found a config file in directory")
-	}
+const withWalkthroughFixture = "../../fixtures/test-folder-with-walkthrough"
+const withNoWalkthroughFixture = "../../fixtures/test-folder-without-walkthrough"
 
-	_, hasAutoConfig := doesCurrentDirHaveConfig(withNoConfigFixture)
-	if hasAutoConfig == false {
-		t.Errorf("Should of found an auto config file in directory")
+func Test_DoesDirHaveWalkthrough(t *testing.T) {
+	hasWalkthrough := doesCurrentDirHaveWalkthrough(withWalkthroughFixture)
+	if hasWalkthrough == false {
+		t.Errorf("Should of found a walkthrough folder in directory")
+	}
+	hasNoWalkthrough := doesCurrentDirHaveWalkthrough(withNoWalkthroughFixture)
+	if hasWalkthrough == true {
+		t.Errorf("Should not of found a walkthrough folder in directory")
 	}
 }

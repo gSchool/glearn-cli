@@ -1,0 +1,25 @@
+version: '2.1'
+
+services:
+  postgres:
+    image: "postgres"
+    healthcheck:
+      test: exit 0
+    expose:
+     - "5432"
+    environment:
+      - POSTGRES_DB=dbname
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+
+  testenv:
+    build: .
+    command: tail -F /dev/null
+    environment:
+      - DATABASE_URL=postgres://admin:admin@postgres:5432/dbname
+      - NODE_ENV=test
+    depends_on:
+      postgres:
+        condition: service_healthy
+    links:
+     - postgres

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"strings"
+	// "path/filepath"
+	// "strings"
 
 	"github.com/spf13/cobra"
 )
@@ -24,71 +24,55 @@ var guideCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// Does that directory have a config file
-		hasConfig, _ := doesCurrentDirHaveConfig(currentDir)
+		// Does that directory have a walkthrough
+		hasWalkthrough := doesCurrentDirHaveWalkthrough(currentDir)
 
-		if hasConfig {
-			fmt.Println("WARNING: configuration file detected and cannot continue with `learn walkthrough` command.")
+		if hasWalkthrough {
+			fmt.Println("'learn-walkthrough' folder already exists, cannot continue with command.")
 			os.Exit(1)
 		}
 
 		// Clone the template from github
 		fmt.Println("Copying curriculum template from Github")
 		fmt.Println("=======================================")
-		fmt.Println("\nCloning into 'learn-curriculum-init'...")
+		fmt.Println("\nCloning into 'learn-walkthrough'...")
 		err = cloneTemplate()
 		if err != nil {
-			fmt.Println("We had trouble cloning into learn-curriculum-init, please check that you have the correct github credentials")
+			fmt.Println("We had trouble cloning into learn-walkthrough, please check that you have the correct github credentials")
 			os.Exit(1)
 		}
 
-		// Move the files into working dir
-		fmt.Println("Copying curriculum")
-		err = moveClonedMaterials(currentDir)
+		// remove git folder
+		err = removeGit(currentDir)
 		if err != nil {
-			fmt.Println("Could not move template into working repository")
+			fmt.Println("Could not remove git folder")
 			os.Exit(1)
 		}
-		fmt.Println("Removing cloned repo")
 
 		fmt.Println(`
 Success!
 ========
 
-A small example curriculum for use with the walkthrough at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/01-overview.md has been added to this directory.`)
+A small example curriculum has been added in ./learn-walkthrough.`)
 	},
 }
 
-func doesCurrentDirHaveConfig(currentDir string) (bool, bool) {
-	configExist := false
-	autoConfigExist := false
+func doesCurrentDirHaveWalkthrough(currentDir string) (bool) {
+	walkthroughExist := false
 
-	configYaml := currentDir + "/config.yaml"
-	_, ymlExists := os.Stat(configYaml)
-	if ymlExists == nil {
-		configExist = true
+	walkthrough := currentDir + "/learn-walkthrough/"
+	_, walkthroughExists := os.Stat(walkthrough)
+	if walkthroughExists == nil {
+		walkthroughExist = true
 	}
 
-	configYml := currentDir + "/config.yml"
-	_, ymlExists = os.Stat(configYml)
-	if ymlExists == nil {
-		configExist = true
-	}
-
-	autoConfigYaml := currentDir + "/autoconfig.yaml"
-	_, ymlExists = os.Stat(autoConfigYaml)
-	if ymlExists == nil {
-		configExist = true
-		autoConfigExist = true
-	}
-
-	return configExist, autoConfigExist
+	return walkthroughExist
 }
 
 func cloneTemplate() error {
-	_, err := exec.Command("bash", "-c", "git clone git@github.com:gSchool/learn-curriculum-init.git").CombinedOutput()
+	_, err := exec.Command("bash", "-c", "git clone git@github.com:gSchool/learn-walkthrough.git").CombinedOutput()
 	if err != nil {
-		_, errr := exec.Command("bash", "-c", "git clone https://github.com/gSchool/learn-curriculum-init.git").CombinedOutput()
+		_, errr := exec.Command("bash", "-c", "git clone https://github.com/gSchool/learn-walkthrough.git").CombinedOutput()
 		if errr != nil {
 			return errr
 		}
@@ -97,20 +81,8 @@ func cloneTemplate() error {
 	return nil
 }
 
-func moveClonedMaterials(currentDir string) error {
-	initDir := "/learn-curriculum-init"
+func removeGit(currentDir string) error {
+	initDir := "/learn-walkthrough"
 	os.RemoveAll(currentDir + initDir + "/.git/")
-	err := filepath.Walk(currentDir+initDir, func(path string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(path, initDir) && !strings.Contains(path, ".git/") {
-			oldLocation := path
-			newLocation := strings.Replace(path, initDir, "", 1)
-			os.Rename(oldLocation, newLocation)
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	os.RemoveAll(currentDir + initDir)
 	return nil
 }
