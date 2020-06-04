@@ -197,22 +197,22 @@ func pushToRemote(branch string) error {
 }
 
 func addAutoConfigAndCommit() error {
-	_, err := exec.Command("bash", "-c", "git add autoconfig.yaml").Output()
+	out, err := exec.Command("bash", "-c", "git add autoconfig.yaml").CombinedOutput()
 	if err != nil {
-		return err
+		return fmt.Errorf("%s", out)
 	}
-	_, err = exec.Command("bash", "-c", "git commit -m \"learn cli tool publish command: adding autoconfig.yaml\"").Output()
+	out, err = exec.Command("bash", "-c", "git commit -m \"learn cli tool publish command: adding autoconfig.yaml\"").CombinedOutput()
 	if err != nil {
-		return err
+		return fmt.Errorf("%s", out)
 	}
 
 	return nil
 }
 
 func runBashCommand(command string) (string, error) {
-	out, err := exec.Command("bash", "-c", command).Output()
+	out, err := exec.Command("bash", "-c", command).CombinedOutput()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%s- %s", out, err)
 	}
 
 	return strings.TrimSpace(string(out)), nil
