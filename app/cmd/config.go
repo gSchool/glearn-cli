@@ -172,7 +172,7 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 					if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
 						localPath := path
 						if blockRoot != "./" {
-							localPath = path[len(blockRoot):len(path)]
+							localPath = path[len(blockRoot):]
 						}
 						unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
 					}

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// PrintTemplate prints the template to stdout
 var PrintTemplate bool
 
 var markdownCmd = &cobra.Command{
@@ -55,7 +56,7 @@ var markdownCmd = &cobra.Command{
 func getTemp(command string) (temp, error) {
 	t, ok := templates[command]
 	if !ok {
-		return temp{}, fmt.Errorf("Unknown arg '%s'. Run 'learn md --help' for options.\n", command)
+		return temp{}, fmt.Errorf("unknown arg '%s'. run 'learn md --help' for options", command)
 	}
 	return t, nil
 }
@@ -63,20 +64,20 @@ func getTemp(command string) (temp, error) {
 type temp struct {
 	Name      string
 	Template  string
-	RequireId bool
+	RequireID bool
 }
 
 func (t temp) printContent() {
-	if t.RequireId {
+	if t.RequireID {
 		id := uuid.New().String()
-		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```") + "\n", id)
+		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```")+"\n", id)
 	} else {
 		fmt.Println(t.Template)
 	}
 }
 
 func (t temp) copyContent() {
-	if t.RequireId {
+	if t.RequireID {
 		id := uuid.New().String()
 		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id))
 		fmt.Println(t.Name, "generated with id:", id, "\nCopied to clipboard!")
@@ -88,32 +89,32 @@ func (t temp) copyContent() {
 
 func (t temp) appendContent(target string) error {
 	if !strings.HasSuffix(target, ".md") {
-		return fmt.Errorf("'%s' must have an `.md` extension to append %s content.\n", target, t.Name)
+		return fmt.Errorf("'%s' must have an `.md` extension to append %s content", target, t.Name)
 	}
 
 	targetInfo, err := os.Stat(target)
 	if err != nil {
-		return fmt.Errorf("'%s' is not a file that can be appended!\n%s\n", target, err)
+		return fmt.Errorf("'%s' is not a file that can be appended!\n%s", target, err)
 	}
 	if targetInfo.IsDir() {
-		return fmt.Errorf("'%s' is a directory, please specify a markdown file.\n", target)
+		return fmt.Errorf("'%s' is a directory, please specify a markdown file", target)
 	}
 
 	f, err := os.OpenFile(target, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
-		return fmt.Errorf("Cannot open '%s'!\n%s\n", target, err)
+		return fmt.Errorf("Cannot open '%s'!\n%s", target, err)
 	}
 	defer f.Close()
 
-	if t.RequireId {
+	if t.RequireID {
 		id := uuid.New().String()
 		if _, err = f.WriteString(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id) + "\n"); err != nil {
-			return fmt.Errorf("Cannot write to '%s'!\n%s\n", target, err)
+			return fmt.Errorf("cannot write to '%s'!\n%s", target, err)
 		}
 		fmt.Printf("%s appended to %s!\nid: %s\n", t.Name, target, id)
 	} else {
 		if _, err = f.WriteString(t.Template + "\n"); err != nil {
-			return fmt.Errorf("Cannot write to '%s'!\n%s\n", target, err)
+			return fmt.Errorf("cannot write to '%s'!\n%s", target, err)
 		}
 		fmt.Printf("%s appended to %s!\n", t.Name, target)
 	}
