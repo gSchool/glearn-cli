@@ -196,6 +196,10 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	configFile.WriteString("---\n")
 	configFile.WriteString("Standards:\n")
 
+	if len(unitToContentFileMap) == 0 {
+		return fmt.Errorf("Could not find any Units. Preview for single unit not supported.")
+	}
+
 	// sort unit keys in lexigraphical order
 	unitKeys := make([]string, 0, len(unitToContentFileMap))
 	for unit := range unitToContentFileMap {

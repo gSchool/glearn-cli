@@ -64,6 +64,18 @@ func Test_PreviewBuildsAutoConfigDeclaredUnitsDir(t *testing.T) {
 	}
 }
 
+func Test_PreviewBuildFailsWhenPreviewingSingleUnit(t *testing.T) {
+	createdConfig, err := doesConfigExistOrCreate(withNoUnitsDirFixture+"/single_unit", "", false)
+
+	if createdConfig == true {
+		t.Errorf("Should not of created a config file")
+	}
+
+	if err == nil {
+		t.Errorf("Should of alerted user that no units where found and single unit preview is not supported")
+	}
+}
+
 func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
 	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, "", false)
 	if createdConfig == false {
