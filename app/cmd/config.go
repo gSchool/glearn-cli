@@ -197,7 +197,7 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	configFile.WriteString("Standards:\n")
 
 	if len(unitToContentFileMap) == 0 {
-		return fmt.Errorf("No content found at '%s'. Preview of an individual unit is not supported, make sure '%s' is the root of a repo or a single lesson.", target, target)
+		return fmt.Errorf("hmm No content found at '%s'. Preview of an individual unit is not supported, make sure '%s' is the root of a repo or a single lesson.", target, target)
 	}
 
 	// sort unit keys in lexigraphical order
