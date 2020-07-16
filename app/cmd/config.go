@@ -172,7 +172,7 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 					if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
 						localPath := path
 						if blockRoot != "./" {
-							localPath = path[len(blockRoot):len(path)]
+							localPath = path[len(blockRoot):]
 						}
 						unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
 					}
@@ -195,6 +195,10 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	configFile.WriteString("\n")
 	configFile.WriteString("---\n")
 	configFile.WriteString("Standards:\n")
+
+	if len(unitToContentFileMap) == 0 {
+		return fmt.Errorf("No content found at '%s'. Preview of an individual unit is not supported, make sure '%s' is the root of a repo or a single lesson.", target, target)
+	}
 
 	// sort unit keys in lexigraphical order
 	unitKeys := make([]string, 0, len(unitToContentFileMap))
