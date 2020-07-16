@@ -48,7 +48,7 @@ func doesConfigExistOrCreate(target, unitsDir string, isSingleFilePreview bool) 
 		} else if os.IsNotExist(ymlExists) {
 			if isSingleFilePreview == false {
 				// Neither exists so we are going to create one
-				fmt.Printf("INFO: No config.yaml found\n")
+				fmt.Printf("INFO: No configuration found, generating autoconfig.yaml ")
 			}
 			if target == tmpSingleFileDir {
 				err := createAutoConfig(target, ".")
@@ -88,8 +88,6 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 	_, err := os.Stat(autoConfigYamlPath)
 	if err == nil {
 		os.Remove(autoConfigYamlPath)
-	} else {
-		fmt.Printf("INFO: Generating autoconfig.yaml\n")
 	}
 
 	// Create tmpSingleFileDir if it does not exist
