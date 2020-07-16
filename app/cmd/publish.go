@@ -92,7 +92,7 @@ new block. If the block already exists, it will update the existing block.
 			fmt.Println("Committing autoconfig.yaml to", branch)
 			err = addAutoConfigAndCommit()
 
-			if err != nil {
+			if err != nil && !strings.Contains(err.Error(), "Your branch is up to date with 'origin/master'.") {
 				fmt.Printf("Error committing the autoconfig.yaml to origin remote on branch: %s", err)
 				os.Exit(1)
 			}
