@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -27,7 +28,21 @@ var markdownCmd = &cobra.Command{
 			if PrintTemplate {
 				t.printContent()
 			} else {
-				t.copyContent()
+
+				if runtime.GOOS == "linux" {
+					// xclip is required to run this on linux, print content when it is not present
+					_, err := runBashCommand("which xclip")
+					// presence of an error indicates xclip is not installed
+					if err != nil {
+						fmt.Println(linuxMissingXclip)
+						t.printContent()
+					} else {
+						t.copyContent()
+					}
+
+				} else {
+					t.copyContent()
+				}
 			}
 
 		} else if len(args) == 2 {
@@ -69,7 +84,7 @@ type temp struct {
 func (t temp) printContent() {
 	if t.RequireId {
 		id := uuid.New().String()
-		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```") + "\n", id)
+		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```")+"\n", id)
 	} else {
 		fmt.Println(t.Template)
 	}
@@ -157,6 +172,12 @@ var templates = map[string]temp{
 }
 
 const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout.\n\n" + argList
+
+const linuxMissingXclip = `!!!! WARNING !!!!
+Application 'xclip' is required for copy-to-clipboard feature on Linux. Install xclip with 'sudo apt-get install xclip'
+Printing content to STDOUT:
+!!!! WARNING !!!!
+`
 
 const argList = `Args, full (abbreviation)--
 
