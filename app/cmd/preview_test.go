@@ -55,6 +55,33 @@ func Test_createNewTarget(t *testing.T) {
 
 func Test_createNewTargetSingleFileThatIsSQL(t *testing.T) {
 	output := captureOutput(func() {
+		_, err := createNewTarget("test.md", []string{"/data/some.sql", "image/nested-small.png"})
+		_, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "data/some.sql"))
+		if err == nil {
+			t.Errorf("data/some.sql should have been copied over and it was not")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "/image/nested-small.png")); os.IsNotExist(err) {
+			t.Errorf("mrsmall-invert should have been created, was not")
+		}
+	})
+
+	if strings.Contains(output, "Link not found with path") {
+		t.Errorf("output should not print 'Link not found with path', output was:\n%s\n", output)
+	}
+
+	if strings.Contains(output, "Failed build tmp files around single file preview for") {
+		t.Errorf("output should not print 'Failed build tmp files around single file preview for', output was:\n%s\n", output)
+	}
+
+	err := os.RemoveAll("single-file-upload")
+	if err != nil {
+		t.Errorf("could not remove single-file-upload directory: %s\n", err)
+	}
+}
+
+func Test_createNewTargetSingleFileSQLWithImage(t *testing.T) {
+	output := captureOutput(func() {
 		_, err := createNewTarget("test.md", []string{"/data/some.sql"})
 		_, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "data/some.sql"))
 		if err == nil {

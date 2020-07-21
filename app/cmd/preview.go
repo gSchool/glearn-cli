@@ -296,7 +296,7 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 		} else if len(pathArray) == 2 {
 			linkDirs = pathArray[0]
 		} else {
-			// Collect verything up until the image name (last item) and join it back together
+			// Collect everything up until the image name (last item) and join it back together
 			// This gives us the name of the directory(ies) to make to put the image in
 			linkDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
 		}
