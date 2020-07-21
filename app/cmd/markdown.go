@@ -69,7 +69,7 @@ type temp struct {
 func (t temp) printContent() {
 	if t.RequireId {
 		id := uuid.New().String()
-		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```") + "\n", id)
+		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```")+"\n", id)
 	} else {
 		fmt.Println(t.Template)
 	}

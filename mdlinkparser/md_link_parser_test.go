@@ -17,7 +17,7 @@ func Test_ParseLink(t *testing.T) {
 [with](links)
 		`: []string{"than", "line", "links"},
 		"[example](linkresult[contains](valid-link))": []string{"linkresult[contains](valid-link"}, // not actually supported, checks terminating link character
-		"[)": []string{""},
+		"[)":                  []string{""},
 		"[here](./../result)": []string{"./../result"},
 		`var myarr = [];
 myarr[0] = (val != otherval);`: []string{""},

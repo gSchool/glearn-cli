@@ -111,8 +111,9 @@ preview and return/open the preview URL when it is complete.
 		isSingleFilePreviewWithLinks := !isDirectory && (fileContainsLinks || fileContainsSQLPaths)
 		isDirectory = isDirectory || (!isDirectory && fileContainsLinks)
 
+		var alternateTarget string
 		if fileContainsLinks {
-			target, err = createNewTarget(target, singleFileLinkPaths)
+			alternateTarget, err = createNewTarget(target, singleFileLinkPaths)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
 				return
@@ -120,11 +121,14 @@ preview and return/open the preview URL when it is complete.
 		}
 
 		if fileContainsSQLPaths {
-			target, err = createNewTarget(target, dataPaths)
+			alternateTarget, err = createNewTarget(target, dataPaths)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
 				return
 			}
+		}
+		if alternateTarget != "" {
+			target = alternateTarget
 		}
 
 		// Detect config file
