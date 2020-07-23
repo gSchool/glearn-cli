@@ -10,6 +10,12 @@ import (
 	"testing"
 )
 
+const testMDContent = `## Test links
+
+![alt](./image/nested-small.png)
+![alt](image/nested-small.png)
+![alt](../nested-small.png)`
+
 func Test_createNewTarget(t *testing.T) {
 	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{"./mrsmall-invert.png", "../mrsmall.png", "../image/nested-small.png", "deeper/deep-small.png"})
 	if err != nil {
@@ -53,7 +59,55 @@ func Test_createNewTarget(t *testing.T) {
 	}
 }
 
+func Test_createNewTargetSingleFileSQLWithImage(t *testing.T) {
+	err := createTestMD()
+	err = os.MkdirAll("image", os.FileMode(0777))
+	_, err = os.Create("image/nested-small.png")
+	if err != nil {
+		t.Errorf("Error generating test image: %s\n", err)
+	}
+
+	output := captureOutput(func() {
+		_, err := createNewTarget("test.md", []string{"/data/some.sql", "image/nested-small.png"})
+		_, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "data/some.sql"))
+		if err == nil {
+			t.Errorf("data/some.sql should have been copied over and it was not")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "/image/nested-small.png")); os.IsNotExist(err) {
+			t.Errorf("mrsmall-invert should have been created, was not")
+		}
+	})
+
+	if strings.Contains(output, "Link not found with path") {
+		t.Errorf("output should not print 'Link not found with path', output was:\n%s\n", output)
+	}
+
+	if strings.Contains(output, "Failed build tmp files around single file preview for") {
+		t.Errorf("output should not print 'Failed build tmp files around single file preview for', output was:\n%s\n", output)
+	}
+
+	err = os.RemoveAll("single-file-upload")
+	if err != nil {
+		t.Errorf("could not remove single-file-upload directory: %s\n", err)
+	}
+
+	err = os.RemoveAll("image")
+	if err != nil {
+		t.Errorf("could not remove image directory: %s\n", err)
+	}
+
+	err = os.Remove("test.md")
+	if err != nil {
+		t.Errorf("could not remove 'test.md' file: %s\n", err)
+	}
+}
+
 func Test_createNewTargetSingleFileThatIsSQL(t *testing.T) {
+	err := createTestMD()
+	if err != nil {
+		t.Errorf("Error creating test.md: %s\n", err)
+	}
 	output := captureOutput(func() {
 		_, err := createNewTarget("test.md", []string{"/data/some.sql"})
 		_, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "data/some.sql"))
@@ -65,9 +119,22 @@ func Test_createNewTargetSingleFileThatIsSQL(t *testing.T) {
 	if strings.Contains(output, "Link not found with path") {
 		t.Errorf("output should not print 'Link not found with path', output was:\n%s\n", output)
 	}
+
+	err = os.Remove("test.md")
+	if err != nil {
+		t.Errorf("could not remove 'test.md' file: %s\n", err)
+	}
 }
 
 func Test_createNewTargetSingleFile(t *testing.T) {
+	err := createTestMD()
+	err = os.MkdirAll("image", os.FileMode(0777))
+	_, err = os.Create("image/nested-small.png")
+	_, err = os.Create("../nested-small.png")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+
 	output := captureOutput(func() {
 		result, err := createNewTarget("test.md", []string{"./image/nested-small.png", "image/nested-small.png", "../nested-small.png"})
 		if err != nil {
@@ -98,6 +165,37 @@ func Test_createNewTargetSingleFile(t *testing.T) {
 	if strings.Contains(output, "Link not found with path") {
 		t.Errorf("output should not print 'Link not found with path', output was:\n%s\n", output)
 	}
+
+	err = os.RemoveAll("image")
+	if err != nil {
+		t.Errorf("could not remove 'image' directory: %s\n", err)
+	}
+
+	err = os.Remove("../nested-small.png")
+	if err != nil {
+		t.Errorf("could not remove '../nested-small.png' file: %s\n", err)
+	}
+
+	err = os.Remove("test.md")
+	if err != nil {
+		t.Errorf("could not remove 'test.md' file: %s\n", err)
+	}
+}
+
+func createTestMD() error {
+	f, err := os.OpenFile("test.md", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write([]byte(testMDContent)); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func captureOutput(f func()) string {
