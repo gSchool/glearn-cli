@@ -45,23 +45,23 @@ new block. If the block already exists, it will update the existing block.
 		// Start benchmarking the total time spent in publish cmd
 		startOfCmd := time.Now()
 
-		remote, err := remoteName()
+		repoPieces, err := remotePieces()
 		if err != nil {
 			fmt.Printf("Cannot run git remote detection with command: %s\n%s\n", pushRemoteCommand, err)
 			os.Exit(1)
 		}
-		if remote == "" {
+		if repoPieces.RepoName == "" {
 			fmt.Println("no fetch remote detected")
 			os.Exit(1)
 		}
 
-		block, err := learn.API.GetBlockByRepoName(remote)
+		block, err := learn.API.GetBlockByRepoName(repoPieces)
 		if err != nil {
 			fmt.Printf("Error fetching block from learn: %s\n", err)
 			os.Exit(1)
 		}
 		if !block.Exists() {
-			block, err = learn.API.CreateBlockByRepoName(remote)
+			block, err = learn.API.CreateBlockByRepoName(repoPieces)
 			if err != nil {
 				fmt.Printf("Error creating block from learn: %s\n", err)
 				os.Exit(1)
@@ -86,7 +86,7 @@ new block. If the block already exists, it will update the existing block.
 			fmt.Printf(fmt.Sprintf("Failed to find or create a config file for repo: (%s). Err: %v", branch, err))
 			os.Exit(1)
 		}
-		fmt.Printf("Publishing block with repo name %s\n", remote)
+		fmt.Printf("Publishing block with repo name %s\n", repoPieces.RepoName)
 
 		if createdConfig {
 			fmt.Println("Committing autoconfig.yaml to", branch)
@@ -129,7 +129,7 @@ new block. If the block already exists, it will update the existing block.
 		if err != nil {
 			s.Stop()
 
-			block, err := learn.API.GetBlockByRepoName(remote)
+			block, err := learn.API.GetBlockByRepoName(repoPieces)
 			if err != nil {
 				fmt.Printf("Error fetching block from learn: %s\n", err)
 				os.Exit(1)
@@ -171,20 +171,34 @@ func currentBranch() (string, error) {
 	return runBashCommand(branchCommand)
 }
 
-func remoteName() (string, error) {
+func remotePieces() (learn.RepoPieces, error) {
+	var repoPieces learn.RepoPieces
 	s, err := runBashCommand(pushRemoteCommand)
 	if err != nil {
-		return "", err
+		return repoPieces, err
 	}
 	parts := strings.Split(s, ".git") // isolate url from .git
 	if len(parts) < 1 {
-		return "", fmt.Errorf("Error parsing remote name from %s", s)
+		return repoPieces, fmt.Errorf("Error parsing remote name from %s", s)
 	}
 	parts = strings.Split(parts[0], "/") // select final part of the url
 	if len(parts) < 1 {
-		return "", fmt.Errorf("Error parsing remote name from %s", s)
+		return repoPieces, fmt.Errorf("Error parsing remote name from %s", s)
 	}
-	return parts[len(parts)-1], nil
+
+	repoPieces.RepoName = parts[len(parts)-1]
+	parts = strings.Split(parts[0], ":")
+	if len(parts) < 1 {
+		return repoPieces, fmt.Errorf("Error parsing remote name from %s", s)
+	}
+	repoPieces.Org = parts[len(parts)-1]
+	parts = strings.Split(parts[0], "@")
+	if len(parts) < 1 {
+		return repoPieces, fmt.Errorf("Error parsing remote name from %s", s)
+	}
+	repoPieces.Origin = parts[len(parts)-1]
+
+	return repoPieces, nil
 }
 
 func pushToRemote(branch string) error {
