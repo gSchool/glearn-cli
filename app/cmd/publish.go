@@ -177,26 +177,26 @@ func remotePieces() (learn.RepoPieces, error) {
 	if err != nil {
 		return repoPieces, err
 	}
-	parts := strings.Split(s, ".git") // isolate url from .git
-	if len(parts) < 1 {
-		return repoPieces, fmt.Errorf("Error parsing remote name from %s", s)
+	parts := strings.Split(s, ".git")
+	if len(parts) < 1 { // There should only be 1
+		return repoPieces, fmt.Errorf("Error parsing git remote from %s", s)
 	}
-	parts = strings.Split(parts[0], "/") // select final part of the url
-	if len(parts) < 1 {
-		return repoPieces, fmt.Errorf("Error parsing remote name from %s", s)
+	parts = strings.Split(parts[0], "/")
+
+	// does it start with https
+	if parts[0] == "https:" {
+		repoPieces.Origin = parts[2]
+		repoPieces.Org = parts[3]
+		repoPieces.RepoName = parts[4]
+
+		return repoPieces, nil
 	}
 
-	repoPieces.RepoName = parts[len(parts)-1]
+	repoPieces.RepoName = parts[1]
 	parts = strings.Split(parts[0], ":")
-	if len(parts) < 1 {
-		return repoPieces, fmt.Errorf("Error parsing remote name from %s", s)
-	}
-	repoPieces.Org = parts[len(parts)-1]
+	repoPieces.Org = parts[1]
 	parts = strings.Split(parts[0], "@")
-	if len(parts) < 1 {
-		return repoPieces, fmt.Errorf("Error parsing remote name from %s", s)
-	}
-	repoPieces.Origin = parts[len(parts)-1]
+	repoPieces.Origin = parts[1]
 
 	return repoPieces, nil
 }
