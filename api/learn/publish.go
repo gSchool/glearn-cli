@@ -93,7 +93,7 @@ func (api *APIClient) GetBlockByRepoName(repoPieces RepoPieces) (Block, error) {
 
 // CreateBlockByRepoName takes a string repo name and makes a POST to the Learn API to create the block
 func (api *APIClient) CreateBlockByRepoName(repoPieces RepoPieces) (Block, error) {
-	payload := BlockPost{Block: Block{Origin: repoPieces.Origin, Org: repoPieces.Org, RepoName: repoPieces.RepoName}}
+	payload := BlockPost{Block: Block{Origin: repoPieces.Origin, Org: repoPieces.Org, RepoName: repoPieces.RepoName, Title: repoPieces.RepoName}}
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
