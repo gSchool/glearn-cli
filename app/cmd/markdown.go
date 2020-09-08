@@ -234,7 +234,7 @@ const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>
 ##### !end-answer
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -275,7 +275,7 @@ const checkboxTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 ##### !end-answer
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -309,7 +309,7 @@ const tasklistTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 ##### !end-options
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -347,7 +347,7 @@ const shortanswerTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>
 ##### !end-answer
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -386,7 +386,7 @@ const numberTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 ##### !end-answer
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -418,7 +418,7 @@ const paragraphTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 ##### !end-placeholder
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -471,7 +471,7 @@ describe('doSomething', function() {
 ##### !end-tests
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -546,7 +546,7 @@ public class SnippetTest {
 ##### !end-tests
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -603,7 +603,7 @@ class TestPython1(unittest.TestCase):
 ##### !end-tests
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -654,7 +654,7 @@ ORDER BY something
 ##### !end-tests
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -692,7 +692,7 @@ function doSomething() {
 ##### !end-placeholder
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -724,7 +724,7 @@ const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>
 ##### !end-placeholder
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
@@ -758,7 +758,7 @@ const testableProjectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>
 ##### !end-placeholder
 
 <!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
