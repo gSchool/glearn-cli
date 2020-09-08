@@ -128,6 +128,8 @@ var templates = map[string]temp{
 	"multiplechoice":  {"Multiple Choice markdown", multiplechoiceTemplate, true},
 	"cb":              {"Checkbox markdown", checkboxTemplate, true},
 	"checkbox":        {"Checkbox markdown", checkboxTemplate, true},
+	"tl":              {"Tasklist markdown", tasklistTemplate, true},
+	"tasklist":        {"Tasklist markdown", tasklistTemplate, true},
 	"sa":              {"Short Answer markdown", shortanswerTemplate, true},
 	"shortanswer":     {"Short Answer markdown", shortanswerTemplate, true},
 	"nb":              {"Number markdown", numberTemplate, true},
@@ -165,6 +167,7 @@ Files:
 Questions:
   multiplechoice (mc)
   checkbox (cb)
+  tasklist (tl)
   shortanswer (sa)
   number (nb)
   paragraph (pg)
@@ -270,6 +273,40 @@ const checkboxTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 * [Option 3 (the correct answer set)]
 
 ##### !end-answer
+
+<!-- other optional sections -->
+<!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
+<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
+<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const tasklistTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+<!-- Replace everything in square brackets [] and remove brackets  -->
+
+### !challenge
+
+* type: tasklist
+* id: %s
+* title: [text, a short question title]
+<!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
+<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+
+##### !question
+
+[optional, markdown, a prompt at the top of the tasklist]
+
+##### !end-question
+
+##### !options
+
+* [Task 1]
+* [Task 2]
+* [Task 3, etc]
+
+##### !end-options
 
 <!-- other optional sections -->
 <!-- !hint - !end-hint (markdown, users can see after a failed attempt) -->
