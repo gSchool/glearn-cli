@@ -14,7 +14,12 @@ func Test_GetBlockByRepoName(t *testing.T) {
 	mockClient := api.MockResponse(validBlockResponse)
 	API, _ := NewAPI("https://example.com", mockClient)
 
-	block, err := API.GetBlockByRepoName("blocks-test")
+	repo := RepoPieces{}
+	repo.RepoName = "blocks-test"
+	repo.Org = "gSchool"
+	repo.Origin = "github.com"
+
+	block, err := API.GetBlockByRepoName(repo)
 	if err != nil {
 		t.Errorf("error not nil: %s\n", err)
 	}
@@ -35,8 +40,8 @@ func Test_GetBlockByRepoName(t *testing.T) {
 	if req.Method != "GET" {
 		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
 	}
-	if req.URL.String() != "https://example.com/api/v1/blocks?repo_name=blocks-test" {
-		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", "https://example.com/api/v1/blocks?repo_name=blocks-test", req.URL.String())
+	if req.URL.String() != "https://example.com/api/v1/blocks?org=gSchool&origin=github.com&repo_name=blocks-test" {
+		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", "https://example.com/api/v1/blocks?org=gSchool&origin=github.com&repo_name=blocks-test", req.URL.String())
 	}
 	if req.Header.Get("Content-Type") != "application/json" {
 		t.Errorf("Content-Type header should be 'application/json', was '%s'\n", req.Header.Get("Content-Type"))
@@ -51,7 +56,12 @@ func Test_CreateBlockByRepoName(t *testing.T) {
 	mockClient := api.MockResponse(validBlockResponse)
 	API, _ := NewAPI("https://example.com", mockClient)
 
-	block, err := API.CreateBlockByRepoName("blocks-test")
+	repo := RepoPieces{}
+	repo.RepoName = "blocks-test"
+	repo.Org = "gSchool"
+	repo.Origin = "github.com"
+
+	block, err := API.CreateBlockByRepoName(repo)
 	if err != nil {
 		t.Errorf("error not nil: %s\n", err)
 	}

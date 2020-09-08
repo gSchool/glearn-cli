@@ -18,10 +18,19 @@ type BlockPost struct {
 // Block holds information yielded from the Learn Block API
 type Block struct {
 	ID           int      `json:"id"`
+	Origin       string   `json:"origin"`
+	Org          string   `json:"org"`
 	RepoName     string   `json:"repo_name"`
 	SyncErrors   []string `json:"sync_errors"`
 	Title        string   `json:"title"`
 	CohortsUsing []int    `json:"cohorts_using"`
+}
+
+// RepoPieces pieces of the remote url
+type RepoPieces struct {
+	Origin   string
+	Org      string
+	RepoName string
 }
 
 // blockReponse represents the shape of our Learn API block responses
@@ -41,13 +50,15 @@ func (b Block) Exists() bool {
 
 // GetBlockByRepoName takes a string repo name and requests a block from Learn. Returns
 // either the Block or an error
-func (api *APIClient) GetBlockByRepoName(repoName string) (Block, error) {
+func (api *APIClient) GetBlockByRepoName(repoPieces RepoPieces) (Block, error) {
 	u, err := url.Parse(fmt.Sprintf("%s/api/v1/blocks", api.baseURL))
 	if err != nil {
 		return Block{}, errors.New("unable to parse Learn remote")
 	}
 	v := url.Values{}
-	v.Set("repo_name", repoName)
+	v.Set("repo_name", repoPieces.RepoName)
+	v.Set("org", repoPieces.Org)
+	v.Set("origin", repoPieces.Origin)
 	u.RawQuery = v.Encode()
 
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -81,8 +92,8 @@ func (api *APIClient) GetBlockByRepoName(repoName string) (Block, error) {
 }
 
 // CreateBlockByRepoName takes a string repo name and makes a POST to the Learn API to create the block
-func (api *APIClient) CreateBlockByRepoName(repoName string) (Block, error) {
-	payload := BlockPost{Block: Block{RepoName: repoName}}
+func (api *APIClient) CreateBlockByRepoName(repoPieces RepoPieces) (Block, error) {
+	payload := BlockPost{Block: Block{Origin: repoPieces.Origin, Org: repoPieces.Org, RepoName: repoPieces.RepoName, Title: repoPieces.RepoName}}
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
