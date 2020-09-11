@@ -93,7 +93,7 @@ new block. If the block already exists, it will update the existing block.
 			err = addAutoConfigAndCommit()
 
 			if err != nil && !strings.Contains(err.Error(), "Your branch is up to date with 'origin/master'.") {
-				fmt.Printf("Error committing the autoconfig.yaml to origin remote on branch: %s", err)
+				fmt.Printf("Error committing the autoconfig.yaml to origin remote on branch, run 'git rm autoconfig.yaml' to remove it from reference then add a new commit: %s", err)
 				os.Exit(1)
 			}
 		}
