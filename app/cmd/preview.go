@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
-	"github.com/gSchool/glearn-cli/mdlinkparser"
+	"github.com/gSchool/glearn-cli/mdresourceparser"
 	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )
 
@@ -398,7 +398,7 @@ func printlnGreen(text string) {
 }
 
 // collectLinkPaths takes a target, reads it, and passes it's contents (slice of bytes)
-// to our MDLinkParser as a string. All relative/local markdown flavored images are parsed
+// to our MDResourceParser as a string. All relative/local markdown flavored images are parsed
 // into an array of strings and returned
 func collectLinkPaths(target string) ([]string, error) {
 	contents, err := ioutil.ReadFile(target)
@@ -406,8 +406,8 @@ func collectLinkPaths(target string) ([]string, error) {
 		return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
 	}
 
-	m := mdlinkparser.New(string(contents))
-	m.ParseLinks()
+	m := mdresourceparser.New(string(contents))
+	m.ParseResources()
 
 	return m.Links, nil
 }
