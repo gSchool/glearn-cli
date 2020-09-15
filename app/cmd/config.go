@@ -36,6 +36,7 @@ func doesConfigExistOrCreate(target, unitsDir string, isSingleFilePreview bool) 
 		if isSingleFilePreview == false {
 			fmt.Printf("INFO: Using existing config.yaml. ")
 		}
+
 		return createdConfig, nil
 	} else if os.IsNotExist(yamlExists) {
 		_, ymlExists := os.Stat(configYmlPath)
@@ -44,6 +45,7 @@ func doesConfigExistOrCreate(target, unitsDir string, isSingleFilePreview bool) 
 			if isSingleFilePreview == false {
 				fmt.Printf("INFO: Using existing config.yaml. ")
 			}
+
 			return createdConfig, nil
 		} else if os.IsNotExist(ymlExists) {
 			if isSingleFilePreview == false {

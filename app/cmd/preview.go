@@ -93,7 +93,7 @@ preview and return/open the preview URL when it is complete.
 		if includeLinks {
 			if filepath.Ext(target) == ".md" {
 				dataPaths, err = collectDataPaths(target)
-				singleFileLinkPaths, err = collectLinkPaths(target)
+				singleFileLinkPaths, dockerPaths, err = collectResourcePaths(target)
 				if err != nil {
 					previewCmdError(fmt.Sprintf("Failed to attach local images for single file preview for: (%s). Err: %v", target, err))
 					return
@@ -105,11 +105,11 @@ preview and return/open the preview URL when it is complete.
 		}
 		fileContainsLinks := len(singleFileLinkPaths) > 0
 		fileContainsSQLPaths := len(dataPaths) > 0
+		fileContainsDocker := len(dockerPaths) > 0
 
 		// variable holding whether or not source is a dir OR when it is a single file preview
 		// AND singleFileLinkPaths is > 0 that means it is now a dir again (tmp one we created)
-		isSingleFilePreviewWithLinks := !isDirectory && (fileContainsLinks || fileContainsSQLPaths)
-		isDirectory = isDirectory || (!isDirectory && fileContainsLinks)
+		isDirectory = isDirectory || (!isDirectory && (fileContainsLinks || fileContainsDocker))
 
 		var alternateTarget string
 		if fileContainsLinks {
@@ -127,13 +127,15 @@ preview and return/open the preview URL when it is complete.
 				return
 			}
 		}
+
 		if alternateTarget != "" {
 			target = alternateTarget
 		}
 
 		// Detect config file
-		if fileContainsLinks || fileContainsSQLPaths || isDirectory {
-			_, err = doesConfigExistOrCreate(target, UnitsDirectory, isSingleFilePreviewWithLinks)
+		if fileContainsLinks || fileContainsSQLPaths || isDirectory || fileContainsDocker {
+			isSingleFilePreview := !isDirectory && (fileContainsLinks || fileContainsSQLPaths)
+			_, err = doesConfigExistOrCreate(target, UnitsDirectory, isSingleFilePreview)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
 				return
@@ -208,7 +210,7 @@ preview and return/open the preview URL when it is complete.
 		startBuildAndPollRelease := time.Now()
 
 		// Let Learn know there is new preview content on s3, where it is, and to build it
-		res, err := learn.API.BuildReleaseFromS3(bucketKey, (isDirectory || fileContainsSQLPaths))
+		res, err := learn.API.BuildReleaseFromS3(bucketKey, (isDirectory || fileContainsSQLPaths || fileContainsDocker))
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to build new preview content in learn. Err: %v", err))
 			return
@@ -347,7 +349,7 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 				return "", err
 			}
 		}
-	}
+	} // End of loop over files
 
 	// Copy original single markdown file into the base of our new tmp dir
 	newTarget := newSrcPath + "/" + srcMDFile
@@ -397,19 +399,19 @@ func printlnGreen(text string) {
 	fmt.Printf("\033[32m%s\033[0m\n", text)
 }
 
-// collectLinkPaths takes a target, reads it, and passes it's contents (slice of bytes)
+// collectResourcePaths takes a target, reads it, and passes it's contents (slice of bytes)
 // to our MDResourceParser as a string. All relative/local markdown flavored images are parsed
 // into an array of strings and returned
-func collectLinkPaths(target string) ([]string, error) {
+func collectResourcePaths(target string) ([]string, []string, error) {
 	contents, err := ioutil.ReadFile(target)
 	if err != nil {
-		return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+		return []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
 	}
 
-	m := mdresourceparser.New(string(contents))
+	m := mdresourceparser.New([]rune(string(contents)))
 	m.ParseResources()
 
-	return m.Links, nil
+	return m.Links, m.DockerDirectoryPaths, nil
 }
 
 // collectDataPaths takes a target, reads it, and scans the file for data paths and collects them

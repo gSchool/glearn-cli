@@ -28,9 +28,9 @@ type startMatch struct {
 }
 
 // New creates and returns a pointer to the MDResourceParser with it's input attached
-func New(input string) *MDResourceParser {
+func New(input []rune) *MDResourceParser {
 	p := &MDResourceParser{
-		input:          []rune(input),
+		input:          input,
 		dockerDirMatch: &startMatch{match: "* docker_directory_path:"},
 	}
 	p.readChar()
@@ -92,7 +92,6 @@ func (p *MDResourceParser) extractPath() (string, error) {
 			return "", fmt.Errorf("no match")
 		}
 
-		fmt.Println(string(p.char), string(matchChar))
 		if p.readPosition >= len(p.input) {
 			return "", io.EOF
 		}
