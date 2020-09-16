@@ -17,7 +17,7 @@ const testMDContent = `## Test links
 ![alt](../nested-small.png)`
 
 func Test_createNewTarget(t *testing.T) {
-	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{"./mrsmall-invert.png", "../mrsmall.png", "../image/nested-small.png", "deeper/deep-small.png"})
+	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{"./mrsmall-invert.png", "../mrsmall.png", "../image/nested-small.png", "deeper/deep-small.png"}, []string{})
 	if err != nil {
 		t.Errorf("Attempting to createNewTarget errored: %s\n", err)
 	}
@@ -68,7 +68,7 @@ func Test_createNewTargetSingleFileSQLWithImage(t *testing.T) {
 	}
 
 	output := captureOutput(func() {
-		_, err := createNewTarget("test.md", []string{"/data/some.sql", "image/nested-small.png"})
+		_, err := createNewTarget("test.md", []string{"/data/some.sql", "image/nested-small.png"}, []string{})
 		_, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "data/some.sql"))
 		if err == nil {
 			t.Errorf("data/some.sql should have been copied over and it was not")
@@ -109,7 +109,7 @@ func Test_createNewTargetSingleFileThatIsSQL(t *testing.T) {
 		t.Errorf("Error creating test.md: %s\n", err)
 	}
 	output := captureOutput(func() {
-		_, err := createNewTarget("test.md", []string{"/data/some.sql"})
+		_, err := createNewTarget("test.md", []string{"/data/some.sql"}, []string{})
 		_, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "data/some.sql"))
 		if err == nil {
 			t.Errorf("data/some.sql should have been copied over and it was not")
@@ -136,7 +136,7 @@ func Test_createNewTargetSingleFile(t *testing.T) {
 	}
 
 	output := captureOutput(func() {
-		result, err := createNewTarget("test.md", []string{"./image/nested-small.png", "image/nested-small.png", "../nested-small.png"})
+		result, err := createNewTarget("test.md", []string{"./image/nested-small.png", "image/nested-small.png", "../nested-small.png"}, []string{})
 		if err != nil {
 			t.Errorf("Attempting to createNewTarget errored: %s\n", err)
 		}
