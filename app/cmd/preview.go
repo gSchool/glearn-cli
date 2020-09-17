@@ -347,6 +347,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 
 	// iterate over docker directories as their contents must be recursively copied
 	for _, dirPath := range dockerPaths {
+		fmt.Printf("Including docker_directory_path: %s\n", dirPath)
 		dirPath = trimFirstRune(dirPath)
 		fileDir, err := os.Stat(dirPath)
 
@@ -368,7 +369,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 
 			if newDirPath != "" {
 				// the directory was found after checkpoing porents, copy contents
-				err = CopyDirectoryContents(newDirPath, newSrcPath)
+				err = CopyDirectoryContents(newDirPath, newSrcPath+"/"+dirPath)
 				if err != nil {
 					return "", err
 				}
@@ -377,7 +378,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		} else if !fileDir.IsDir() {
 			return "", fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
 		} else {
-			err = CopyDirectoryContents(dirPath, newSrcPath)
+			err = CopyDirectoryContents(dirPath, newSrcPath+"/"+dirPath)
 			if err != nil {
 				return "", err
 			}

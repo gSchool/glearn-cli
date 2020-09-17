@@ -232,7 +232,7 @@ func Test_createNewTarget_DockerDirectory(t *testing.T) {
 			t.Errorf("test.md should have been created")
 		}
 
-		if _, err = os.Stat(fmt.Sprintf("single-file-upload/image/%s", "path/to/dir/root.png")); os.IsNotExist(err) {
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/root.png")); os.IsNotExist(err) {
 			t.Errorf("path/to/dir/root.png should have been created and it's image dir moved to the root of the single file directory, was not")
 		}
 
@@ -256,7 +256,123 @@ func Test_createNewTarget_DockerDirectory(t *testing.T) {
 		t.Errorf("could not remove 'test.md' file: %s\n", err)
 	}
 
-	if output == "" {
+	if output != "" {
+		t.Error("expected stdout exist")
+	}
+}
+
+func Test_createNewTarget_DockerDirectoryNestedMd(t *testing.T) {
+	err := createTestMD(dockerMDContent)
+	err = os.MkdirAll("../path/to/dir/child", os.FileMode(0777))
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+	_, err = os.Create("../path/to/dir/root.png")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+	_, err = os.Create("../path/to/dir/child/nest.png")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+
+	output := captureOutput(func() {
+		result, err := createNewTarget("test.md", []string{}, []string{"/path/to/dir"})
+		if err != nil {
+			t.Errorf("Attempting to createNewTarget errored: %s\n", err)
+		}
+
+		if result != "single-file-upload" {
+			t.Errorf("result should be the temp directory with the target markdown, '%s'", result)
+		}
+
+		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
+			t.Errorf("test.md should have been created")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/root.png")); os.IsNotExist(err) {
+			t.Errorf("path/to/dir/root.png should have been created and it's image dir moved to the root of the single file directory, was not")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/child/nest.png")); os.IsNotExist(err) {
+			t.Errorf("path/to/dir/child/nest.png should have been created and it's image dir moved to the root of the single file directory, was not")
+		}
+
+		err = os.RemoveAll("single-file-upload")
+		if err != nil {
+			t.Errorf("could not remove single-file-upload directory: %s\n", err)
+		}
+	})
+
+	err = os.RemoveAll("../path")
+	if err != nil {
+		t.Errorf("could not remove 'path' directory: %s\n", err)
+	}
+
+	err = os.Remove("test.md")
+	if err != nil {
+		t.Errorf("could not remove 'test.md' file: %s\n", err)
+	}
+
+	if output != "" {
+		t.Error("expected stdout exist")
+	}
+}
+
+func Test_createNewTarget_DockerDirectoryDoubleNestedMd(t *testing.T) {
+	err := createTestMD(dockerMDContent)
+	err = os.MkdirAll("../../path/to/dir/child", os.FileMode(0777))
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+	_, err = os.Create("../../path/to/dir/root.png")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+	_, err = os.Create("../../path/to/dir/child/nest.png")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+
+	output := captureOutput(func() {
+		result, err := createNewTarget("test.md", []string{}, []string{"/path/to/dir"})
+		if err != nil {
+			t.Errorf("Attempting to createNewTarget errored: %s\n", err)
+		}
+
+		if result != "single-file-upload" {
+			t.Errorf("result should be the temp directory with the target markdown, '%s'", result)
+		}
+
+		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
+			t.Errorf("test.md should have been created")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/root.png")); os.IsNotExist(err) {
+			t.Errorf("path/to/dir/root.png should have been created and it's image dir moved to the root of the single file directory, was not")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/child/nest.png")); os.IsNotExist(err) {
+			t.Errorf("path/to/dir/child/nest.png should have been created and it's image dir moved to the root of the single file directory, was not")
+		}
+
+		err = os.RemoveAll("single-file-upload")
+		if err != nil {
+			t.Errorf("could not remove single-file-upload directory: %s\n", err)
+		}
+	})
+
+	err = os.RemoveAll("../../path")
+	if err != nil {
+		t.Errorf("could not remove 'path' directory: %s\n", err)
+	}
+
+	err = os.Remove("test.md")
+	if err != nil {
+		t.Errorf("could not remove 'test.md' file: %s\n", err)
+	}
+
+	if output != "" {
 		t.Error("expected stdout exist")
 	}
 }
