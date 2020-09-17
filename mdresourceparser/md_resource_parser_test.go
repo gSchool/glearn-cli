@@ -26,7 +26,7 @@ myarr[0]("code-test-case");`: []string{"\"code-test-case\""},
 	}
 
 	for k, v := range tableTest {
-		parser := New(k)
+		parser := New([]rune(k))
 		parser.ParseResources()
 		result := parser.Links
 		if strings.Join(result, "") != strings.Join(v, "") {
@@ -40,7 +40,7 @@ func Test_ParseDockerDirectoryPaths(t *testing.T) {
 		challengeContent: []string{"/path/to/dir"},
 	}
 	for k, v := range tableTest {
-		parser := New(k)
+		parser := New([]rune(k))
 		parser.ParseResources()
 		result := parser.DockerDirectoryPaths
 		if strings.Join(result, "") != strings.Join(v, "") {
