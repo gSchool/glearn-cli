@@ -146,7 +146,7 @@ preview and return/open the preview URL when it is complete.
 		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpZipFile
-		err = compressDirectory(target, tmpZipFile)
+		err = compressDirectory(target, tmpZipFile, isSingleFilePreview)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", target, err))
 			return
@@ -648,8 +648,9 @@ func CopyDirectoryContents(src, dst string) error {
 
 // compressDirectory takes a source file path (where the content you want zipped lives)
 // and a target file path (where to put the zip file) and recursively compresses the source.
-// Source can either be a directory or a single file
-func compressDirectory(source, target string) error {
+// Source can either be a directory or a single file. When singleFile is true, all files in
+// the zip are added.
+func compressDirectory(source, target string, singleFile bool) error {
 	// Create file with target name and defer its closing
 	zipfile, err := os.Create(target)
 	if err != nil {
@@ -677,6 +678,10 @@ func compressDirectory(source, target string) error {
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		ext := filepath.Ext(path)
 		_, ok := fileExtWhitelist[ext]
+		// upload everything for single file as it should always be relevant data
+		if singleFile {
+			ok = true
+		}
 
 		if ok || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
 			if err != nil {
