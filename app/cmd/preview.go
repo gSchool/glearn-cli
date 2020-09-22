@@ -448,8 +448,13 @@ func collectDataPaths(target string) ([]string, error) {
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
 func uploadToS3(file *os.File, checksum string, creds *learn.Credentials) (string, error) {
 	// Set up an AWS session with the user's credentials
+	region := "us-west-2"
+	alternateRegion := os.Getenv("S3_REGION")
+	if alternateRegion != "" {
+		region = alternateRegion
+	}
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-2"),
+		Region: aws.String(region),
 		Credentials: credentials.NewStaticCredentials(
 			creds.AccessKeyID,
 			creds.SecretAccessKey,
