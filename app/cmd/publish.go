@@ -81,7 +81,7 @@ new block. If the block already exists, it will update the existing block.
 
 		// Detect config file
 		path, _ := os.Getwd()
-		createdConfig, err := doesConfigExistOrCreate(path+"/", UnitsDirectory, false)
+		createdConfig, err := findOrCreateConfigDir(path + "/")
 		if err != nil {
 			fmt.Printf(fmt.Sprintf("Failed to find or create a config file for repo: (%s). Err: %v", branch, err))
 			os.Exit(1)

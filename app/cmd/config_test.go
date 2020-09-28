@@ -10,7 +10,7 @@ import (
 const withConfigFixture = "../../fixtures/test-block-with-config"
 
 func Test_PreviewDetectsConfig(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withConfigFixture, "", false)
+	createdConfig, _ := doesConfigExistOrCreate(withConfigFixture, false, []string{})
 	if createdConfig {
 		t.Errorf("Created a config when one existed")
 	}
@@ -19,7 +19,7 @@ func Test_PreviewDetectsConfig(t *testing.T) {
 const withNoConfigFixture = "../../fixtures/test-block-no-config"
 
 func Test_PreviewBuildsAutoConfig(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, "", false)
+	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, []string{})
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
@@ -43,10 +43,12 @@ func Test_PreviewBuildsAutoConfig(t *testing.T) {
 const withNoUnitsDirFixture = "../../fixtures/test-block-no-units-dir"
 
 func Test_PreviewBuildsAutoConfigDeclaredUnitsDir(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoUnitsDirFixture, "foo", false)
+	UnitsDirectory = "foo"
+	createdConfig, _ := doesConfigExistOrCreate(withNoUnitsDirFixture, false, []string{})
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
+	UnitsDirectory = ""
 
 	b, err := ioutil.ReadFile(withNoUnitsDirFixture + "/autoconfig.yaml")
 	if err != nil {
@@ -65,7 +67,7 @@ func Test_PreviewBuildsAutoConfigDeclaredUnitsDir(t *testing.T) {
 }
 
 func Test_PreviewBuildFailsWhenPreviewingSingleUnit(t *testing.T) {
-	createdConfig, err := doesConfigExistOrCreate(withNoUnitsDirFixture+"/single_unit", "", false)
+	createdConfig, err := doesConfigExistOrCreate(withNoUnitsDirFixture+"/single_unit", false, []string{})
 
 	if createdConfig == true {
 		t.Errorf("Should not of created a config file")
@@ -77,7 +79,7 @@ func Test_PreviewBuildFailsWhenPreviewingSingleUnit(t *testing.T) {
 }
 
 func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, "", false)
+	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, []string{})
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
@@ -107,7 +109,7 @@ func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
 }
 
 func Test_IgnoresFilesAndUnitsThatStartWithTwoUnderscores(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, "", false)
+	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, []string{})
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
@@ -125,5 +127,27 @@ func Test_IgnoresFilesAndUnitsThatStartWithTwoUnderscores(t *testing.T) {
 
 	if strings.Contains(config, "__skipthis.md") {
 		t.Errorf("Autoconfig have contentfiles that start with __")
+	}
+}
+
+func Test_IgnoresExcludedFiles(t *testing.T) {
+	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, []string{"/units"})
+	if createdConfig == false {
+		t.Errorf("Should of created a config file")
+	}
+
+	b, err := ioutil.ReadFile(withNoConfigFixture + "/autoconfig.yaml")
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	config := string(b)
+
+	if strings.Contains(config, "Title: Unit 1") {
+		t.Errorf("Autoconfig should have excluded a unit titled Unit 1")
+	}
+
+	if strings.Contains(config, "Path: /units/test.md") {
+		t.Errorf("Autoconfig should have excluded a lesson with a path of /units/test.md")
 	}
 }

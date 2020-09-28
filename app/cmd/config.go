@@ -12,8 +12,12 @@ import (
 	"strings"
 )
 
+func findOrCreateConfigDir(target string) (bool, error) {
+	return doesConfigExistOrCreate(target, false, []string{})
+}
+
 // Check whether or nor a config file exists and if it does not we are going to attempt to create one
-func doesConfigExistOrCreate(target, unitsDir string, isSingleFilePreview bool) (bool, error) {
+func doesConfigExistOrCreate(target string, isSingleFilePreview bool, excludePaths []string) (bool, error) {
 	// Configs can be `yaml` or `yml`
 	configYamlPath := ""
 	if strings.HasSuffix(target, "/") {
@@ -53,12 +57,13 @@ func doesConfigExistOrCreate(target, unitsDir string, isSingleFilePreview bool) 
 				fmt.Printf("INFO: No configuration found, generating autoconfig.yaml ")
 			}
 			if target == tmpSingleFileDir {
-				err := createAutoConfig(target, ".")
+				err := createAutoConfig(target, ".", excludePaths)
 				if err != nil {
 					return false, err
 				}
 			} else {
-				err := createAutoConfig(target, unitsDir)
+				// UnitsDirectory supplied from a string flag
+				err := createAutoConfig(target, UnitsDirectory, excludePaths)
 				if err != nil {
 					return false, err
 				}
@@ -73,7 +78,7 @@ func doesConfigExistOrCreate(target, unitsDir string, isSingleFilePreview bool) 
 // 1. Did you give us a units directory?
 // 2. Do you have a units directory?
 // Units must exist in units dir or one provided!
-func createAutoConfig(target, requestedUnitsDir string) error {
+func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) error {
 	blockRoot := ""
 
 	// Make sure we have an ending slash on the root dir
@@ -176,6 +181,7 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 						if blockRoot != "./" {
 							localPath = path[len(blockRoot):]
 						}
+
 						unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
 					}
 
@@ -215,6 +221,19 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 		if strings.HasPrefix(parts[0], "__") {
 			continue
 		}
+
+		// skip the unit when all content files are excluded
+		allFilesExcluded := true
+		for _, path := range unitToContentFileMap[unit] {
+			if !anyMatchingPrefix("/"+path, excludePaths) {
+				allFilesExcluded = false
+				break
+			}
+		}
+		if allFilesExcluded {
+			continue
+		}
+
 		configFile.WriteString("  -\n")
 
 		formattedUnitName := formattedName(unit)
@@ -239,6 +258,9 @@ func createAutoConfig(target, requestedUnitsDir string) error {
 		configFile.WriteString("    ContentFiles:\n")
 
 		for _, path := range unitToContentFileMap[unit] {
+			if anyMatchingPrefix("/"+path, excludePaths) {
+				continue
+			}
 			parts := strings.Split(path, "/")
 			if strings.HasPrefix(parts[len(parts)-1], "__") {
 				continue
@@ -310,4 +332,14 @@ func formattedName(name string) string {
 	a = regexp.MustCompile(`^([0-9]{1,3} :?)`)
 	parts = a.Split(strings.TrimSpace(formattedName), -1)
 	return strings.TrimSpace(strings.Join(parts, ""))
+}
+
+// anyMatchingPrefix reports if any of the given prefixes haveb been found to be a prefix of the target
+func anyMatchingPrefix(target string, prefixes []string) bool {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(target, prefix) {
+			return true
+		}
+	}
+	return false
 }

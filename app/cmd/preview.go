@@ -129,7 +129,7 @@ preview and return/open the preview URL when it is complete.
 
 		// Detect config file
 		if fileContainsLinks || fileContainsSQLPaths || isDirectory || fileContainsDocker {
-			_, err = doesConfigExistOrCreate(target, UnitsDirectory, isSingleFilePreview)
+			_, err = doesConfigExistOrCreate(target, isSingleFilePreview, dockerPaths)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
 				return
