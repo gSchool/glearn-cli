@@ -26,7 +26,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
-	"github.com/gSchool/glearn-cli/mdlinkparser"
+	"github.com/gSchool/glearn-cli/mdresourceparser"
 	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )
 
@@ -90,10 +90,11 @@ preview and return/open the preview URL when it is complete.
 		// linking to local files. If there are any, add them to the target
 		var singleFileLinkPaths []string
 		var dataPaths []string
+		var dockerPaths []string
 		if includeLinks {
 			if filepath.Ext(target) == ".md" {
 				dataPaths, err = collectDataPaths(target)
-				singleFileLinkPaths, err = collectLinkPaths(target)
+				singleFileLinkPaths, dockerPaths, err = collectResourcePaths(target)
 				if err != nil {
 					previewCmdError(fmt.Sprintf("Failed to attach local images for single file preview for: (%s). Err: %v", target, err))
 					return
@@ -105,35 +106,30 @@ preview and return/open the preview URL when it is complete.
 		}
 		fileContainsLinks := len(singleFileLinkPaths) > 0
 		fileContainsSQLPaths := len(dataPaths) > 0
+		fileContainsDocker := len(dockerPaths) > 0
 
 		// variable holding whether or not source is a dir OR when it is a single file preview
 		// AND singleFileLinkPaths is > 0 that means it is now a dir again (tmp one we created)
-		isSingleFilePreviewWithLinks := !isDirectory && (fileContainsLinks || fileContainsSQLPaths)
-		isDirectory = isDirectory || (!isDirectory && fileContainsLinks)
+		isSingleFilePreview := !isDirectory && (fileContainsLinks || fileContainsSQLPaths || fileContainsDocker)
+		isDirectory = isDirectory || (!isDirectory && (fileContainsLinks || fileContainsDocker))
 
 		var alternateTarget string
-		if fileContainsLinks {
-			alternateTarget, err = createNewTarget(target, singleFileLinkPaths)
+		if fileContainsLinks || fileContainsSQLPaths || fileContainsDocker {
+			paths := append(singleFileLinkPaths, dataPaths...)
+			alternateTarget, err = createNewTarget(target, paths, dockerPaths)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
 				return
 			}
 		}
 
-		if fileContainsSQLPaths {
-			alternateTarget, err = createNewTarget(target, dataPaths)
-			if err != nil {
-				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
-				return
-			}
-		}
 		if alternateTarget != "" {
 			target = alternateTarget
 		}
 
 		// Detect config file
-		if fileContainsLinks || fileContainsSQLPaths || isDirectory {
-			_, err = doesConfigExistOrCreate(target, UnitsDirectory, isSingleFilePreviewWithLinks)
+		if fileContainsLinks || fileContainsSQLPaths || isDirectory || fileContainsDocker {
+			_, err = doesConfigExistOrCreate(target, isSingleFilePreview, dockerPaths)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
 				return
@@ -150,7 +146,7 @@ preview and return/open the preview URL when it is complete.
 		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpZipFile
-		err = compressDirectory(target, tmpZipFile)
+		err = compressDirectory(target, tmpZipFile, isSingleFilePreview)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", target, err))
 			return
@@ -208,7 +204,7 @@ preview and return/open the preview URL when it is complete.
 		startBuildAndPollRelease := time.Now()
 
 		// Let Learn know there is new preview content on s3, where it is, and to build it
-		res, err := learn.API.BuildReleaseFromS3(bucketKey, (isDirectory || fileContainsSQLPaths))
+		res, err := learn.API.BuildReleaseFromS3(bucketKey, (isDirectory || fileContainsSQLPaths || fileContainsDocker))
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to build new preview content in learn. Err: %v", err))
 			return
@@ -217,7 +213,7 @@ preview and return/open the preview URL when it is complete.
 		// If content is a directory, rewrite the res from polling for build response. Directories
 		// can take much longer to build, however single files build instantly so we do not need to
 		// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
-		if isDirectory || fileContainsSQLPaths {
+		if isDirectory || fileContainsSQLPaths || fileContainsDocker {
 			var attempts uint8 = 30
 			res, err = learn.API.PollForBuildResponse(res.ReleaseID, &attempts)
 			if err != nil {
@@ -255,7 +251,7 @@ preview and return/open the preview URL when it is complete.
 // createNewTarget will set up and create everything needed for single file previews if they are needed.
 // Returns a string representing the source name which if not single file tmp dir is needed, will return the
 // original
-func createNewTarget(target string, singleFileLinkPaths []string) (string, error) {
+func createNewTarget(target string, singleFilePaths, dockerPaths []string) (string, error) {
 	// Tmp dir so we can build out a new dir with the correct links in their correct
 	// paths based on relative link paths supplied in the single markdown file
 	newSrcPath := tmpSingleFileDir
@@ -265,15 +261,15 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 	srcMDFile := srcArray[len(srcArray)-1]
 	substringPaths := []string{}
 
-	for _, imgPath := range singleFileLinkPaths {
-		if !strings.HasPrefix(imgPath, "/") {
-			imgPath = fmt.Sprintf("/%s", imgPath)
+	for _, filePath := range singleFilePaths {
+		if !strings.HasPrefix(filePath, "/") {
+			filePath = fmt.Sprintf("/%s", filePath)
 		}
 
 		// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
 		pathArray := []string{}
 		var containsPeriodPeriod bool
-		for _, dir := range strings.Split(imgPath, "/") {
+		for _, dir := range strings.Split(filePath, "/") {
 			if dir != ".." { // sanitize any .. so we don't have to worry about nexted things
 				containsPeriodPeriod = true
 				pathArray = append(pathArray, dir)
@@ -282,7 +278,7 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 		// We need to modify the actual markdown file so it no longer has `..` in links, since we're putting
 		// everything in the newSrcPath
 		if containsPeriodPeriod {
-			substringPaths = append(substringPaths, imgPath)
+			substringPaths = append(substringPaths, filePath)
 		}
 
 		imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
@@ -311,10 +307,10 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 		// links so we need to go one back from "target" so things aren't trying
 		// to be nested in the .md file itself
 		targetArray := strings.Split(target, "/")
-		sourceLinkPath := trimFirstRune(imgPath)
+		sourceLinkPath := trimFirstRune(filePath)
 		if len(targetArray[:len(targetArray)-1]) != 0 && !strings.HasSuffix(sourceLinkPath, ".sql") {
 			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
-			sourceLinkPath = oneDirBackFromTarget + imgPath
+			sourceLinkPath = oneDirBackFromTarget + filePath
 		}
 
 		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
@@ -347,7 +343,47 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 				return "", err
 			}
 		}
-	}
+	} // End of loop over files
+
+	// iterate over docker directories as their contents must be recursively copied
+	for _, dirPath := range dockerPaths {
+		fmt.Printf("Including docker_directory_path: %s\n", dirPath)
+		dirPath = trimFirstRune(dirPath)
+		fileDir, err := os.Stat(dirPath)
+
+		// when the directory does not exist, keep moving back in the directory structure until it is found
+		if os.IsNotExist(err) {
+			newDirPath := ""
+			parent := "../" + dirPath
+			for i := 1; i <= 5; i++ {
+				f, parentExists := os.Stat(parent)
+				if parentExists == nil && f.IsDir() {
+					newDirPath = parent
+					break
+				} else if parentExists == nil && !f.IsDir() {
+					return "", fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
+				} else {
+					parent = "../" + parent
+				}
+			}
+
+			if newDirPath != "" {
+				// the directory was found after checkpoing porents, copy contents
+				err = CopyDirectoryContents(newDirPath, newSrcPath+"/"+dirPath)
+				if err != nil {
+					return "", err
+				}
+			}
+
+		} else if !fileDir.IsDir() {
+			return "", fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
+		} else {
+			err = CopyDirectoryContents(dirPath, newSrcPath+"/"+dirPath)
+			if err != nil {
+				return "", err
+			}
+		}
+	} // End docker path loop
 
 	// Copy original single markdown file into the base of our new tmp dir
 	newTarget := newSrcPath + "/" + srcMDFile
@@ -356,7 +392,7 @@ func createNewTarget(target string, singleFileLinkPaths []string) (string, error
 		return "", err
 	}
 
-	if len(singleFileLinkPaths) > 0 {
+	if len(singleFilePaths) > 0 || len(dockerPaths) > 0 {
 		if len(substringPaths) > 0 {
 			// open contents of new target
 			b, err := ioutil.ReadFile(newTarget)
@@ -397,19 +433,28 @@ func printlnGreen(text string) {
 	fmt.Printf("\033[32m%s\033[0m\n", text)
 }
 
-// collectLinkPaths takes a target, reads it, and passes it's contents (slice of bytes)
-// to our MDLinkParser as a string. All relative/local markdown flavored images are parsed
+// collectResourcePaths takes a target, reads it, and passes it's contents (slice of bytes)
+// to our MDResourceParser as a string. All relative/local markdown flavored images are parsed
 // into an array of strings and returned
-func collectLinkPaths(target string) ([]string, error) {
+func collectResourcePaths(target string) ([]string, []string, error) {
 	contents, err := ioutil.ReadFile(target)
 	if err != nil {
-		return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+		return []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
 	}
 
-	m := mdlinkparser.New(string(contents))
-	m.ParseLinks()
+	m := mdresourceparser.New([]rune(string(contents)))
+	m.ParseResources()
 
-	return m.Links, nil
+	uniqueMap := make(map[string]struct{})
+	for _, v := range m.DockerDirectoryPaths {
+		uniqueMap[v] = struct{}{}
+	}
+	var uniqueDockerPaths []string
+	for v, _ := range uniqueMap {
+		uniqueDockerPaths = append(uniqueDockerPaths, v)
+	}
+
+	return m.Links, uniqueDockerPaths, nil
 }
 
 // collectDataPaths takes a target, reads it, and scans the file for data paths and collects them
@@ -563,10 +608,49 @@ func Copy(src, dst string) error {
 	return out.Close()
 }
 
+func CopyDirectoryContents(src, dst string) error {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if !srcInfo.IsDir() {
+		return fmt.Errorf("path specified is not a directory: %s\n", src)
+	}
+
+	err = os.MkdirAll(dst, srcInfo.Mode())
+	if err != nil {
+		return err
+	}
+
+	files, err := ioutil.ReadDir(src)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		source := filepath.Join(src, file.Name())
+		destination := filepath.Join(dst, file.Name())
+
+		if file.IsDir() {
+			err = CopyDirectoryContents(source, destination)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = Copy(source, destination)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 // compressDirectory takes a source file path (where the content you want zipped lives)
 // and a target file path (where to put the zip file) and recursively compresses the source.
-// Source can either be a directory or a single file
-func compressDirectory(source, target string) error {
+// Source can either be a directory or a single file. When singleFile is true, all files in
+// the zip are added.
+func compressDirectory(source, target string, singleFile bool) error {
 	// Create file with target name and defer its closing
 	zipfile, err := os.Create(target)
 	if err != nil {
@@ -594,6 +678,10 @@ func compressDirectory(source, target string) error {
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		ext := filepath.Ext(path)
 		_, ok := fileExtWhitelist[ext]
+		// upload everything for single file as it should always be relevant data
+		if singleFile {
+			ok = true
+		}
 
 		if ok || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
 			if err != nil {
