@@ -16,8 +16,8 @@ Standards:
     ContentFiles:
       -
         Type: Checkpoint
-        UID: 9dc2e6ee10eeb8cbfd1689877f3e706e
-        Path: /units/01-checkpoint/checkpoint.md
+        UID: 715356b14b1b84ef22a007e0e3ad4f40
+        Path: /units/01-checkpoint/another-checkpoint.md
   -
     Title: Resource
     Description: Resource
@@ -27,8 +27,8 @@ Standards:
     ContentFiles:
       -
         Type: Resource
-        UID: c0cc1a4bc4286fe554479f82f08788d5
-        Path: /units/03.resource/resource.md
+        UID: d9c98eb710b27a2155d7e7021638b416
+        Path: /units/03.resource/name.resource.md
   -
     Title: Unit 1
     Description: Unit 1

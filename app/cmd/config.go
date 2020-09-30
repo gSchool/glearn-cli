@@ -300,11 +300,14 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 
 func detectContentType(path string) string {
 	path = strings.ToLower(path)
-	if strings.Contains(path, "instructor") {
+	instructorMatch, _ := regexp.MatchString("[.-]instructor[.-]", path)
+	checkpointMatch, _ := regexp.MatchString("[.-]checkpoint[.-]", path)
+	resourceMatch, _ := regexp.MatchString("[.-]resource[.-]", path)
+	if instructorMatch {
 		return "Instructor"
-	} else if strings.Contains(path, "checkpoint") {
+	} else if checkpointMatch {
 		return "Checkpoint"
-	} else if strings.Contains(path, "resource") {
+	} else if resourceMatch {
 		return "Resource"
 	}
 	return "Lesson"
