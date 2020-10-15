@@ -303,12 +303,15 @@ func detectContentType(path string) string {
 	instructorMatch, _ := regexp.MatchString("[.-]instructor[.-]", path)
 	checkpointMatch, _ := regexp.MatchString("[.-]checkpoint[.-]", path)
 	resourceMatch, _ := regexp.MatchString("[.-]resource[.-]", path)
+	surveyMatch, _ := regexp.MatchString("[.-]survey[.-]", path)
 	if instructorMatch {
 		return "Instructor"
 	} else if checkpointMatch {
 		return "Checkpoint"
 	} else if resourceMatch {
 		return "Resource"
+	} else if surveyMatch {
+		return "Survey"
 	}
 	return "Lesson"
 }
