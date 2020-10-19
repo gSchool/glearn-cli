@@ -95,6 +95,10 @@ func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
 		t.Errorf("Autoconfig should have a content path of checkpoint but the type should not of changed")
 	}
 
+	if !strings.Contains(config, "Type: Survey") {
+		t.Errorf("Autoconfig should have a content path of survey but the type should not of changed")
+	}
+
 	if !strings.Contains(config, "Type: Instructor") {
 		t.Errorf("Autoconfig should have a content file of type Instructor")
 	}
