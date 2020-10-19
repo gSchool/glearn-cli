@@ -298,8 +298,10 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 	return nil
 }
 
-func detectContentType(path string) string {
-	path = strings.ToLower(path)
+func detectContentType(p string) string {
+	fullpath := strings.ToLower(p)
+	parts := strings.Split(fullpath, "/")
+	path := parts[len(parts)-1]
 	instructorMatch, _ := regexp.MatchString("^instructor[.-]|[.-]instructor[.-]", path)
 	checkpointMatch, _ := regexp.MatchString("^checkpoint[.-]|[.-]checkpoint[.-]", path)
 	resourceMatch, _ := regexp.MatchString("^resource[.-]|[.-]resource[.-]", path)
