@@ -177,9 +177,6 @@ func remotePieces() (learn.RepoPieces, error) {
 	if err != nil {
 		return repoPieces, err
 	}
-	if strings.HasPrefix(s, "ssh://") {
-		s = strings.ReplaceAll(s, "ssh://", "")
-	}
 	parts := strings.Split(s, ".git")
 	if len(parts) < 1 { // There should only be 1
 		return repoPieces, fmt.Errorf("Error parsing git remote from %s", s)
@@ -187,8 +184,8 @@ func remotePieces() (learn.RepoPieces, error) {
 	parts = strings.Split(parts[0], "/")
 
 	// does it start with https
-	if parts[0] == "https:" {
-		repoPieces.Origin = parts[2]
+	if parts[0] == "https:" || parts[0] == "ssh:" {
+		repoPieces.Origin = strings.ReplaceAll(parts[2], "git@", "")
 		repoPieces.Org = parts[3]
 		repoPieces.RepoName = parts[4]
 
