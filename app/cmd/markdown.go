@@ -136,8 +136,8 @@ var templates = map[string]temp{
 	"number":          {"Number markdown", numberTemplate, true},
 	"pg":              {"Paragraph markdown", paragraphTemplate, true},
 	"paragraph":       {"Paragraph markdown", paragraphTemplate, true},
-	"or":              {"Ordered markdown", orderedTemplate, true},
-	"ordered":         {"Ordered markdown", orderedTemplate, true},
+	"or":              {"Ordering markdown", orderingTemplate, true},
+	"ordering":        {"Ordering markdown", orderingTemplate, true},
 	"js":              {"Javascript markdown", javascriptTemplate, true},
 	"javascript":      {"Javascript markdown", javascriptTemplate, true},
 	"ja":              {"Java markdown", javaTemplate, true},
@@ -173,7 +173,7 @@ Questions:
   shortanswer (sa)
   number (nb)
   paragraph (pg)
-  ordered (or)
+  ordering (or)
   javascript (js)
   java (ja)
   python (py)
@@ -429,12 +429,12 @@ const paragraphTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
-const orderedTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+const orderingTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
 ### !challenge
 
-* type: ordered
+* type: ordering
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
