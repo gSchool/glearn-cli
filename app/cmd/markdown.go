@@ -136,6 +136,8 @@ var templates = map[string]temp{
 	"number":          {"Number markdown", numberTemplate, true},
 	"pg":              {"Paragraph markdown", paragraphTemplate, true},
 	"paragraph":       {"Paragraph markdown", paragraphTemplate, true},
+	"or":              {"Ordering markdown", orderingTemplate, true},
+	"ordering":        {"Ordering markdown", orderingTemplate, true},
 	"js":              {"Javascript markdown", javascriptTemplate, true},
 	"javascript":      {"Javascript markdown", javascriptTemplate, true},
 	"ja":              {"Java markdown", javaTemplate, true},
@@ -171,6 +173,7 @@ Questions:
   shortanswer (sa)
   number (nb)
   paragraph (pg)
+  ordering (or)
   javascript (js)
   java (ja)
   python (py)
@@ -416,6 +419,40 @@ const paragraphTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 [text, placeholder text for input field]
 
 ##### !end-placeholder
+
+<!-- other optional sections -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
+<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
+<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const orderingTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+<!-- Replace everything in square brackets [] and remove brackets  -->
+
+### !challenge
+
+* type: ordering
+* id: %s
+* title: [text, a short question title]
+<!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
+<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+
+##### !question
+
+[markdown, your question]
+
+##### !end-question
+
+##### !answer
+
+1. [Option 1 in the correct first position, options will be randomized for students]
+1. [Option 2 in the correct second position]
+1. [Option 3 in the correct third position]
+
+##### !end-answer
 
 <!-- other optional sections -->
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->

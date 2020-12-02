@@ -66,9 +66,9 @@ Create a temp directory somewhere
 mkdir test-content && cd test-content
 ```
 
-Then run
+If you have access to [this repo](https://github.com/gSchool/learn-curriculum-init), then run
 ```
-learn new
+learn walkthrough
 ```
 
 ## Example Usage
