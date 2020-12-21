@@ -67,6 +67,7 @@ func (api *APIClient) GetBlockByRepoName(repoPieces RepoPieces) (Block, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Source", "gLearn_cli")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
 
 	res, err := api.client.Do(req)
@@ -106,6 +107,7 @@ func (api *APIClient) CreateBlockByRepoName(repoPieces RepoPieces) (Block, error
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Source", "gLearn_cli")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
 
 	res, err := api.client.Do(req)
@@ -140,6 +142,7 @@ func (api *APIClient) CreateMasterRelease(blockID int) (int, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Source", "gLearn_cli")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
 
 	res, err := api.client.Do(req)
