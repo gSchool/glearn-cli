@@ -103,7 +103,7 @@ new block. If the block already exists, it will update the existing block.
 		// TODO what happens when they do not have work in remote and push fails?
 		err = pushToRemote(branch)
 		if err != nil {
-			fmt.Printf("Error pushing to origin remote on branch: %s\n", err)
+			fmt.Printf("\nError pushing to origin remote on branch:\n\n%s", err)
 			os.Exit(1)
 		}
 
@@ -202,9 +202,9 @@ func remotePieces() (learn.RepoPieces, error) {
 }
 
 func pushToRemote(branch string) error {
-	_, err := exec.Command("bash", "-c", fmt.Sprintf("git push origin %s", branch)).CombinedOutput()
+	out, err := exec.Command("bash", "-c", fmt.Sprintf("git push origin %s", branch)).CombinedOutput()
 	if err != nil {
-		return err
+		return fmt.Errorf("%s", out)
 	}
 
 	return nil
