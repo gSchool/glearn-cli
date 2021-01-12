@@ -114,6 +114,7 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 		return nil, err
 	}
 
+	req.Header.Set("Source", "gLearn_cli")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
 
@@ -172,6 +173,7 @@ func (api *APIClient) SendMetadataToLearn(timingPayload *CLIBenchmarkPayload) er
 	}
 	defer req.Body.Close()
 
+	req.Header.Set("Source", "gLearn_cli")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
 

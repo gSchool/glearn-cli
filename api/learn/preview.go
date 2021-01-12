@@ -27,6 +27,7 @@ func (api *APIClient) PollForBuildResponse(releaseID int, attempts *uint8) (*Pre
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Source", "gLearn_cli")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
 
 	res, err := api.client.Do(req)
@@ -94,6 +95,7 @@ func (api *APIClient) BuildReleaseFromS3(bucketKey string, isDirectory bool) (*P
 	defer req.Body.Close()
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Source", "gLearn_cli")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", api.Credentials.token))
 
 	res, err := api.client.Do(req)
