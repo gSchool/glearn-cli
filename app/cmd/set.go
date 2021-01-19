@@ -9,7 +9,7 @@ import (
 )
 
 var setCmd = &cobra.Command{
-	Use:   "set [...flags]",
+	Use:   "set --api_token=value",
 	Short: "Set your your credentials for ~/.glearn-config.yaml",
 	Long: `
 In order to use learn resources through our CLI you must set your
@@ -18,12 +18,15 @@ credentials inside ~/.glearn-config.yaml
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
-			fmt.Println("The set command does not take any arguments. Instead set variables with set --credentialFlag=value")
+			fmt.Println("The set command does not take any arguments. Instead set variables with set --api_token=value")
 			os.Exit(1)
 		}
 
 		// If the --api_token=some_value flag was given, set it in viper
-		if APIToken != "" {
+		if APIToken == "" {
+			fmt.Println("The set command needs '--api_token' flag.\n\nUse: learn set --api_token=value")
+			os.Exit(1)
+		} else {
 			viper.Set("api_token", APIToken)
 		}
 
