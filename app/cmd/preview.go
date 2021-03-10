@@ -681,6 +681,8 @@ func compressDirectory(source, target string, singleFile bool) error {
 
 	// Walk the whole filepath
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+		path = filepath.ToSlash(path)
+
 		ext := filepath.Ext(path)
 		_, ok := fileExtWhitelist[ext]
 		// upload everything for single file as it should always be relevant data
