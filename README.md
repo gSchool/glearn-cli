@@ -2,7 +2,7 @@
 
 This is the command line interface for developing, previewing, and publishing curriculum on Learn.
 
-## Installation with Homebrew
+## Option 1 (Mac Users only): Installation with Homebrew
 
 ### Install
 ```
@@ -11,90 +11,80 @@ brew tap gSchool/learn
 ```
 brew install learn
 ```
+
+### Set your API token
 ```
-learn set --api_token=YOUR_LEARN_API_TOKEN
-```
-
-You can get your Learn API token from https://learn-2.galvanize.com/api_token
-
-### Get Started
-
-Run
-
-```
-learn help
+learn set --api_token=[Your API Token from https://learn-2.galvanize.com/api_token]
 ```
 
-### Update
+## Option 2 (Windows, Linux, and Mac Users): Install binaries directly from Github
+
+### Download
+
+Download binaries for all platforms directly from
+https://github.com/gSchool/glearn-cli/releases
+
+Place in an appropriate location and include in your system Path so that commands can be called from any directory.
+
+### Set your API token
 ```
-brew upgrade learn
+learn set --api_token=[Your API Token from https://learn-2.galvanize.com/api_token]
 ```
 
-### Uninstall
-```
-brew uninstall learn
-```
+## Option 3 (Linux and Mac users only): Install with curl
 
-## Alternatives to Homebrew
+### Curl commands
 
-### Install
-
-Option: Use curl on Mac
+Mac users
 ```
 curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Darwin_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
 ```
 
-Option: Use curl on Linux
+Linux users
 ```
 curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Linux_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
 ```
 
-Option: Download binaries for all platforms directly from
-https://github.com/gSchool/glearn-cli/releases
+Both of these commands should place the binary in a location that is already covered by your system Path.
 
-After using any of these options, set your API token with
+### Set your API token
 ```
-learn set --api_token=YOUR_LEARN_API_TOKEN
-```
-
-You can get your Learn API token from https://learn-2.galvanize.com/api_token
-
-### Get Started
-
-Create a temp directory somewhere
-```
-mkdir test-content && cd test-content
+learn set --api_token=[Your API Token from https://learn-2.galvanize.com/api_token]
 ```
 
-If you have access to [this repo](https://github.com/gSchool/learn-curriculum-init), then run
-```
-learn walkthrough
-```
+## Get Started: Walkthrough
 
-## Example Usage
+Visit https://galvanize-learn.zendesk.com/hc/en-us/articles/1500000930401-Introduction for a short walkthrough to publish your first curriculum.
 
-See a list of commands
+## Get Started: Quick Edits to Existing Curriculum
+
+1. Clone and edit curriculum
+2. Preview your changes. Run:
+    `learn preview -o <directory|file>`
+3. Git add / commit / push changes to the master branch
+4. Publish changes for any cohort in Learn. Run:
+    `learn publish`
+
+## Help with other commands
+
 ```
 learn help
 ```
 
-Preview a single file
-```
-learn preview my_file.md
-```
+## Update
+Depending on how you installed above--
 
-Preview an entire directory:
-```
-learn preview my_curriculum_directory
-```
+Homebrew: `brew upgrade learn`
 
-Publishing an entire repo
-* add/commit/push to github
-* if block doesn't exist, create and publish new block
-* if block exists, update existing block and create new release
-```
-learn publish
-```
+Binary download: Download new binaries from https://github.com/gSchool/glearn-cli/releases
+
+Curl: Run curl commands listed under "install" again.
+
+## Uninstall
+
+Homebrew: `brew uninstall learn`
+
+Other users: delete binary
 
 ## Development
 Build
