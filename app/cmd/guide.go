@@ -63,19 +63,19 @@ func doesCurrentDirHaveConfig(currentDir string) (bool, bool) {
 	configExist := false
 	autoConfigExist := false
 
-	configYaml := currentDir + "/config.yaml"
+	configYaml := currentDir + PathSeparator + "config.yaml"
 	_, ymlExists := os.Stat(configYaml)
 	if ymlExists == nil {
 		configExist = true
 	}
 
-	configYml := currentDir + "/config.yml"
+	configYml := currentDir + PathSeparator + "config.yml"
 	_, ymlExists = os.Stat(configYml)
 	if ymlExists == nil {
 		configExist = true
 	}
 
-	autoConfigYaml := currentDir + "/autoconfig.yaml"
+	autoConfigYaml := currentDir + PathSeparator + "autoconfig.yaml"
 	_, ymlExists = os.Stat(autoConfigYaml)
 	if ymlExists == nil {
 		configExist = true
@@ -99,9 +99,9 @@ func cloneTemplate() error {
 
 func moveClonedMaterials(currentDir string) error {
 	initDir := "/learn-curriculum-init"
-	os.RemoveAll(currentDir + initDir + "/.git/")
+	os.RemoveAll(currentDir + initDir + PathSeparator + ".git" + PathSeparator)
 	err := filepath.Walk(currentDir+initDir, func(path string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(path, initDir) && !strings.Contains(path, ".git/") {
+		if !strings.HasSuffix(path, initDir) && !strings.Contains(path, ".git"+PathSeparator) {
 			oldLocation := path
 			newLocation := strings.Replace(path, initDir, "", 1)
 			os.Rename(oldLocation, newLocation)
