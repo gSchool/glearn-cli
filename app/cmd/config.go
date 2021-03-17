@@ -20,17 +20,17 @@ func findOrCreateConfigDir(target string) (bool, error) {
 func doesConfigExistOrCreate(target string, isSingleFilePreview bool, excludePaths []string) (bool, error) {
 	// Configs can be `yaml` or `yml`
 	configYamlPath := ""
-	if strings.HasSuffix(target, "/") {
+	if strings.HasSuffix(target, PathSeparator) {
 		configYamlPath = target + "config.yaml"
 	} else {
-		configYamlPath = target + "/config.yaml"
+		configYamlPath = target + PathSeparator + "config.yaml"
 	}
 
 	configYmlPath := ""
-	if strings.HasSuffix(target, "/") {
+	if strings.HasSuffix(target, PathSeparator) {
 		configYmlPath = target + "config.yml"
 	} else {
-		configYmlPath = target + "/config.yml"
+		configYmlPath = target + PathSeparator + "config.yml"
 	}
 
 	createdConfig := false
@@ -82,10 +82,10 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 	blockRoot := ""
 
 	// Make sure we have an ending slash on the root dir
-	if strings.HasSuffix(target, "/") {
+	if strings.HasSuffix(target, PathSeparator) {
 		blockRoot = target
 	} else {
-		blockRoot = target + "/"
+		blockRoot = target + PathSeparator
 	}
 
 	// The config file location that we will be creating
@@ -141,7 +141,7 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 
 		for _, info := range allItems {
 			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
-				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], unitsRootDirName+"/"+info.Name())
+				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], unitsRootDirName+PathSeparator+info.Name())
 			}
 		}
 	}
@@ -165,10 +165,10 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 			nestedFolder := ""
 
 			if dirName != ".git" {
-				if strings.HasSuffix(whereToLookForUnits, "/") {
+				if strings.HasSuffix(whereToLookForUnits, PathSeparator) {
 					nestedFolder = whereToLookForUnits + dirName
 				} else {
-					nestedFolder = whereToLookForUnits + "/" + dirName
+					nestedFolder = whereToLookForUnits + PathSeparator + dirName
 				}
 
 				err = filepath.Walk(nestedFolder, func(path string, info os.FileInfo, err error) error {
@@ -178,7 +178,7 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 
 					if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
 						localPath := path
-						if blockRoot != "./" {
+						if blockRoot != ("." + PathSeparator) {
 							localPath = path[len(blockRoot):]
 						}
 
@@ -217,7 +217,7 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 
 	formattedTargetName := formattedName(target)
 	for _, unit := range unitKeys {
-		parts := strings.Split(unit, "/")
+		parts := strings.Split(unit, PathSeparator)
 		if strings.HasPrefix(parts[0], "__") {
 			continue
 		}
@@ -225,7 +225,7 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 		// skip the unit when all content files are excluded
 		allFilesExcluded := true
 		for _, path := range unitToContentFileMap[unit] {
-			if !anyMatchingPrefix("/"+path, excludePaths) {
+			if !anyMatchingPrefix(PathSeparator+path, excludePaths) {
 				allFilesExcluded = false
 				break
 			}
@@ -258,10 +258,10 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 		configFile.WriteString("    ContentFiles:\n")
 
 		for _, path := range unitToContentFileMap[unit] {
-			if anyMatchingPrefix("/"+path, excludePaths) {
+			if anyMatchingPrefix(PathSeparator+path, excludePaths) {
 				continue
 			}
-			parts := strings.Split(path, "/")
+			parts := strings.Split(path, PathSeparator)
 			if strings.HasPrefix(parts[len(parts)-1], "__") {
 				continue
 			}
@@ -284,10 +284,10 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 
 				configFile.WriteString("        UID: " + hex.EncodeToString(md5cfUID[:]) + "\n")
 
-				if strings.HasPrefix(path, "./") {
+				if strings.HasPrefix(path, "."+PathSeparator) {
 					configFile.WriteString("        Path: " + path[1:] + "\n")
 				} else {
-					configFile.WriteString("        Path: /" + path + "\n")
+					configFile.WriteString("        Path: " + PathSeparator + path + "\n")
 				}
 			}
 		}
@@ -300,7 +300,7 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 
 func detectContentType(p string) string {
 	fullpath := strings.ToLower(p)
-	parts := strings.Split(fullpath, "/")
+	parts := strings.Split(fullpath, PathSeparator)
 	path := parts[len(parts)-1]
 	instructorMatch, _ := regexp.MatchString("^instructor[.-]|[.-]instructor[.-]", path)
 	checkpointMatch, _ := regexp.MatchString("^checkpoint[.-]|[.-]checkpoint[.-]", path)
@@ -319,7 +319,7 @@ func detectContentType(p string) string {
 }
 
 func formattedName(name string) string {
-	parts := strings.Split(name, "/")
+	parts := strings.Split(name, PathSeparator)
 
 	a := regexp.MustCompile(`\-`)
 	parts = a.Split(parts[0], -1)
