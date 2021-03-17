@@ -269,7 +269,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
 		pathArray := []string{}
 		var containsPeriodPeriod bool
-		for _, dir := range strings.Split(filePath, "/") {
+		for _, dir := range strings.Split(filePath, PathSeparator) {
 			if dir != ".." { // sanitize any .. so we don't have to worry about nexted things
 				containsPeriodPeriod = true
 				pathArray = append(pathArray, dir)
@@ -294,7 +294,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		} else {
 			// Collect everything up until the image name (last item) and join it back together
 			// This gives us the name of the directory(ies) to make to put the image in
-			linkDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
+			linkDirs = strings.Join(pathArray[:len(pathArray)-1], PathSeparator)
 		}
 
 		// Create appropriate directory for each link using the linkDirs
@@ -306,29 +306,29 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		// Get "oneDirBackFromTarget" because target will be an .md file with relative
 		// links so we need to go one back from "target" so things aren't trying
 		// to be nested in the .md file itself
-		targetArray := strings.Split(target, "/")
+		targetArray := strings.Split(target, PathSeparator)
 		sourceLinkPath := trimFirstRune(filePath)
 		if len(targetArray[:len(targetArray)-1]) != 0 && !strings.HasSuffix(sourceLinkPath, ".sql") {
-			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
+			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], PathSeparator)
 			sourceLinkPath = oneDirBackFromTarget + filePath
 		}
 
 		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
 			if strings.HasSuffix(sourceLinkPath, ".sql") {
 				useThisPath := ""
-				parent := "../" + sourceLinkPath
+				parent := ".." + PathSeparator + sourceLinkPath
 				for i := 1; i <= 5; i++ {
 					_, parentExists := os.Stat(parent)
 					if parentExists == nil {
 						useThisPath = parent
 						break
 					} else {
-						parent = "../" + parent
+						parent = ".." + PathSeparator + parent
 					}
 				}
 
 				if useThisPath != "" {
-					err = Copy(useThisPath, newSrcPath+linkDirs+"/"+imageName)
+					err = Copy(useThisPath, newSrcPath+linkDirs+PathSeparator+imageName)
 					if err != nil {
 						return "", err
 					}
@@ -338,7 +338,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 			}
 		} else {
 			// Copy the actual image into our new temp directory in it's appropriate spot
-			err = Copy(sourceLinkPath, newSrcPath+linkDirs+"/"+imageName)
+			err = Copy(sourceLinkPath, newSrcPath+linkDirs+PathSeparator+imageName)
 			if err != nil {
 				return "", err
 			}
@@ -354,7 +354,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		// when the directory does not exist, keep moving back in the directory structure until it is found
 		if os.IsNotExist(err) {
 			newDirPath := ""
-			parent := "../" + dirPath
+			parent := ".." + PathSeparator + dirPath
 			for i := 1; i <= 5; i++ {
 				f, parentExists := os.Stat(parent)
 				if parentExists == nil && f.IsDir() {
@@ -363,13 +363,13 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 				} else if parentExists == nil && !f.IsDir() {
 					return "", fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
 				} else {
-					parent = "../" + parent
+					parent = ".." + PathSeparator + parent
 				}
 			}
 
 			if newDirPath != "" {
 				// the directory was found after checkpoing porents, copy contents
-				err = CopyDirectoryContents(newDirPath, newSrcPath+"/"+dirPath)
+				err = CopyDirectoryContents(newDirPath, newSrcPath+PathSeparator+dirPath)
 				if err != nil {
 					return "", err
 				}
@@ -378,7 +378,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		} else if !fileDir.IsDir() {
 			return "", fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
 		} else {
-			err = CopyDirectoryContents(dirPath, newSrcPath+"/"+dirPath)
+			err = CopyDirectoryContents(dirPath, newSrcPath+PathSeparator+dirPath)
 			if err != nil {
 				return "", err
 			}
@@ -386,7 +386,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 	} // End docker path loop
 
 	// Copy original single markdown file into the base of our new tmp dir
-	newTarget := newSrcPath + "/" + srcMDFile
+	newTarget := newSrcPath + PathSeparator + srcMDFile
 	err := Copy(target, newTarget)
 	if err != nil {
 		return "", err
@@ -401,10 +401,10 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 			}
 			contents := string(b)
 			for _, pathToSub := range substringPaths {
-				if strings.HasPrefix(pathToSub, "/") { // undo the add of a slash we did at the beginning
-					pathToSub = strings.TrimPrefix(pathToSub, "/")
+				if strings.HasPrefix(pathToSub, PathSeparator) { // undo the add of a slash we did at the beginning
+					pathToSub = strings.TrimPrefix(pathToSub, PathSeparator)
 				}
-				imgPathWithoutPeriodPeriod := strings.Replace(pathToSub, "../", "", -1)
+				imgPathWithoutPeriodPeriod := strings.Replace(pathToSub, ".."+PathSeparator, "", -1)
 				contents = strings.ReplaceAll(contents, pathToSub, imgPathWithoutPeriodPeriod)
 			}
 			// overwrite target file with the contents
@@ -710,7 +710,7 @@ func compressDirectory(source, target string, singleFile bool) error {
 			// Check if the file we are iterating is a directory and update the header.Name
 			// or the header.Method appropriately
 			if info.IsDir() {
-				header.Name += "/"
+				header.Name += PathSeparator
 			} else {
 				header.Method = zip.Deflate
 			}
