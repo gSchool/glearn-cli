@@ -163,7 +163,6 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 	if len(directories) > 0 {
 		for _, dirName := range directories {
 			nestedFolder := ""
-
 			if dirName != ".git" {
 				if strings.HasSuffix(whereToLookForUnits, "/") {
 					nestedFolder = whereToLookForUnits + dirName
@@ -181,7 +180,9 @@ func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) e
 						if blockRoot != "./" {
 							localPath = path[len(blockRoot):]
 						}
-
+						if strings.Contains(localPath, "\\") {
+							localPath = strings.Replace(localPath, "\\", "/", -1)
+						}
 						unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
 					}
 
