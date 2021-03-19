@@ -114,7 +114,7 @@ new block. If the block already exists, it will update the existing block.
 		fmt.Println("\nBuilding release...")
 		s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
 		s.Color("green")
-		s.FinalMSG = fmt.Sprintf("Block %d released!\n", block.ID)
+		s.FinalMSG = fmt.Sprintf("Block released! https://learn-2.galvanize.com/blocks/%d\n", block.ID)
 		s.Start()
 
 		// Create a release on learn, notify user
