@@ -10,6 +10,7 @@ require (
 	github.com/spf13/viper v1.5.0
 	golang.org/x/sys v0.0.0-20200917073148-efd3b9a0ff20 // indirect
 	golang.org/x/text v0.3.3 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 go 1.13
