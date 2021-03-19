@@ -690,16 +690,17 @@ func compressDirectory(source, target string, singleFile bool, configYamlPaths [
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		path = filepath.ToSlash(path)
 
-		var isInConfig = false
+		var fileIsInConfig = false
 		for _, p := range configYamlPaths {
 			var configPathSplits = strings.Split(p, "/")
 			var fileName = configPathSplits[len(configPathSplits)-1]
 			if strings.Contains(path, fileName) {
-				isInConfig = true
+				fileIsInConfig = true
 			}
 		}
-
-		if isInConfig {
+		var isConfigFile = strings.Contains(path, "config.yml") || strings.Contains(path, "config.yaml") || strings.Contains(path, "autoconfig.yaml")
+		ext := filepath.Ext(path)
+		if isConfigFile || fileIsInConfig || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
 			if err != nil {
 				return err
 			}
