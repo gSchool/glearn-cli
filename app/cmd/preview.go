@@ -702,9 +702,10 @@ func compressDirectory(source, target string, singleFile bool, configYamlPaths [
 		var isConfigFile = strings.Contains(path, "config.yml") || strings.Contains(path, "config.yaml") || strings.Contains(path, "autoconfig.yaml")
 
 		ext := filepath.Ext(path)
-		var isLargeFile = false
+
 		if !info.IsDir() && info.Size() > 1000000 {
-			isLargeFile = true
+			fmt.Printf("\nWARNING: Ingoring File For Preview: File chosen/linked to for preview is too large: %s\n", path)
+			return nil
 		}
 
 		if isConfigFile || fileIsInConfig || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
@@ -732,21 +733,6 @@ func compressDirectory(source, target string, singleFile bool, configYamlPaths [
 				header.Method = zip.Deflate
 			}
 
-			if isLargeFile {
-				toLargeFile, err := os.Create(path + "_large")
-				if err != nil {
-					log.Fatal(err)
-				}
-				toLargeFile.WriteString("File size exceded for preview limit")
-				defer toLargeFile.Close()
-
-				fi, err := toLargeFile.Stat()
-				if err != nil {
-					log.Fatal(err)
-				}
-				header.UncompressedSize64 = uint64(fi.Size())
-			}
-
 			//  Add a file to the zip archive using the provided FileHeader for the file metadata
 			writer, err := archive.CreateHeader(header)
 			if err != nil {
@@ -761,9 +747,7 @@ func compressDirectory(source, target string, singleFile bool, configYamlPaths [
 			// If it was not a directory, we open the file and copy it into the archive writer
 			// ingore zip files
 			file, err := os.Open(path)
-			if isLargeFile {
-				file, err = os.Open(path + "_large")
-			}
+
 			if err != nil {
 				return err
 			}
