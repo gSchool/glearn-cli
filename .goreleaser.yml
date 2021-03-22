@@ -5,6 +5,11 @@ builds:
 - binary: learn
   env:
   - CGO_ENABLED=0
+  goos:
+  - darwin
+  - linux
+  - windows
+  - freebsd
 archives:
 - replacements:
     darwin: Darwin
@@ -12,6 +17,9 @@ archives:
     windows: Windows
     386: i386
     amd64: x86_64
+  format_overrides:
+    - goos: windows
+      format: zip
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -25,7 +33,7 @@ changelog:
 brews:
   -
     name: learn
-    github:
+    tap:
       owner: gSchool
       name: homebrew-glearn
     commit_author:
