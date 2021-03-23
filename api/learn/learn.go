@@ -91,13 +91,18 @@ func NewAPI(baseURL string, client api.Client) (*APIClient, error) {
 	creds, err := apiClient.RetrieveCredentials()
 	if err != nil {
 		return nil, errors.New(
-			"Could not retrieve credentials from Learn. Please reset your API token with this command: learn set --api_token=your-token-from-https://learn-2.galvanize.com/api_token",
+			fmt.Sprintf("Could not retrieve credentials from Learn. Please reset your API token with this command: learn set --api_token=your-token-from-%s/api_token", baseURL),
 		)
 	}
 
 	apiClient.Credentials = creds
 
 	return apiClient, nil
+}
+
+// BaseURL returns the clients baseURL
+func (api *APIClient) BaseURL() string {
+	return api.baseURL
 }
 
 // RetrieveCredentials uses a user's api_token to request AWS credentials
