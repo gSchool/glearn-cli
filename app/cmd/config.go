@@ -13,8 +13,6 @@ import (
 	"strings"
 )
 
-var gitTopLevelCmd = "git rev-parse --show-toplevel"
-
 // only used from publish, just going to send
 func publishFindOrCreateConfigDir(target string) (bool, error) {
 	return doesConfigExistOrCreate(target, false, true, []string{})
@@ -84,13 +82,13 @@ func doesConfigExistOrCreate(target string, isSingleFilePreview, publishContext 
 // Units must exist in units dir or one provided!
 func createAutoConfig(target, requestedUnitsDir string, excludePaths []string, publishContext bool) error {
 	// Make sure we have an ending slash on the root dir
-	var blockRoot string
+	blockRoot := ""
 	if publishContext {
-		blockRoot, err := GitTopLevelDir()
+		blockRootStr, err := GitTopLevelDir()
 		if err != nil {
-			return fmt.Errorf("%s", blockRoot)
+			return fmt.Errorf("%s", err)
 		}
-		blockRoot = blockRoot + "/"
+		blockRoot = blockRootStr + "/"
 	} else {
 		if strings.HasSuffix(target, "/") {
 			blockRoot = target
@@ -365,7 +363,7 @@ func anyMatchingPrefix(target string, prefixes []string) bool {
 
 // get the root dir of the git project
 func GitTopLevelDir() (string, error) {
-	out, err := exec.Command("bash", "-c", gitTopLevelCmd).CombinedOutput()
+	out, err := exec.Command("bash", "-c", "git rev-parse --show-toplevel").CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%s", out)
 	}
