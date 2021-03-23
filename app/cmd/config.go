@@ -13,6 +13,8 @@ import (
 	"strings"
 )
 
+var gitTopLevelCmd = "git rev-parse --show-toplevel"
+
 // only used from publish, just going to send
 func publishFindOrCreateConfigDir(target string) (bool, error) {
 	return doesConfigExistOrCreate(target, false, true, []string{})
@@ -363,7 +365,7 @@ func anyMatchingPrefix(target string, prefixes []string) bool {
 
 // get the root dir of the git project
 func GitTopLevelDir() (string, error) {
-	out, err := exec.Command("bash", "-c", "git rev-parse --show-toplevel").CombinedOutput()
+	out, err := exec.Command("bash", "-c", gitTopLevelCmd).CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%s", out)
 	}

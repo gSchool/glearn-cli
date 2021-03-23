@@ -18,8 +18,9 @@ func Test_PreviewDetectsConfig(t *testing.T) {
 
 const withNoConfigFixture = "../../fixtures/test-block-no-config"
 
-func Test_PreviewBuildsAutoConfig(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{})
+func Test_PublishBuildsAutoConfig(t *testing.T) {
+	gitTopLevelCmd = "echo ../../fixtures/test-block-no-config"
+	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, true, []string{})
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
@@ -67,6 +68,7 @@ func Test_PreviewBuildsAutoConfigDeclaredUnitsDir(t *testing.T) {
 }
 
 func Test_PreviewBuildFailsWhenPreviewingSingleUnit(t *testing.T) {
+	gitTopLevelCmd = "echo ../../fixtures/test-block-no-units-dir"
 	createdConfig, err := doesConfigExistOrCreate(withNoUnitsDirFixture+"/single_unit", false, false, []string{})
 
 	if createdConfig == true {
@@ -79,6 +81,7 @@ func Test_PreviewBuildFailsWhenPreviewingSingleUnit(t *testing.T) {
 }
 
 func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
+	gitTopLevelCmd = "echo ../../fixtures/test-block-no-config"
 	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{})
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
