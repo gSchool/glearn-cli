@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -234,7 +233,7 @@ preview and return/open the preview URL when it is complete.
 		printlnGreen("√")
 
 		if OpenPreview {
-			exec.Command("bash", "-c", fmt.Sprintf("open %s", res.PreviewURL)).Output()
+			openURL(res.PreviewURL)
 		}
 
 		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
