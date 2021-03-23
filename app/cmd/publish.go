@@ -75,7 +75,7 @@ new block. If the block already exists, it will update the existing block.
 		}
 
 		if branch != "master" {
-			fmt.Printf("Branch publishing is cohort-specific. To continue publishing from branch '%s', go to https://learn-2.galvanize.com/cohorts/<cohortID>/setup and click the 'recycle' button for this repo.\n", branch)
+			fmt.Printf("Branch publishing is cohort-specific. To continue publishing from branch '%s', go to %s/cohorts/<cohortID>/setup and click the 'recycle' button for this repo.\n", branch, learn.API.BaseURL())
 			os.Exit(1)
 		}
 
@@ -149,7 +149,7 @@ new block. If the block already exists, it will update the existing block.
 
 		s.Stop()
 
-		fmt.Printf("Block released! https://learn-2.galvanize.com/blocks/%d\n", block.ID)
+		fmt.Printf("Block released! %s/blocks/%d\n", learn.API.BaseURL(), block.ID)
 
 		if len(p.SyncWarnings) > 0 {
 			fmt.Println("\nWarnings on new release:")
