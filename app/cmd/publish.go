@@ -248,7 +248,7 @@ func notCurrentWithRemote(branch string) bool {
 		return false
 	}
 
-	if strings.Contains(out, fmt.Sprintf("Your branch is up to date with 'origin/%v'", branch)) || strings.Contains(out, "nothing to commit, working tree clean") {
+	if strings.Contains(out, fmt.Sprintf("Your branch is up to date with 'origin/%v'", branch)) && strings.Contains(out, "nothing to commit, working tree clean") {
 		return false
 	}
 
