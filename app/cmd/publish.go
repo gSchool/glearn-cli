@@ -81,7 +81,7 @@ new block. If the block already exists, it will update the existing block.
 
 		// Detect config file
 		path, _ := os.Getwd()
-		createdConfig, err := findOrCreateConfigDir(path + "/")
+		createdConfig, err := publishFindOrCreateConfigDir(path + "/")
 		if err != nil {
 			fmt.Printf(fmt.Sprintf("Failed to find or create a config file for repo: (%s). Err: %v", branch, err))
 			os.Exit(1)
@@ -212,7 +212,9 @@ func pushToRemote(branch string) error {
 }
 
 func addAutoConfigAndCommit() error {
-	out, err := exec.Command("bash", "-c", "git add autoconfig.yaml").CombinedOutput()
+	top, err := GitTopLevelDir()
+	addCmd := "git add " + strings.TrimSpace(top) + "/autoconfig.yaml"
+	out, err := exec.Command("bash", "-c", addCmd).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s", out)
 	}

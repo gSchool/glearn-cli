@@ -6,18 +6,28 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 )
 
-func findOrCreateConfigDir(target string) (bool, error) {
-	return doesConfigExistOrCreate(target, false, []string{})
+var gitTopLevelCmd = "git rev-parse --show-toplevel"
+
+// only used from publish, just going to send
+func publishFindOrCreateConfigDir(target string) (bool, error) {
+	return doesConfigExistOrCreate(target, false, true, []string{})
 }
 
 // Check whether or nor a config file exists and if it does not we are going to attempt to create one
-func doesConfigExistOrCreate(target string, isSingleFilePreview bool, excludePaths []string) (bool, error) {
+func doesConfigExistOrCreate(target string, isSingleFilePreview, publishContext bool, excludePaths []string) (bool, error) {
+
+	// in publish context need to look at root of repo
+	if publishContext {
+		target, _ = GitTopLevelDir()
+	}
+
 	// Configs can be `yaml` or `yml`
 	configYamlPath := ""
 	if strings.HasSuffix(target, "/") {
@@ -57,13 +67,13 @@ func doesConfigExistOrCreate(target string, isSingleFilePreview bool, excludePat
 				fmt.Printf("INFO: No configuration found, generating autoconfig.yaml ")
 			}
 			if target == tmpSingleFileDir {
-				err := createAutoConfig(target, ".", excludePaths)
+				err := createAutoConfig(target, ".", excludePaths, publishContext)
 				if err != nil {
 					return false, err
 				}
 			} else {
 				// UnitsDirectory supplied from a string flag
-				err := createAutoConfig(target, UnitsDirectory, excludePaths)
+				err := createAutoConfig(target, UnitsDirectory, excludePaths, publishContext)
 				if err != nil {
 					return false, err
 				}
@@ -78,14 +88,21 @@ func doesConfigExistOrCreate(target string, isSingleFilePreview bool, excludePat
 // 1. Did you give us a units directory?
 // 2. Do you have a units directory?
 // Units must exist in units dir or one provided!
-func createAutoConfig(target, requestedUnitsDir string, excludePaths []string) error {
-	blockRoot := ""
-
+func createAutoConfig(target, requestedUnitsDir string, excludePaths []string, publishContext bool) error {
 	// Make sure we have an ending slash on the root dir
-	if strings.HasSuffix(target, "/") {
-		blockRoot = target
+	blockRoot := ""
+	if publishContext {
+		blockRootStr, err := GitTopLevelDir()
+		if err != nil {
+			return fmt.Errorf("%s", err)
+		}
+		blockRoot = blockRootStr + "/"
 	} else {
-		blockRoot = target + "/"
+		if strings.HasSuffix(target, "/") {
+			blockRoot = target
+		} else {
+			blockRoot = target + "/"
+		}
 	}
 
 	// The config file location that we will be creating
@@ -350,4 +367,14 @@ func anyMatchingPrefix(target string, prefixes []string) bool {
 		}
 	}
 	return false
+}
+
+// get the root dir of the git project
+func GitTopLevelDir() (string, error) {
+	out, err := exec.Command("bash", "-c", gitTopLevelCmd).CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("%s", out)
+	}
+
+	return strings.TrimSpace(string(out)), err
 }
