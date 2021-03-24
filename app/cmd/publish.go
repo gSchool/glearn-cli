@@ -75,7 +75,7 @@ new block. If the block already exists, it will update the existing block.
 		}
 
 		if branch != "master" {
-			fmt.Printf("Branch publishing is cohort-specific. To continue publishing from branch '%s', go to https://learn-2.galvanize.com/cohorts/<cohortID>/setup and click the 'recycle' button for this repo.\n", branch)
+			fmt.Printf("Branch publishing is cohort-specific. To continue publishing from branch '%s', go to %s/cohorts/<cohortID>/setup and click the 'recycle' button for this repo.\n", branch, learn.API.BaseURL())
 			os.Exit(1)
 		}
 
@@ -114,13 +114,12 @@ new block. If the block already exists, it will update the existing block.
 		fmt.Println("\nBuilding release...")
 		s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
 		s.Color("green")
-		s.FinalMSG = fmt.Sprintf("Block %d released!\n", block.ID)
 		s.Start()
 
 		// Create a release on learn, notify user
 		releaseID, err := learn.API.CreateMasterRelease(block.ID)
 		if err != nil || releaseID == 0 {
-			fmt.Printf("error creating master release for releaseID: %d. Error: %s\n", releaseID, err)
+			fmt.Printf("Release failed. releaseID: %d. Error: %s\n", releaseID, err)
 			os.Exit(1)
 		}
 
@@ -131,10 +130,10 @@ new block. If the block already exists, it will update the existing block.
 
 			block, err := learn.API.GetBlockByRepoName(repoPieces)
 			if err != nil {
-				fmt.Printf("Error fetching block from learn: %s\n", err)
+				fmt.Printf("Release failed. Error fetching block from learn: %s\n", err)
 				os.Exit(1)
 			}
-			fmt.Println("Errors on block:")
+			fmt.Println("Release failed. Errors on block:")
 			for _, e := range block.SyncErrors {
 				fmt.Println(e)
 			}
@@ -150,8 +149,10 @@ new block. If the block already exists, it will update the existing block.
 
 		s.Stop()
 
+		fmt.Printf("Block released! %s/blocks/%d\n", learn.API.BaseURL(), block.ID)
+
 		if len(p.SyncWarnings) > 0 {
-			fmt.Println("Warnings on new release:")
+			fmt.Println("\nWarnings on new release:")
 			for _, warning := range p.SyncWarnings {
 				fmt.Println(warning)
 			}
