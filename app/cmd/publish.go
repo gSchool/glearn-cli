@@ -79,6 +79,16 @@ new block. If the block already exists, it will update the existing block.
 			os.Exit(1)
 		}
 
+		if IgnoreLocal == false {
+			notCurrentWithRemote := notCurrentWithRemote(branch)
+			if notCurrentWithRemote {
+				fmt.Println("\nRelease failed.")
+				fmt.Println("You have local changes that are not on remote, run `git status` for details.")
+				fmt.Println("Add/commit/push your existing changes and run `learn publish` again, or continue to publish from current remote with `learn publish --ignore-local`")
+				os.Exit(1)
+			}
+		}
+
 		// Detect config file
 		path, _ := os.Getwd()
 		createdConfig, err := findOrCreateConfigDir(path + "/")
@@ -100,7 +110,6 @@ new block. If the block already exists, it will update the existing block.
 
 		fmt.Println("Pushing work to remote origin", branch)
 
-		// TODO what happens when they do not have work in remote and push fails?
 		err = pushToRemote(branch)
 		if err != nil {
 			fmt.Printf("\nError pushing to origin remote on branch:\n\n%s", err)
@@ -231,4 +240,17 @@ func runBashCommand(command string) (string, error) {
 	}
 
 	return strings.TrimSpace(string(out)), nil
+}
+
+func notCurrentWithRemote(branch string) bool {
+	out, err := runBashCommand("git status")
+	if err != nil {
+		return false
+	}
+
+	if strings.Contains(out, fmt.Sprintf("Your branch is up to date with 'origin/%v'", branch)) || strings.Contains(out, "nothing to commit, working tree clean") {
+		return false
+	}
+
+	return true
 }
