@@ -86,6 +86,9 @@ var FileOnly bool
 // OpenPreview is the flag boolean which will open the preview in browser
 var OpenPreview bool
 
+// Ignore local changes and publish remote only
+var IgnoreLocal bool
+
 func init() {
 	u, err := user.Current()
 	if err != nil {
@@ -132,6 +135,7 @@ func init() {
 	previewCmd.Flags().BoolVarP(&OpenPreview, "open", "o", false, "Open the preview in the browser")
 	previewCmd.Flags().BoolVarP(&FileOnly, "fileonly", "x", false, "E(x)cludes images when previewing a single file, defaults false")
 	publishCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
+	publishCmd.Flags().BoolVarP(&IgnoreLocal, "ignore-local", "", false, "Ignore local changes and publish remote only")
 	markdownCmd.Flags().BoolVarP(&PrintTemplate, "out", "o", false, "Prints the template to stdout")
 }
 

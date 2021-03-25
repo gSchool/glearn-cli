@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -130,7 +129,7 @@ preview and return/open the preview URL when it is complete.
 		var configYamlPaths []string
 		// Detect config file and paths
 		if fileContainsLinks || fileContainsSQLPaths || isDirectory || fileContainsDocker {
-			_, err = doesConfigExistOrCreate(target, isSingleFilePreview, dockerPaths)
+			_, err = doesConfigExistOrCreate(target, isSingleFilePreview, false, dockerPaths)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
 				return
@@ -241,7 +240,7 @@ preview and return/open the preview URL when it is complete.
 		printlnGreen("√")
 
 		if OpenPreview {
-			exec.Command("bash", "-c", fmt.Sprintf("open %s", res.PreviewURL)).Output()
+			openURL(res.PreviewURL)
 		}
 
 		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
