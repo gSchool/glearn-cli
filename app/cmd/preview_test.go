@@ -37,6 +37,10 @@ Question
 ### !end-challenge
 `
 
+const dockerIgnore = `ignore_me.jpg
+badFile.txt
+`
+
 func Test_createNewTarget(t *testing.T) {
 	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{"./mrsmall-invert.png", "../mrsmall.png", "../image/nested-small.png", "deeper/deep-small.png"}, []string{})
 	if err != nil {
@@ -217,6 +221,19 @@ func Test_createNewTarget_DockerDirectory(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
+	// DockerIgnore stuff
+	_, err = os.Create("path/to/dir/ignore_me.jpg")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+	_, err = os.Create("path/to/dir/badFile.txt")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+	err = createFile("path/to/dir/.dockerignore", dockerIgnore)
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
 
 	output := captureOutput(func() {
 		result, err := createNewTarget("test.md", []string{}, []string{"/path/to/dir"})
@@ -234,6 +251,14 @@ func Test_createNewTarget_DockerDirectory(t *testing.T) {
 
 		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/root.png")); os.IsNotExist(err) {
 			t.Errorf("path/to/dir/root.png should have been created and it's image dir moved to the root of the single file directory, was not")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/badFile.txt")); !os.IsNotExist(err) {
+			t.Errorf("path/to/dir/badFile.txt should NOT have been created because its in the docker ignore file")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/ignore_me.jpg")); !os.IsNotExist(err) {
+			t.Errorf("path/to/dir/ignore_me.jpg should NOT have been created because its in the docker ignore file")
 		}
 
 		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/child/nest.png")); os.IsNotExist(err) {
@@ -379,6 +404,22 @@ func Test_createNewTarget_DockerDirectoryDoubleNestedMd(t *testing.T) {
 
 func createTestMD(content string) error {
 	f, err := os.OpenFile("test.md", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write([]byte(content)); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createFile(name, content string) error {
+	f, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}

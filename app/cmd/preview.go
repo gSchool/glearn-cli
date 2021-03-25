@@ -627,6 +627,18 @@ func CopyDirectoryContents(src, dst string) error {
 	if !srcInfo.IsDir() {
 		return fmt.Errorf("path specified is not a directory: %s\n", src)
 	}
+	dockerIgnore := src + ".dockerignore"
+	if !strings.HasSuffix(src, "/") {
+		dockerIgnore = src + "/.dockerignore"
+	}
+
+	ignoreFile, err := ioutil.ReadFile(dockerIgnore)
+	ingoreFileRead := ""
+	if err != nil {
+		fmt.Printf("Could not parse dockerignore file: %s", err)
+	} else {
+		ingoreFileRead = string(ignoreFile)
+	}
 
 	err = os.MkdirAll(dst, srcInfo.Mode())
 	if err != nil {
@@ -647,9 +659,11 @@ func CopyDirectoryContents(src, dst string) error {
 				return err
 			}
 		} else {
-			err = Copy(source, destination)
-			if err != nil {
-				return err
+			if strings.Contains(ingoreFileRead, file.Name()) == false {
+				err = Copy(source, destination)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
