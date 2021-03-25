@@ -158,3 +158,22 @@ func Test_IgnoresExcludedFiles(t *testing.T) {
 		t.Errorf("Autoconfig should have excluded a lesson with a path of /units/test.md")
 	}
 }
+
+func Test_findConfigMethodReturnsProperConfig(t *testing.T) {
+	doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{})
+
+	configString, _ := findConfig(withNoConfigFixture)
+
+	if configString == "" {
+		t.Errorf("Should of found a config or autoconig file")
+	}
+}
+
+func Test_ParseConfigFileForPaths(t *testing.T) {
+	doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{})
+	paths, err := parseConfigAndGatherLinkedPaths(withNoConfigFixture)
+
+	if err != nil || len(paths) == 0 {
+		t.Errorf("Should of parse the yaml and gathered some content file paths")
+	}
+}

@@ -126,13 +126,20 @@ preview and return/open the preview URL when it is complete.
 			target = alternateTarget
 		}
 
-		// Detect config file
+		var configYamlPaths []string
+		// Detect config file and paths
 		if fileContainsLinks || fileContainsSQLPaths || isDirectory || fileContainsDocker {
 			_, err = doesConfigExistOrCreate(target, isSingleFilePreview, false, dockerPaths)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
 				return
 			}
+
+			configYamlPaths, err = parseConfigAndGatherLinkedPaths(target)
+			if err != nil {
+				previewCmdError(fmt.Sprintf("Failed to parse config/autoconfig yaml for: (%s). Err: %v", target, err))
+			}
+
 		}
 
 		// Start a processing spinner that runs until a user's content is compressed
@@ -145,7 +152,7 @@ preview and return/open the preview URL when it is complete.
 		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpZipFile
-		err = compressDirectory(target, tmpZipFile, isSingleFilePreview)
+		err = compressDirectory(target, tmpZipFile, isSingleFilePreview, configYamlPaths)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", target, err))
 			return
@@ -654,7 +661,7 @@ func CopyDirectoryContents(src, dst string) error {
 // and a target file path (where to put the zip file) and recursively compresses the source.
 // Source can either be a directory or a single file. When singleFile is true, all files in
 // the zip are added.
-func compressDirectory(source, target string, singleFile bool) error {
+func compressDirectory(source, target string, singleFile bool, configYamlPaths []string) error {
 	// Create file with target name and defer its closing
 	zipfile, err := os.Create(target)
 	if err != nil {
@@ -682,14 +689,25 @@ func compressDirectory(source, target string, singleFile bool) error {
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		path = filepath.ToSlash(path)
 
-		ext := filepath.Ext(path)
-		_, ok := fileExtWhitelist[ext]
-		// upload everything for single file as it should always be relevant data
-		if singleFile {
-			ok = true
+		var fileIsInConfig = false
+		for _, p := range configYamlPaths {
+			var configPathSplits = strings.Split(p, "/")
+			var fileName = configPathSplits[len(configPathSplits)-1]
+			if strings.Contains(path, fileName) {
+				fileIsInConfig = true
+			}
 		}
 
-		if ok || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
+		var isConfigFile = strings.Contains(path, "config.yml") || strings.Contains(path, "config.yaml") || strings.Contains(path, "autoconfig.yaml")
+
+		ext := filepath.Ext(path)
+
+		if !info.IsDir() && info.Size() > 1000000 {
+			fmt.Printf("\nWARNING: Ingoring File For Preview: File chosen/linked to for preview is too large: %s\n", path)
+			return nil
+		}
+
+		if isConfigFile || fileIsInConfig || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
 			if err != nil {
 				return err
 			}
@@ -728,6 +746,7 @@ func compressDirectory(source, target string, singleFile bool) error {
 			// If it was not a directory, we open the file and copy it into the archive writer
 			// ingore zip files
 			file, err := os.Open(path)
+
 			if err != nil {
 				return err
 			}

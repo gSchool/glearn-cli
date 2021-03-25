@@ -9,7 +9,7 @@ func Test_ParseLink(t *testing.T) {
 	tableTest := map[string][]string{
 		"[example](linkresult)":   []string{"linkresult"},
 		"[example]()":             []string{""},
-		"[example](ends-in.md)":   []string{""},
+		"[example](ends-in.md)":   []string{"ends-in.md"},
 		"[](has-no-link-text)":    []string{"has-no-link-text"},
 		"[more](than)[one](link)": []string{"than", "link"},
 		`[more](than)

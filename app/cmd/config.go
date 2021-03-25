@@ -11,7 +11,22 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/gSchool/glearn-cli/mdresourceparser"
+	"gopkg.in/yaml.v2"
 )
+
+// Note: struct fields must be public in order for unmarshal to
+// correctly populate the data.
+type ConfigYaml struct {
+	Standards []Standard `yaml:"Standards"`
+}
+type Standard struct {
+	ContentFiles []ContentFileAttrs `yaml:"ContentFiles"`
+}
+type ContentFileAttrs struct {
+	Path string `yaml:"Path"`
+}
 
 var gitTopLevelCmd = "git rev-parse --show-toplevel"
 
@@ -367,6 +382,82 @@ func anyMatchingPrefix(target string, prefixes []string) bool {
 		}
 	}
 	return false
+}
+
+func parseConfigAndGatherLinkedPaths(target string) ([]string, error) {
+	ret := []string{}
+	config := ConfigYaml{}
+
+	configYaml, err := findConfig(target)
+	data, err := ioutil.ReadFile(configYaml)
+	if err != nil {
+		return ret, err
+	}
+
+	err = yaml.Unmarshal([]byte(data), &config)
+	if err != nil {
+		return ret, err
+	}
+
+	for _, std := range config.Standards {
+		for _, cf := range std.ContentFiles {
+			contents, err := ioutil.ReadFile(target + cf.Path)
+			if err != nil {
+				return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+			}
+
+			m := mdresourceparser.New([]rune(string(contents)))
+			m.ParseResources()
+			for _, link := range m.Links {
+				var pathSplits = strings.Split(cf.Path, "/")
+				pathSplits = pathSplits[:len(pathSplits)-1]
+				if !strings.HasPrefix(link, "/") {
+					link = "/" + link
+				}
+				var linkRelativePath = target + strings.Join(pathSplits, "/") + link
+				linkAbsPath, _ := filepath.Abs(linkRelativePath)
+				ret = append(ret, linkAbsPath)
+			}
+			cfPath, _ := filepath.Abs(target + cf.Path)
+			ret = append(ret, cfPath)
+		}
+	}
+
+	return ret, nil
+}
+
+// tries to find the config yaml or autoconfig yaml
+func findConfig(target string) (string, error) {
+	configPath := ""
+	if strings.HasSuffix(target, "/") {
+		configPath = target + "config.yaml"
+	} else {
+		configPath = target + "/config.yaml"
+	}
+	_, yamlExists := os.Stat(configPath)
+	if yamlExists != nil {
+		if strings.HasSuffix(target, "/") {
+			configPath = target + "config.yml"
+		} else {
+			configPath = target + "/config.yml"
+		}
+		_, yamlExists = os.Stat(configPath)
+		if yamlExists != nil {
+			if strings.HasSuffix(target, "/") {
+				configPath = target + "autoconfig.yaml"
+			} else {
+				configPath = target + "/autoconfig.yaml"
+			}
+
+			_, yamlExists = os.Stat(configPath)
+
+			if yamlExists != nil {
+				return "", fmt.Errorf("Could not find congfig or autoconfig yaml")
+			}
+		}
+	}
+
+	return configPath, nil
 }
 
 // get the root dir of the git project

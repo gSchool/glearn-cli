@@ -24,3 +24,4 @@ autoconfig.yaml
 !/fixtures/test-block-no-config/autoconfig.yaml
 !/fixtures/test-block-no-units-dir/autoconfig.yaml
 .DS_Store
+.vscode
