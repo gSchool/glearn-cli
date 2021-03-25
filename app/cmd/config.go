@@ -28,8 +28,6 @@ type ContentFileAttrs struct {
 	Path string `yaml:"Path"`
 }
 
-func findOrCreateConfigDir(target string) (bool, error) {
-	return doesConfigExistOrCreate(target, false, []string{})
 var gitTopLevelCmd = "git rev-parse --show-toplevel"
 
 // only used from publish, just going to send
@@ -460,6 +458,8 @@ func findConfig(target string) (string, error) {
 	}
 
 	return configPath, nil
+}
+
 // get the root dir of the git project
 func GitTopLevelDir() (string, error) {
 	out, err := exec.Command("bash", "-c", gitTopLevelCmd).CombinedOutput()

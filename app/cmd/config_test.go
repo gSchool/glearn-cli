@@ -160,7 +160,7 @@ func Test_IgnoresExcludedFiles(t *testing.T) {
 }
 
 func Test_findConfigMethodReturnsProperConfig(t *testing.T) {
-	doesConfigExistOrCreate(withNoConfigFixture, false, []string{})
+	doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{})
 
 	configString, _ := findConfig(withNoConfigFixture)
 
@@ -170,7 +170,7 @@ func Test_findConfigMethodReturnsProperConfig(t *testing.T) {
 }
 
 func Test_ParseConfigFileForPaths(t *testing.T) {
-	doesConfigExistOrCreate(withNoConfigFixture, false, []string{})
+	doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{})
 	paths, err := parseConfigAndGatherLinkedPaths(withNoConfigFixture)
 
 	if err != nil || len(paths) == 0 {
