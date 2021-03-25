@@ -1,4 +1,4 @@
-package ignore_matcher
+package ignorematcher
 
 import (
 	"os"

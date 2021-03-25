@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	di "github.com/gSchool/glearn-cli/api/ignorematcher"
 	"github.com/gSchool/glearn-cli/api/learn"
 	"github.com/gSchool/glearn-cli/mdresourceparser"
 	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
@@ -627,17 +628,18 @@ func CopyDirectoryContents(src, dst string) error {
 	if !srcInfo.IsDir() {
 		return fmt.Errorf("path specified is not a directory: %s\n", src)
 	}
+
 	dockerIgnore := src + ".dockerignore"
 	if !strings.HasSuffix(src, "/") {
 		dockerIgnore = src + "/.dockerignore"
 	}
 
 	ignoreFile, err := ioutil.ReadFile(dockerIgnore)
-	ingoreFileRead := ""
+	ignorePatterns := []string{}
 	if err != nil {
 		fmt.Printf("Could not parse dockerignore file: %s", err)
 	} else {
-		ingoreFileRead = string(ignoreFile)
+		ignorePatterns = strings.Split(string(ignoreFile), "\n")
 	}
 
 	err = os.MkdirAll(dst, srcInfo.Mode())
@@ -653,17 +655,30 @@ func CopyDirectoryContents(src, dst string) error {
 		source := filepath.Join(src, file.Name())
 		destination := filepath.Join(dst, file.Name())
 
+		ingore := false
+		for _, pattern := range ignorePatterns {
+			matched, err := di.IgnoreMatches(pattern, source)
+			if err != nil {
+				// Do something about it?
+			}
+			if matched {
+				ingore = matched
+				break
+			}
+		}
+		if ingore {
+			return nil
+		}
+
 		if file.IsDir() {
 			err = CopyDirectoryContents(source, destination)
 			if err != nil {
 				return err
 			}
 		} else {
-			if strings.Contains(ingoreFileRead, file.Name()) == false {
-				err = Copy(source, destination)
-				if err != nil {
-					return err
-				}
+			err = Copy(source, destination)
+			if err != nil {
+				return err
 			}
 		}
 	}
