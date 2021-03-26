@@ -24,8 +24,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	di "github.com/gSchool/glearn-cli/api/ignorematcher"
 	"github.com/gSchool/glearn-cli/api/learn"
+	di "github.com/gSchool/glearn-cli/ignorematcher"
 	"github.com/gSchool/glearn-cli/mdresourceparser"
 	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )

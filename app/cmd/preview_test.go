@@ -38,7 +38,7 @@ Question
 `
 
 const dockerIgnore = `ignore_me.jpg
-badFile.txt
+*.txt
 `
 
 func Test_createNewTarget(t *testing.T) {
