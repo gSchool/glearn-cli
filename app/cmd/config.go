@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bufio"
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -13,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/gSchool/glearn-cli/mdresourceparser"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const autoComment = `# This file is auto-generated and orders your content based on the file structure of your repo.
@@ -38,10 +40,14 @@ type Standard struct {
 	ContentFiles    []ContentFileAttrs `yaml:"ContentFiles"`
 }
 type ContentFileAttrs struct {
-	Type              string `yaml:"Type"`
-	Path              string `yaml:"Path"`
-	UID               string `yaml:"UID"`
-	DefaultVisibility bool   `yaml:"DefaultVisibility"`
+	Type                     string `yaml:"Type"`
+	Path                     string `yaml:"Path"`
+	UID                      string `yaml:"UID"`
+	DefaultVisibility        string `yaml:"DefaultVisibility,omitempty"`
+	MaxCheckpointSubmissions int    `yaml:"MaxCheckpointSubmissions,omitempty"`
+	TimeLimit                int    `yaml:"TimeLimit,omitempty"`
+	Autoscore                bool   `yaml:"Autoscore,omitempty"`
+	fromHeader               bool   // fromHeader is set true when the attrs were parsed from the header
 }
 
 var gitTopLevelCmd = "git rev-parse --show-toplevel"
@@ -79,7 +85,7 @@ func doesConfigExistOrCreate(target string, isSingleFilePreview, publishContext 
 
 	if yamlExists == nil { // Yaml exists
 		if isSingleFilePreview == false {
-			fmt.Printf("INFO: Using existing config.yaml. ")
+			fmt.Printf("INFO: Using existing config.yaml. \n")
 		}
 
 		return createdConfig, nil
@@ -88,14 +94,14 @@ func doesConfigExistOrCreate(target string, isSingleFilePreview, publishContext 
 
 		if ymlExists == nil { // Yml exists
 			if isSingleFilePreview == false {
-				fmt.Printf("INFO: Using existing config.yaml. ")
+				fmt.Printf("INFO: Using existing config.yaml. \n")
 			}
 
 			return createdConfig, nil
 		} else if os.IsNotExist(ymlExists) {
 			if isSingleFilePreview == false {
 				// Neither exists so we are going to create one
-				fmt.Printf("INFO: No configuration found, generating autoconfig.yaml ")
+				fmt.Printf("INFO: No configuration found, generating autoconfig.yaml \n")
 			}
 			if target == tmpSingleFileDir {
 				err := createAutoConfig(target, ".", excludePaths, publishContext)
@@ -172,8 +178,8 @@ func createYamlConfig(target, requestedUnitsDir string, excludePaths []string, p
 }
 
 func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []string) (ConfigYaml, error) {
-	// If no unitsDir was passed in, create a Units directory string
 	config := ConfigYaml{Standards: []Standard{}}
+	// If no unitsDir was passed in, create a Units directory string
 	unitsDir := ""
 	unitsDirName := ""
 	unitsRootDirName := "units"
@@ -211,8 +217,8 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 
 		// skip the unit when all content files are excluded
 		allFilesExcluded := true
-		for _, path := range unitToContentFileMap[unit] {
-			if !anyMatchingPrefix("/"+path, excludePaths) {
+		for _, contentFile := range unitToContentFileMap[unit] {
+			if !anyMatchingPrefix("/"+contentFile.Path, excludePaths) {
 				allFilesExcluded = false
 				break
 			}
@@ -235,39 +241,44 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 			SuccessCriteria: []string{},
 		}
 
-		for _, path := range unitToContentFileMap[unit] {
-			if anyMatchingPrefix("/"+path, excludePaths) {
+		for _, contentFile := range unitToContentFileMap[unit] {
+			if anyMatchingPrefix("/"+contentFile.Path, excludePaths) {
 				continue
 			}
-			parts := strings.Split(path, "/")
+			parts := strings.Split(contentFile.Path, "/")
 			if strings.HasPrefix(parts[len(parts)-1], "__") {
 				continue
 			}
-			if path != "README.md" {
-				if strings.Contains(strings.ToLower(path), "..") {
-					path = strings.Replace(path, "..", ".", 1)
+			if contentFile.Path != "README.md" {
+				if strings.Contains(strings.ToLower(contentFile.Path), "..") {
+					contentFile.Path = strings.Replace(contentFile.Path, "..", ".", 1)
 				}
-				if strings.HasPrefix(path, "./") {
-					path = path[1:]
+				if strings.HasPrefix(contentFile.Path, "./") {
+					contentFile.Path = contentFile.Path[1:]
 				} else {
-					path = "/" + path
+					contentFile.Path = "/" + contentFile.Path
 				}
-				cfUID := []byte(formattedUnitName + path)
-				md5cfUID := md5.Sum(cfUID)
+				if contentFile.fromHeader {
+					fmt.Printf("Using file header to set autoconfig values for %s\n", contentFile.Path)
+					standard.ContentFiles = append(standard.ContentFiles, contentFile)
+				} else {
+					cfUID := []byte(formattedUnitName + contentFile.Path)
+					md5cfUID := md5.Sum(cfUID)
 
-				contentFile := ContentFileAttrs{
-					Type:              detectContentType(path),
-					Path:              path,
-					UID:               hex.EncodeToString(md5cfUID[:]),
-					DefaultVisibility: strings.Contains(strings.ToLower(path), "hidden"),
+					cf := ContentFileAttrs{
+						Type: detectContentType(contentFile.Path),
+						Path: contentFile.Path,
+						UID:  hex.EncodeToString(md5cfUID[:]),
+					}
+					if strings.Contains(strings.ToLower(contentFile.Path), "hidden") {
+						cf.DefaultVisibility = "hidden"
+					}
+					standard.ContentFiles = append(standard.ContentFiles, cf)
 				}
-				standard.ContentFiles = append(standard.ContentFiles, contentFile)
 			}
 		}
 		config.Standards = append(config.Standards, standard)
 	}
-
-	fmt.Printf("CONFIG %+v\n", config)
 
 	return config, nil
 }
@@ -633,10 +644,41 @@ func findConfig(target string) (string, error) {
 	return configPath, nil
 }
 
+// readContentFileAttrs takes a file path and returns contentFileAttrs if they were present in the header yaml
+func readContentFileAttrs(path string) (contentFile ContentFileAttrs, err error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return contentFile, err
+	}
+	defer file.Close()
+	bufferSize := 1024 // this reasonably holds the header
+	buf := make([]byte, bufferSize)
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(buf, bufferSize)
+	scanner.Split(split)
+	// read to the first yaml delimiter
+	scanner.Scan()
+	yamlText := scanner.Text() // extract yaml
+	if err = scanner.Err(); err != nil {
+		return contentFile, err
+	}
+
+	if strings.TrimSpace(yamlText) != "" {
+		err = yaml.Unmarshal([]byte(yamlText), &contentFile)
+		if err != nil {
+			return contentFile, err
+		}
+		contentFile.Path = path
+		contentFile.fromHeader = true
+		return contentFile, err
+	}
+	contentFile.Path = path
+	return contentFile, nil
+}
+
 // buildUnitToContentFileMap reads contents from the unit directory and includes md files
-// TODO this should eventually do all the heavy lifting for buiding  the ConfigYaml? It is already open files to be read
-func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirName string) (map[string][]string, error) {
-	unitToContentFileMap := map[string][]string{}
+func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirName string) (map[string][]ContentFileAttrs, error) {
+	unitToContentFileMap := map[string][]ContentFileAttrs{}
 
 	// Check to see if units directory exists
 	_, err := os.Stat(unitsDir)
@@ -653,7 +695,11 @@ func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirNa
 
 		for _, info := range allItems {
 			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
-				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], unitsRootDirName+"/"+info.Name())
+				contentFile, err := readContentFileAttrs(unitsRootDirName + "/" + info.Name())
+				if err != nil {
+					return unitToContentFileMap, err
+				}
+				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], contentFile)
 			}
 		}
 	}
@@ -693,7 +739,12 @@ func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirNa
 							localPath = path[len(blockRoot):]
 						}
 
-						unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], localPath)
+						// TODO read header, extract ContentFileAttrs
+						contentFile, err := readContentFileAttrs(localPath)
+						if err != nil {
+							return err
+						}
+						unitToContentFileMap[dirName] = append(unitToContentFileMap[dirName], contentFile)
 					}
 
 					return nil
@@ -715,4 +766,35 @@ func GitTopLevelDir() (string, error) {
 	}
 
 	return strings.TrimSpace(string(out)), err
+}
+
+// split is the bufio Scanner Split interface implementation for fetching content file header attributes
+func split(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+	if len(data) < 4 {
+		return 0, nil, nil // the content simply does not exist
+	}
+	// if the first three characters aren't '---' don't continue
+	if string(data[:3]) != "---" {
+		return 0, nil, nil
+	}
+
+	index := bytes.Index(data, []byte("---"))
+	if index >= 0 {
+		// data[index+3:] reads past the incidence of '---' up to the index of the next '---'
+		next := bytes.Index(data[index+3:], []byte("---"))
+		if next > 0 {
+			// the next '---' is found, advance just past it with next + 3, the token here is the terminating '---'
+			return next + 3, bytes.TrimSpace(data[:next+3]), nil
+		}
+		// when no second instance, advance to the end of the file
+		return len(data), bytes.TrimSpace(data[index+3:]), nil
+	}
+	// when atEOF return the final index
+	if atEOF {
+		return len(data), data, nil
+	}
+	return 0, nil, nil
 }
