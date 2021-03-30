@@ -222,15 +222,15 @@ func Test_createNewTarget_DockerDirectory(t *testing.T) {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
 	// DockerIgnore stuff
-	_, err = os.Create("path/to/dir/ignore_me.jpg")
+	err = os.Mkdir("path/to/dir/.dockerignore", os.FileMode(0777))
 	if err != nil {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
-	_, err = os.Create("path/to/dir/badFile.txt")
+	_, err = os.Create("path/to/dir/.dockerignore/ignore_me.jpg")
 	if err != nil {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
-	err = createFile("path/to/dir/.dockerignore", dockerIgnore)
+	_, err = os.Create("path/to/dir/.dockerignore/badFile.txt")
 	if err != nil {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
@@ -418,21 +418,6 @@ func createTestMD(content string) error {
 	return nil
 }
 
-func createFile(name, content string) error {
-	f, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	if _, err := f.Write([]byte(content)); err != nil {
-		f.Close()
-		return err
-	}
-	if err := f.Close(); err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func captureOutput(f func()) string {
 	var buf bytes.Buffer
