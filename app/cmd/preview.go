@@ -654,7 +654,6 @@ func CopyDirectoryContents(src, dst string) error {
 	for _, file := range files {
 		source := filepath.Join(src, file.Name())
 		destination := filepath.Join(dst, file.Name())
-
 		ingore := false
 		for _, pattern := range ignorePatterns {
 			matched, err := di.IgnoreMatches(pattern, source)
@@ -733,6 +732,10 @@ func compressDirectory(source, target string, singleFile bool, configYamlPaths [
 
 		if !info.IsDir() && info.Size() > 1000000 {
 			fmt.Printf("\nWARNING: Ingoring File For Preview: File chosen/linked to for preview is too large: %s\n", path)
+			return nil
+		}
+
+		if strings.Contains(path, ".dockerignore") || strings.HasPrefix(path, ".") {
 			return nil
 		}
 

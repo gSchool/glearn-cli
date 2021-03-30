@@ -222,6 +222,10 @@ func Test_createNewTarget_DockerDirectory(t *testing.T) {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
 	// DockerIgnore stuff
+	_, err = os.Create("path/to/dir/child/.dockerignore")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
 	err = os.Mkdir("path/to/dir/.dockerignore", os.FileMode(0777))
 	if err != nil {
 		t.Errorf("Error generating test fixtures: %s\n", err)
@@ -417,7 +421,6 @@ func createTestMD(content string) error {
 
 	return nil
 }
-
 
 func captureOutput(f func()) string {
 	var buf bytes.Buffer
