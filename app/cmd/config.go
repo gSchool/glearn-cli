@@ -175,7 +175,7 @@ func createYamlConfig(target, requestedUnitsDir string, excludePaths []string, p
 	return nil
 }
 
-// CnewConfigYaml lreates a ConfigYaml struct given certain conditions
+// newConfigYaml lreates a ConfigYaml struct given certain conditions
 // 1. Did you give us a units directory?
 // 2. Do you have a units directory?
 // Units must exist in units dir or one provided!

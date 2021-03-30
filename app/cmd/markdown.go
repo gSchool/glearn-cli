@@ -122,42 +122,44 @@ func (t temp) appendContent(target string) error {
 }
 
 var templates = map[string]temp{
-	"ls":              {"Lesson markdown", lessonTemplate, false},
-	"lesson":          {"Lesson markdown", lessonTemplate, false},
-	"mc":              {"Multiple Choice markdown", multiplechoiceTemplate, true},
-	"multiplechoice":  {"Multiple Choice markdown", multiplechoiceTemplate, true},
-	"cb":              {"Checkbox markdown", checkboxTemplate, true},
-	"checkbox":        {"Checkbox markdown", checkboxTemplate, true},
-	"tl":              {"Tasklist markdown", tasklistTemplate, true},
-	"tasklist":        {"Tasklist markdown", tasklistTemplate, true},
-	"sa":              {"Short Answer markdown", shortanswerTemplate, true},
-	"shortanswer":     {"Short Answer markdown", shortanswerTemplate, true},
-	"nb":              {"Number markdown", numberTemplate, true},
-	"number":          {"Number markdown", numberTemplate, true},
-	"pg":              {"Paragraph markdown", paragraphTemplate, true},
-	"paragraph":       {"Paragraph markdown", paragraphTemplate, true},
-	"or":              {"Ordering markdown", orderingTemplate, true},
-	"ordering":        {"Ordering markdown", orderingTemplate, true},
-	"js":              {"Javascript markdown", javascriptTemplate, true},
-	"javascript":      {"Javascript markdown", javascriptTemplate, true},
-	"ja":              {"Java markdown", javaTemplate, true},
-	"java":            {"Java markdown", javaTemplate, true},
-	"py":              {"Python markdown", pythonTemplate, true},
-	"python":          {"Python markdown", pythonTemplate, true},
-	"sq":              {"Sql markdown", sqlTemplate, true},
-	"sql":             {"Sql markdown", sqlTemplate, true},
-	"cs":              {"Custom Snippet markdown", customsnippetTemplate, true},
-	"customsnippet":   {"Custom Snippet markdown", customsnippetTemplate, true},
-	"pr":              {"Project markdown", projectTemplate, true},
-	"project":         {"Project markdown", projectTemplate, true},
-	"tpr":             {"Testable Project markdown", testableProjectTemplate, true},
-	"testableproject": {"Testable Project markdown", testableProjectTemplate, true},
-	"cfy":             {"config.yaml syntax", configyamlTemplate, false},
-	"configyaml":      {"config.yaml syntax", configyamlTemplate, false},
-	"cry":             {"course.yaml syntax", courseyamlTemplate, false},
-	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, false},
-	"callout":         {"Callout markdown", calloutTemplate, false},
-	"co":              {"Callout markdown", calloutTemplate, false},
+	"ls":               {"Lesson markdown", lessonTemplate, false},
+	"lesson":           {"Lesson markdown", lessonTemplate, false},
+	"mc":               {"Multiple Choice markdown", multiplechoiceTemplate, true},
+	"multiplechoice":   {"Multiple Choice markdown", multiplechoiceTemplate, true},
+	"cb":               {"Checkbox markdown", checkboxTemplate, true},
+	"checkbox":         {"Checkbox markdown", checkboxTemplate, true},
+	"tl":               {"Tasklist markdown", tasklistTemplate, true},
+	"tasklist":         {"Tasklist markdown", tasklistTemplate, true},
+	"sa":               {"Short Answer markdown", shortanswerTemplate, true},
+	"shortanswer":      {"Short Answer markdown", shortanswerTemplate, true},
+	"nb":               {"Number markdown", numberTemplate, true},
+	"number":           {"Number markdown", numberTemplate, true},
+	"pg":               {"Paragraph markdown", paragraphTemplate, true},
+	"paragraph":        {"Paragraph markdown", paragraphTemplate, true},
+	"or":               {"Ordering markdown", orderingTemplate, true},
+	"ordering":         {"Ordering markdown", orderingTemplate, true},
+	"js":               {"Javascript markdown", javascriptTemplate, true},
+	"javascript":       {"Javascript markdown", javascriptTemplate, true},
+	"ja":               {"Java markdown", javaTemplate, true},
+	"java":             {"Java markdown", javaTemplate, true},
+	"py":               {"Python markdown", pythonTemplate, true},
+	"python":           {"Python markdown", pythonTemplate, true},
+	"sq":               {"Sql markdown", sqlTemplate, true},
+	"sql":              {"Sql markdown", sqlTemplate, true},
+	"cs":               {"Custom Snippet markdown", customsnippetTemplate, true},
+	"customsnippet":    {"Custom Snippet markdown", customsnippetTemplate, true},
+	"pr":               {"Project markdown", projectTemplate, true},
+	"project":          {"Project markdown", projectTemplate, true},
+	"tpr":              {"Testable Project markdown", testableProjectTemplate, true},
+	"testableproject":  {"Testable Project markdown", testableProjectTemplate, true},
+	"cfy":              {"config.yaml syntax", configyamlTemplate, false},
+	"configyaml":       {"config.yaml syntax", configyamlTemplate, false},
+	"cry":              {"course.yaml syntax", courseyamlTemplate, false},
+	"courseyaml":       {"course.yaml syntax", courseyamlTemplate, false},
+	"callout":          {"Callout markdown", calloutTemplate, false},
+	"co":               {"Callout markdown", calloutTemplate, false},
+	"autoconfigheader": {"Autoconfig header yaml syntax", autoConfigHeaderTemplate, true},
+	"ah":               {"Autoconfig header yaml syntax", autoConfigHeaderTemplate, true},
 }
 
 const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout.\n\n" + argList
@@ -185,7 +187,8 @@ Other Markdown:
   callout (co)
 Configuration:
   configyaml (cfy)
-  courseyaml (cry)`
+  courseyaml (cry)
+  autoconfigheader (ah)`
 
 const lessonTemplate = `# Title
 
@@ -873,3 +876,14 @@ const calloutTemplate = `<!-- available callout types: info, success, warning, d
 body
 
 ### !end-callout`
+
+const autoConfigHeaderTemplate = `---
+# This is for autoconfig content file settings generation only
+# Using a config.yml will override these settings.
+Type:
+UID: %s
+# MaxCheckpointSubmissions:
+# TimeLimit:
+# Autoscore:
+# DefaultVisibility:
+---`
