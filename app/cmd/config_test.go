@@ -20,7 +20,10 @@ const withNoConfigFixture = "../../fixtures/test-block-no-config"
 
 func Test_PublishBuildsAutoConfig(t *testing.T) {
 	gitTopLevelCmd = "echo ../../fixtures/test-block-no-config"
-	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, true, []string{})
+	createdConfig, err := doesConfigExistOrCreate(withNoConfigFixture, false, true, []string{})
+	if err != nil {
+		t.Errorf("Should not have errored but got error: '%s'\n", err)
+	}
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}

@@ -34,6 +34,7 @@ var validContentFileAttrs = []string{"Type", "UID", "DefaultVisibility", "MaxChe
 type ConfigYaml struct {
 	Standards []Standard `yaml:"Standards"`
 }
+
 type Standard struct {
 	Title           string             `yaml:"Title"`
 	UID             string             `yaml:"UID"`
@@ -41,6 +42,7 @@ type Standard struct {
 	SuccessCriteria []string           `yaml:"SuccessCriteria,omitempty"`
 	ContentFiles    []ContentFileAttrs `yaml:"ContentFiles"`
 }
+
 type ContentFileAttrs struct {
 	Type                     string `yaml:"Type"`
 	Path                     string `yaml:"Path"`
@@ -409,9 +411,9 @@ func findConfig(target string) (string, error) {
 	return configPath, nil
 }
 
-// readContentFileAttrs takes a file path and returns contentFileAttrs if they were present in the header yaml
-func readContentFileAttrs(path string) (contentFile ContentFileAttrs, err error) {
-	file, err := os.Open(path)
+// readContentFileAttrs takes a file path and a readPath and returns contentFileAttrs if they were present in the header yaml
+func readContentFileAttrs(path, readPath string) (contentFile ContentFileAttrs, err error) {
+	file, err := os.Open(readPath)
 	if err != nil {
 		return contentFile, err
 	}
@@ -466,7 +468,7 @@ func printExtras(yamlText, path string) error {
 	return nil
 }
 
-// buildUnitToContentFileMap reads contents from the unit directory and includes md files
+// buildUnitToContentFileMap reads contents from the unit directory and includes md files. It returns attributes from the header for each file
 func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirName string) (map[string][]ContentFileAttrs, error) {
 	unitToContentFileMap := map[string][]ContentFileAttrs{}
 
@@ -485,7 +487,9 @@ func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirNa
 
 		for _, info := range allItems {
 			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
-				contentFile, err := readContentFileAttrs(unitsRootDirName + "/" + info.Name())
+				readPath := blockRoot + unitsRootDirName + "/" + info.Name()
+				path := unitsRootDirName + "/" + info.Name()
+				contentFile, err := readContentFileAttrs(path, readPath)
 				if err != nil {
 					return unitToContentFileMap, err
 				}
@@ -529,7 +533,8 @@ func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirNa
 							localPath = path[len(blockRoot):]
 						}
 
-						contentFile, err := readContentFileAttrs(localPath)
+						readPath := blockRoot + "/" + localPath
+						contentFile, err := readContentFileAttrs(localPath, readPath)
 						if err != nil {
 							return err
 						}

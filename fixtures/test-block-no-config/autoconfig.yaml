@@ -5,56 +5,45 @@
 # include a config.yaml in your repo following the same conventions as this auto-generated file.
 # A user-created config.yaml will have priority over the auto-generated one.
 
----
 Standards:
-  -
-    Title: Checkpoint
-    Description: Checkpoint
-    UID: ef41311079c448d0beb06ec07db0bf8c
-    SuccessCriteria:
-      - success criteria
-    ContentFiles:
-      -
-        Type: Checkpoint
-        UID: 715356b14b1b84ef22a007e0e3ad4f40
-        Path: /units/01-checkpoint/another-checkpoint.md
-  -
-    Title: Resource
-    Description: Resource
-    UID: be8545ae7ab0276e15898aae7acfbd7a
-    SuccessCriteria:
-      - success criteria
-    ContentFiles:
-      -
-        Type: Resource
-        UID: d9c98eb710b27a2155d7e7021638b416
-        Path: /units/03.resource/name.resource.md
-  -
-    Title: Unit 1
-    Description: Unit 1
-    UID: 02210548f12da09aa7a0bd1f1308c423
-    SuccessCriteria:
-      - success criteria
-    ContentFiles:
-      -
-        Type: Lesson
-        DefaultVisibility: hidden
-        UID: fa17889419368b299a1a133d631c2220
-        Path: /units/file.hidden.file.md
-      -
-        Type: Survey
-        UID: 28625cda42c039ccec4b31a3ff0dffa2
-        Path: /units/file.survey.md
-      -
-        Type: Resource
-        DefaultVisibility: hidden
-        UID: 2359128cd306beec92d33a11156a993a
-        Path: /units/hidden.resource.md
-      -
-        Type: Instructor
-        UID: e2cb916b740d6a949e05ebc1966b121d
-        Path: /units/teacher-instructor.md
-      -
-        Type: Lesson
-        UID: 03295c99fd9e90b8d3cebacf3840b1d7
-        Path: /units/test.md
+- Title: Checkpoint
+  UID: ef41311079c448d0beb06ec07db0bf8c
+  Description: Checkpoint
+  SuccessCriteria:
+  - success criteria
+  ContentFiles:
+  - Type: Checkpoint
+    Path: /units/01-checkpoint/another-checkpoint.md
+    UID: db9e525f7f0f8266e2271753753bf5b8
+- Title: Resource
+  UID: be8545ae7ab0276e15898aae7acfbd7a
+  Description: Resource
+  SuccessCriteria:
+  - success criteria
+  ContentFiles:
+  - Type: Resource
+    Path: /units/03.resource/name.resource.md
+    UID: 2726a7a33276eaef4a8e143d824d9d1e
+- Title: Unit 1
+  UID: 02210548f12da09aa7a0bd1f1308c423
+  Description: Unit 1
+  SuccessCriteria:
+  - success criteria
+  ContentFiles:
+  - Type: Lesson
+    Path: /units/file.hidden.file.md
+    UID: 11e6402058570d6b6a4974a92b93c9e2
+    DefaultVisibility: hidden
+  - Type: Survey
+    Path: /units/file.survey.md
+    UID: 62e5abeb1b47c22ffbd0b17908b7bbcf
+  - Type: Resource
+    Path: /units/hidden.resource.md
+    UID: deea657dbe56e37fb00dabb2dc479677
+    DefaultVisibility: hidden
+  - Type: Instructor
+    Path: /units/teacher-instructor.md
+    UID: 96a4bddb1c4cc90d07abba65c768440a
+  - Type: Lesson
+    Path: /units/test.md
+    UID: 6510de2be97eecf4f4062ae572548b49
