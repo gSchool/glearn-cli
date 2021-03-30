@@ -27,6 +27,8 @@ const autoComment = `# This file is auto-generated and orders your content based
 
 `
 
+var validContentFileAttrs = []string{"Type", "UID", "DefaultVisibility", "MaxCheckpointSubmissions", "TimeLimit", "Autoscore"}
+
 // Note: struct fields must be public in order for unmarshal to
 // correctly populate the data.
 type ConfigYaml struct {
@@ -238,7 +240,7 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 			Title:           formattedUnitName,
 			UID:             hex.EncodeToString(md5unitUID[:]),
 			Description:     formattedUnitName,
-			SuccessCriteria: []string{},
+			SuccessCriteria: []string{"success criteria"},
 		}
 
 		for _, contentFile := range unitToContentFileMap[unit] {
@@ -259,21 +261,17 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 					contentFile.Path = "/" + contentFile.Path
 				}
 				if contentFile.fromHeader {
-					fmt.Printf("Using file header to set autoconfig values for %s\n", contentFile.Path)
 					standard.ContentFiles = append(standard.ContentFiles, contentFile)
 				} else {
 					cfUID := []byte(formattedUnitName + contentFile.Path)
 					md5cfUID := md5.Sum(cfUID)
 
-					cf := ContentFileAttrs{
-						Type: detectContentType(contentFile.Path),
-						Path: contentFile.Path,
-						UID:  hex.EncodeToString(md5cfUID[:]),
-					}
+					contentFile.Type = detectContentType(contentFile.Path)
+					contentFile.UID = hex.EncodeToString(md5cfUID[:])
 					if strings.Contains(strings.ToLower(contentFile.Path), "hidden") {
-						cf.DefaultVisibility = "hidden"
+						contentFile.DefaultVisibility = "hidden"
 					}
-					standard.ContentFiles = append(standard.ContentFiles, cf)
+					standard.ContentFiles = append(standard.ContentFiles, contentFile)
 				}
 			}
 		}
@@ -664,6 +662,10 @@ func readContentFileAttrs(path string) (contentFile ContentFileAttrs, err error)
 	}
 
 	if strings.TrimSpace(yamlText) != "" {
+		err = printExtras(yamlText, path)
+		if err != nil {
+			return contentFile, err
+		}
 		err = yaml.Unmarshal([]byte(yamlText), &contentFile)
 		if err != nil {
 			return contentFile, err
@@ -674,6 +676,27 @@ func readContentFileAttrs(path string) (contentFile ContentFileAttrs, err error)
 	}
 	contentFile.Path = path
 	return contentFile, nil
+}
+
+// printExtras prints unknown content file header keys
+func printExtras(yamlText, path string) error {
+	attributes := map[string]interface{}{}
+	err := yaml.Unmarshal([]byte(yamlText), &attributes)
+	if err != nil {
+		return err
+	}
+	for key, _ := range attributes {
+		acceptableKey := false
+		for _, validKey := range validContentFileAttrs {
+			if key == validKey {
+				acceptableKey = true
+			}
+		}
+		if !acceptableKey {
+			fmt.Printf("Found unknown content file header key '%s' in file %s\n", key, path)
+		}
+	}
+	return nil
 }
 
 // buildUnitToContentFileMap reads contents from the unit directory and includes md files
@@ -739,7 +762,6 @@ func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirNa
 							localPath = path[len(blockRoot):]
 						}
 
-						// TODO read header, extract ContentFileAttrs
 						contentFile, err := readContentFileAttrs(localPath)
 						if err != nil {
 							return err
