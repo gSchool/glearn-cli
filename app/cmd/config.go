@@ -418,7 +418,7 @@ func readContentFileAttrs(path, readPath string) (contentFile ContentFileAttrs, 
 		return contentFile, err
 	}
 	defer file.Close()
-	bufferSize := 1024 // this reasonably holds the header
+	bufferSize := 1024 * 1024
 	buf := make([]byte, bufferSize)
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(buf, bufferSize)
