@@ -44,6 +44,10 @@ Standards:
   - Type: Instructor
     Path: /units/teacher-instructor.md
     UID: 96a4bddb1c4cc90d07abba65c768440a
-  - Type: Lesson
+  - Type: Checkpoint
     Path: /units/test.md
-    UID: 6510de2be97eecf4f4062ae572548b49
+    UID: abc123
+    DefaultVisibility: hidden
+    MaxCheckpointSubmissions: 1
+    TimeLimit: 45
+    Autoscore: true
