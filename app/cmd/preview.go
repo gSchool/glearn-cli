@@ -141,8 +141,6 @@ preview and return/open the preview URL when it is complete.
 			}
 
 		}
-		fmt.Println("BAIL EARLY")
-		return
 
 		// Start a processing spinner that runs until a user's content is compressed
 		fmt.Println("Compressing your content...")
