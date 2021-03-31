@@ -109,7 +109,6 @@ preview and return/open the preview URL when it is complete.
 
 		// variable holding whether or not source is a dir OR when it is a single file preview
 		// AND singleFileLinkPaths is > 0 that means it is now a dir again (tmp one we created)
-		isSingleFilePreview := !isDirectory && (fileContainsLinks || fileContainsSQLPaths || fileContainsDocker)
 		isDirectory = isDirectory || (!isDirectory && (fileContainsLinks || fileContainsDocker))
 
 		var alternateTarget string
@@ -129,6 +128,7 @@ preview and return/open the preview URL when it is complete.
 		var configYamlPaths []string
 		// Detect config file and paths
 		if fileContainsLinks || fileContainsSQLPaths || isDirectory || fileContainsDocker {
+			isSingleFilePreview := !isDirectory && (fileContainsLinks || fileContainsSQLPaths || fileContainsDocker)
 			_, err = doesConfigExistOrCreate(target, isSingleFilePreview, false, dockerPaths)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s). Err: %v", target, err))
@@ -152,7 +152,7 @@ preview and return/open the preview URL when it is complete.
 		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpZipFile
-		err = compressDirectory(target, tmpZipFile, isSingleFilePreview, configYamlPaths)
+		err = compressDirectory(target, tmpZipFile, configYamlPaths)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", target, err))
 			return
@@ -661,7 +661,7 @@ func CopyDirectoryContents(src, dst string) error {
 // and a target file path (where to put the zip file) and recursively compresses the source.
 // Source can either be a directory or a single file. When singleFile is true, all files in
 // the zip are added.
-func compressDirectory(source, target string, singleFile bool, configYamlPaths []string) error {
+func compressDirectory(source, target string, configYamlPaths []string) error {
 	// Create file with target name and defer its closing
 	zipfile, err := os.Create(target)
 	if err != nil {
@@ -689,25 +689,27 @@ func compressDirectory(source, target string, singleFile bool, configYamlPaths [
 	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		path = filepath.ToSlash(path)
 
-		var fileIsInConfig = false
+		fileIsIncluded := false
 		for _, p := range configYamlPaths {
 			var configPathSplits = strings.Split(p, "/")
 			var fileName = configPathSplits[len(configPathSplits)-1]
 			if strings.Contains(path, fileName) {
-				fileIsInConfig = true
+				fileIsIncluded = true
 			}
+		}
+		if len(configYamlPaths) == 0 && !info.IsDir() {
+			// This accounts for the single file preview which won't have yaml files and won't be a directory
+			fileIsIncluded = true
 		}
 
 		var isConfigFile = strings.Contains(path, "config.yml") || strings.Contains(path, "config.yaml") || strings.Contains(path, "autoconfig.yaml")
-
 		ext := filepath.Ext(path)
-
 		if !info.IsDir() && info.Size() > 1000000 {
 			fmt.Printf("\nWARNING: Ingoring File For Preview: File chosen/linked to for preview is too large: %s\n", path)
 			return nil
 		}
 
-		if isConfigFile || fileIsInConfig || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
+		if isConfigFile || fileIsIncluded || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
 			if err != nil {
 				return err
 			}
