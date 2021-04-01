@@ -261,6 +261,16 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 					contentFile.Path = "/" + contentFile.Path
 				}
 				if contentFile.fromHeader {
+					// when it came from the header but Type is not set, fall back to detecting from path
+					if contentFile.Type == "" {
+						contentFile.Type = detectContentType(contentFile.Path)
+					}
+					// when it came from the header but UID is not set, fall back to detecting from path
+					if contentFile.UID == "" {
+						cfUID := []byte(formattedUnitName + contentFile.Path)
+						md5cfUID := md5.Sum(cfUID)
+						contentFile.UID = hex.EncodeToString(md5cfUID[:])
+					}
 					standard.ContentFiles = append(standard.ContentFiles, contentFile)
 				} else {
 					cfUID := []byte(formattedUnitName + contentFile.Path)
