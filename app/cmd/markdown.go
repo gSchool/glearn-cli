@@ -122,8 +122,18 @@ func (t temp) appendContent(target string) error {
 }
 
 var templates = map[string]temp{
-	"ls":               {"Lesson markdown", lessonTemplate, false},
-	"lesson":           {"Lesson markdown", lessonTemplate, false},
+	"ls":               {"Lesson markdown", lessonTemplate, true},
+	"lesson":           {"Lesson markdown", lessonTemplate, true},
+	"cp":               {"Checkpoint markdown", checkpointTemplate, true},
+	"checkpoint":       {"Checkpoint markdown", checkpointTemplate, true},
+	"sv":               {"Survey markdown", surveyTemplate, true},
+	"survey":           {"Survey markdown", surveyTemplate, true},
+	"in":               {"Instructor markdown", instructorTemplate, true},
+	"instructor":       {"Instructor markdown", instructorTemplate, true},
+	"rs":               {"Resource markdown", resourceTemplate, true},
+	"resource":         {"Resource markdown", resourceTemplate, true},
+	"fh":               {"File header", fileHeaderTemplate, true},
+	"fileheader":       {"File header", fileHeaderTemplate, true},
 	"mc":               {"Multiple Choice markdown", multiplechoiceTemplate, true},
 	"multiplechoice":   {"Multiple Choice markdown", multiplechoiceTemplate, true},
 	"cb":               {"Checkbox markdown", checkboxTemplate, true},
@@ -158,8 +168,6 @@ var templates = map[string]temp{
 	"courseyaml":       {"course.yaml syntax", courseyamlTemplate, false},
 	"callout":          {"Callout markdown", calloutTemplate, false},
 	"co":               {"Callout markdown", calloutTemplate, false},
-	"autoconfigheader": {"Autoconfig header yaml syntax", autoConfigHeaderTemplate, true},
-	"ah":               {"Autoconfig header yaml syntax", autoConfigHeaderTemplate, true},
 }
 
 const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout.\n\n" + argList
@@ -168,6 +176,11 @@ const argList = `Args, full (abbreviation)--
 
 Files:
   lesson (ls)
+  checkpoint (cp)
+  survey (sv)
+  instructor (in)
+  resource (rs)
+  fileheader (fh)
 Questions:
   multiplechoice (mc)
   checkbox (cb)
@@ -187,26 +200,93 @@ Other Markdown:
   callout (co)
 Configuration:
   configyaml (cfy)
-  courseyaml (cry)
-  autoconfigheader (ah)`
+  courseyaml (cry)`
 
-const lessonTemplate = `# Title
+const fileHeaderTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Lesson # Options: Lesson, Checkpoint, Survey, Instructor, Resource
+UID: %s
+# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
+# MaxCheckpointSubmissions: 1 # Checkpoints only. Uncomment this line to limit the number of submissions
+# TimeLimit: 60 # Checkpoints only. Uncomment this line to set a time limit in minutes
+# Autoscore: true # Checkpoints only. Uncomment this line to finalize checkpoint scores without instructor review
+# END FILE CONFIGURATION YML HEADER <<<<<
+---`
 
-## Learning Objectives
+const lessonTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Lesson
+UID: %s
+# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
+# END FILE CONFIGURATION YML HEADER <<<<<
+---
 
-By the end of this lesson you will be able to:
+# Title
 
-* First Objective
-* [at least one]
-* [no more than four]
+<!--Lesson content can be markdown, videos, slides, images, gifs, etc. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
+<!--Lessons can include Challenges, which make the content interactive and give instructors visibility into student learning. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
+`
 
-## Lesson Content
+const resourceTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Resource
+UID: %s
+# END FILE CONFIGURATION YML HEADER <<<<<
+---
 
-[Can be written content, videos, slides, images, gifs, etc. Think about including a rationale as the first few sentences/paragraph if you feel the lesson requires significant motivation or context. Examples of markdown formatting are at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/03b-markdown-examples.md]
+# Title
 
-## Challenges
+<!--A Resource can have all of the same markdown and challenges as a lesson. Resources do not appear in the left nav and don't count toward course completion.-->
+`
 
-[It's recommended that each lesson has at least one challenge. Challenges make the content interactive and give instructors visibility into student learning. These challenge can be spread out in between content, or can be at the end of the lesson. Examples of all challenge types are in this unit -- https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/Multiple-Choice-Challenge.md]`
+const instructorTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Instructor
+UID: %s
+# END FILE CONFIGURATION YML HEADER <<<<<
+---
+
+# Title
+
+<!--An Instructor file can have all of the same markdown and challenges as a lesson. Instructor files are only viewable by instructors. -->
+`
+
+const surveyTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Survey
+UID: %s
+# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
+# END FILE CONFIGURATION YML HEADER <<<<<
+---
+
+# Title
+
+<!--A Survey can have any markdown. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
+<!--A Survey must include include one or more Challenges, which are the survey questions a student will answer. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
+`
+
+const checkpointTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Checkpoint
+UID: %s
+# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
+# MaxCheckpointSubmissions: 1 # Uncomment this line to limit the number of submissions
+# TimeLimit: 60 # Uncomment this line to set a time limit in minutes
+# Autoscore: true # Uncomment this line to finalize checkpoint scores without instructor review
+# END FILE CONFIGURATION YML HEADER <<<<<
+---
+
+# Title
+
+<!--A Checkpoint is an assessment and can have any markdown. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
+<!--A Checkpoint must include include one or more Challenges, which are the assessment questions a student will answer. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
+`
 
 const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
@@ -876,14 +956,3 @@ const calloutTemplate = `<!-- available callout types: info, success, warning, d
 body
 
 ### !end-callout`
-
-const autoConfigHeaderTemplate = `---
-# This is for autoconfig content file settings generation only
-# Using a config.yml will override these settings.
-Type:
-UID: %s
-# MaxCheckpointSubmissions:
-# TimeLimit:
-# Autoscore:
-# DefaultVisibility:
----`
