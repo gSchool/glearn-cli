@@ -451,7 +451,7 @@ func readContentFileAttrs(path, readPath string) (contentFile ContentFileAttrs, 
 		}
 		err = yaml.Unmarshal([]byte(yamlText), &contentFile)
 		if err != nil {
-			return contentFile, err
+			return contentFile, fmt.Errorf("Error parsing yaml header for '%s': %s\n'", path, err)
 		}
 		contentFile.Path = path
 		contentFile.fromHeader = true
