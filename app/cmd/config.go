@@ -271,6 +271,10 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 						md5cfUID := md5.Sum(cfUID)
 						contentFile.UID = hex.EncodeToString(md5cfUID[:])
 					}
+					// when it came from the header but DefaultVisibility is not set, fall back to detecting from path
+					if contentFile.DefaultVisibility == "" && strings.Contains(strings.ToLower(contentFile.Path), "hidden") {
+						contentFile.DefaultVisibility = "hidden"
+					}
 					standard.ContentFiles = append(standard.ContentFiles, contentFile)
 				} else {
 					cfUID := []byte(formattedUnitName + contentFile.Path)
