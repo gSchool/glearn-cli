@@ -12,6 +12,13 @@ func IgnoreMatches(pattern, path string) (bool, error) {
 	return regexpMatch(pattern, path)
 }
 
+func Chop(str string) string {
+	if str == "" {
+		return ""
+	}
+	return str[0 : len(str)-1]
+}
+
 // regexpMatch tries to match the logic of filepath.Match but
 // does so using regexp logic. We do this so that we can expand the
 // wildcard set to include other things, like "**" to mean any number
@@ -19,6 +26,12 @@ func IgnoreMatches(pattern, path string) (bool, error) {
 // with filepath.Match(). We'll end up supporting more stuff, due to
 // the fact that we're using regexp, but that's ok - it does no harm.
 func regexpMatch(pattern, path string) (bool, error) {
+	if strings.HasSuffix(pattern, "/") {
+		pattern = Chop(pattern)
+	}
+	if strings.HasSuffix(path, "/") {
+		path = Chop(path)
+	}
 	regStr := "^"
 
 	// Do some syntax checking on the pattern.

@@ -735,7 +735,7 @@ func compressDirectory(source, target string, singleFile bool, configYamlPaths [
 			return nil
 		}
 
-		if strings.Contains(path, ".dockerignore") || strings.HasPrefix(path, ".") {
+		if strings.Contains(path, ".dockerignore") || strings.HasPrefix(path, ".") || strings.Contains(path, "node_modules") {
 			return nil
 		}
 
