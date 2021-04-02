@@ -466,7 +466,7 @@ func printExtras(yamlText, path string) error {
 	attributes := map[string]interface{}{}
 	err := yaml.Unmarshal([]byte(yamlText), &attributes)
 	if err != nil {
-		return err
+		return fmt.Errorf("yaml header for '%s' is not valid:\n%s\n", path, err)
 	}
 	for key, _ := range attributes {
 		acceptableKey := false
