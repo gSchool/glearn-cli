@@ -185,7 +185,7 @@ var templates = map[string]temp{
 	"co":              {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
 }
 
-const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout.\n\n" + argList
+const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout, -m for a minimal template.\n\n" + argList
 
 const argList = `Args, full (abbreviation)--
 
@@ -309,7 +309,7 @@ const surveyTemplate = `---
 # autoconfig.yml will use these settings. config.yml will override.
 Type: Survey
 UID: %s
-# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
+# DefaultVisibility: hidden # Uncomment this line to default Survey to hidden
 # END FILE CONFIGURATION YML HEADER <<<<<
 ---
 
@@ -333,7 +333,7 @@ const checkpointTemplate = `---
 # autoconfig.yml will use these settings. config.yml will override.
 Type: Checkpoint
 UID: %s
-# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
+# DefaultVisibility: hidden # Uncomment this line to default Checkpoint to hidden
 # MaxCheckpointSubmissions: 1 # Uncomment this line to limit the number of submissions
 # TimeLimit: 60 # Uncomment this line to set a time limit in minutes
 # Autoscore: true # Uncomment this line to finalize checkpoint scores without instructor review
@@ -1445,7 +1445,5 @@ body
 const calloutTemplateMin = `### !callout-info
 
 ## title
-
-
 
 ### !end-callout`
