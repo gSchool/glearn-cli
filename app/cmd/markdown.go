@@ -1438,6 +1438,7 @@ const calloutTemplate = `<!-- available callout types: info, success, warning, d
 ### !callout-info
 
 ## title
+
 body
 
 ### !end-callout`
@@ -1445,5 +1446,7 @@ body
 const calloutTemplateMin = `### !callout-info
 
 ## title
+
+
 
 ### !end-callout`
