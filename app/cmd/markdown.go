@@ -214,6 +214,15 @@ UID: %s
 # END FILE CONFIGURATION YML HEADER <<<<<
 ---`
 
+const fileHeaderTemplateMin = `---
+Type: Lesson
+UID: %s
+# DefaultVisibility: hidden
+# MaxCheckpointSubmissions: 1
+# TimeLimit: 60
+# Autoscore: true
+---`
+
 const lessonTemplate = `---
 # BEGIN FILE CONFIGURATION YML HEADER >>>>>
 # autoconfig.yml will use these settings. config.yml will override.
@@ -229,6 +238,15 @@ UID: %s
 <!--Lessons can include Challenges, which make the content interactive and give instructors visibility into student learning. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
 `
 
+const lessonTemplateMin = `---
+Type: Lesson
+UID: %s
+# DefaultVisibility: hidden
+---
+
+# Title
+`
+
 const resourceTemplate = `---
 # BEGIN FILE CONFIGURATION YML HEADER >>>>>
 # autoconfig.yml will use these settings. config.yml will override.
@@ -240,6 +258,14 @@ UID: %s
 # Title
 
 <!--A Resource can have all of the same markdown and challenges as a lesson. Resources do not appear in the left nav and don't count toward course completion.-->
+`
+
+const resourceTemplateMin = `---
+Type: Resource
+UID: %s
+---
+
+# Title
 `
 
 const instructorTemplate = `---
@@ -255,6 +281,14 @@ UID: %s
 <!--An Instructor file can have all of the same markdown and challenges as a lesson. Instructor files are only viewable by instructors. -->
 `
 
+const instructorTemplateMin = `---
+Type: Instructor
+UID: %s
+---
+
+# Title
+`
+
 const surveyTemplate = `---
 # BEGIN FILE CONFIGURATION YML HEADER >>>>>
 # autoconfig.yml will use these settings. config.yml will override.
@@ -268,6 +302,15 @@ UID: %s
 
 <!--A Survey can have any markdown. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
 <!--A Survey must include include one or more Challenges, which are the survey questions a student will answer. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
+`
+
+const surveyTemplateMin = `---
+Type: Survey
+UID: %s
+# DefaultVisibility: hidden
+---
+
+# Title
 `
 
 const checkpointTemplate = `---
@@ -286,6 +329,18 @@ UID: %s
 
 <!--A Checkpoint is an assessment and can have any markdown. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
 <!--A Checkpoint must include include one or more Challenges, which are the assessment questions a student will answer. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
+`
+
+const checkpointTemplateMin = `---
+Type: Checkpoint
+UID: %s
+# DefaultVisibility: hidden
+# MaxCheckpointSubmissions: 1
+# TimeLimit: 60
+# Autoscore: true
+---
+
+# Title
 `
 
 const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
@@ -323,6 +378,38 @@ const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const multiplechoiceTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: multiple-choice
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !options
+
+*
+*
+*
+
+##### !end-options
+
+##### !answer
+
+*
+
+##### !end-answer
 
 ### !end-challenge
 
@@ -369,6 +456,39 @@ const checkboxTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const checkboxTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: checkbox
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !options
+
+*
+*
+*
+
+##### !end-options
+
+##### !answer
+
+*
+*
+
+##### !end-answer
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const tasklistTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -398,6 +518,32 @@ const tasklistTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const tasklistTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: tasklist
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !options
+
+*
+*
+*
+
+##### !end-options
 
 ### !end-challenge
 
@@ -436,6 +582,30 @@ const shortanswerTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const shortanswerTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: short-answer
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !answer
+
+
+
+##### !end-answer
 
 ### !end-challenge
 
@@ -480,6 +650,31 @@ const numberTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const numberTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: number
+* id: %s
+* title:
+* decimal:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !answer
+
+
+
+##### !end-answer
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const paragraphTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -507,6 +702,25 @@ const paragraphTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const paragraphTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+<!-- Replace everything in square brackets [] and remove brackets  -->
+
+### !challenge
+
+* type: paragraph
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
 
 ### !end-challenge
 
@@ -541,6 +755,32 @@ const orderingTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const orderingTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: ordering
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !answer
+
+1.
+2.
+3.
+
+##### !end-answer
 
 ### !end-challenge
 
@@ -594,6 +834,39 @@ describe('doSomething', function() {
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const javascriptTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: code-snippet
+* language: javascript
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+##### !tests
+
+
+
+##### !end-tests
+
+
 
 ### !end-challenge
 
@@ -674,6 +947,43 @@ public class SnippetTest {
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const javaTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: code-snippet
+* language: java
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !setup
+
+
+
+##### !end-setup
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+##### !tests
+
+
+
+##### !end-tests
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const pythonTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -731,6 +1041,37 @@ class TestPython1(unittest.TestCase):
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const pythonTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: code-snippet
+* language: python3.6
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+##### !tests
+
+
+
+##### !end-tests
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const sqlTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -782,6 +1123,38 @@ ORDER BY something
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const sqlTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: code-snippet
+* language: sql
+* id: %s
+* title:
+* data_path: /
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+##### !tests
+
+
+
+##### !end-tests
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const customsnippetTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -820,6 +1193,32 @@ function doSomething() {
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const customsnippetTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: custom-snippet
+* language: [text, one of: csharp, html, java, javascript, json, markdown, python, or sql]
+* id: %s
+* title:
+* docker_directory_path: /
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -847,6 +1246,30 @@ const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const projectTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: project
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
 
 ### !end-challenge
 
@@ -881,6 +1304,32 @@ const testableProjectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const testableProjectTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: testable-project
+* id: %s
+* title:
+* upstream:
+* validate_fork: true
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
 
 ### !end-challenge
 
@@ -923,8 +1372,22 @@ Standards:
         Path: /[folder/file.md]
       - Type: Checkpoint
         UID: [unique-id]
-        Path: /[folder/file.md]
-`
+        Path: /[folder/file.md]`
+
+const configyamlTemplateMin = `---
+Standards:
+  - Title:
+    UID:
+    Description:
+    SuccessCriteria:
+      -
+    ContentFiles:
+      - Type: Lesson
+        UID:
+        Path: /
+      - Type: Checkpoint
+        UID:
+        Path: /`
 
 const courseyamlTemplate = `# Course.yaml files specify the grouping and ordering of repos that define a course.
 #
@@ -949,10 +1412,25 @@ Course:
     Repos:
       - URL: https://github.com/gSchool/[Repo name]`
 
+const courseyamlTemplateMin = `---
+# DefaultUnitVisibility: hidden
+Course:
+  - Section:
+    Repos:
+      - URL:`
+
 const calloutTemplate = `<!-- available callout types: info, success, warning, danger, secondary  -->
 ### !callout-info
 
 ## title
 body
+
+### !end-callout`
+
+const calloutTemplateMin = `### !callout-info
+
+## title
+
+
 
 ### !end-callout`
