@@ -5,16 +5,13 @@
 # include a config.yaml in your repo following the same conventions as this auto-generated file.
 # A user-created config.yaml will have priority over the auto-generated one.
 
----
 Standards:
-  -
-    Title: Foo
-    Description: Foo
-    UID: 1356c67d7ad1638d816bfb822dd2c25d
-    SuccessCriteria:
-      - success criteria
-    ContentFiles:
-      -
-        Type: Lesson
-        UID: 003f6bd3d54d0c23d2c2002a1db1f40c
-        Path: /foo/test.md
+- Title: Foo
+  UID: 1356c67d7ad1638d816bfb822dd2c25d
+  Description: Foo
+  SuccessCriteria:
+  - success criteria
+  ContentFiles:
+  - Type: Lesson
+    Path: /foo/test.md
+    UID: 2b5837712709e5c40a03b4831b4bac2b

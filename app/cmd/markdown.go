@@ -12,6 +12,8 @@ import (
 
 var PrintTemplate bool
 
+var Minimal bool
+
 var markdownCmd = &cobra.Command{
 	Use:     "markdown",
 	Aliases: []string{"md"},
@@ -61,32 +63,45 @@ func getTemp(command string) (temp, error) {
 }
 
 type temp struct {
-	Name      string
-	Template  string
-	RequireId bool
+	Name        string
+	Template    string
+	MinTemplate string
+	RequireId   bool
 }
 
 func (t temp) printContent() {
+	template := t.Template
+	if Minimal {
+		template = t.MinTemplate
+	}
 	if t.RequireId {
 		id := uuid.New().String()
-		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```")+"\n", id)
+		fmt.Printf(strings.ReplaceAll(template, `~~~`, "```")+"\n", id)
 	} else {
-		fmt.Println(t.Template)
+		fmt.Println(template)
 	}
 }
 
 func (t temp) copyContent() {
+	template := t.Template
+	if Minimal {
+		template = t.MinTemplate
+	}
 	if t.RequireId {
 		id := uuid.New().String()
-		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id))
+		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(template, `~~~`, "```"), id))
 		fmt.Println(t.Name, "generated with id:", id, "\nCopied to clipboard!")
 	} else {
-		clipboard.WriteAll(t.Template)
+		clipboard.WriteAll(template)
 		fmt.Println(t.Name, "copied to clipboard!")
 	}
 }
 
 func (t temp) appendContent(target string) error {
+	template := t.Template
+	if Minimal {
+		template = t.MinTemplate
+	}
 	if !strings.HasSuffix(target, ".md") {
 		return fmt.Errorf("'%s' must have an `.md` extension to append %s content.\n", target, t.Name)
 	}
@@ -107,12 +122,12 @@ func (t temp) appendContent(target string) error {
 
 	if t.RequireId {
 		id := uuid.New().String()
-		if _, err = f.WriteString(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id) + "\n"); err != nil {
+		if _, err = f.WriteString(fmt.Sprintf(strings.ReplaceAll(template, `~~~`, "```"), id) + "\n"); err != nil {
 			return fmt.Errorf("Cannot write to '%s'!\n%s\n", target, err)
 		}
 		fmt.Printf("%s appended to %s!\nid: %s\n", t.Name, target, id)
 	} else {
-		if _, err = f.WriteString(t.Template + "\n"); err != nil {
+		if _, err = f.WriteString(template + "\n"); err != nil {
 			return fmt.Errorf("Cannot write to '%s'!\n%s\n", target, err)
 		}
 		fmt.Printf("%s appended to %s!\n", t.Name, target)
@@ -122,50 +137,65 @@ func (t temp) appendContent(target string) error {
 }
 
 var templates = map[string]temp{
-	"ls":              {"Lesson markdown", lessonTemplate, false},
-	"lesson":          {"Lesson markdown", lessonTemplate, false},
-	"mc":              {"Multiple Choice markdown", multiplechoiceTemplate, true},
-	"multiplechoice":  {"Multiple Choice markdown", multiplechoiceTemplate, true},
-	"cb":              {"Checkbox markdown", checkboxTemplate, true},
-	"checkbox":        {"Checkbox markdown", checkboxTemplate, true},
-	"tl":              {"Tasklist markdown", tasklistTemplate, true},
-	"tasklist":        {"Tasklist markdown", tasklistTemplate, true},
-	"sa":              {"Short Answer markdown", shortanswerTemplate, true},
-	"shortanswer":     {"Short Answer markdown", shortanswerTemplate, true},
-	"nb":              {"Number markdown", numberTemplate, true},
-	"number":          {"Number markdown", numberTemplate, true},
-	"pg":              {"Paragraph markdown", paragraphTemplate, true},
-	"paragraph":       {"Paragraph markdown", paragraphTemplate, true},
-	"or":              {"Ordering markdown", orderingTemplate, true},
-	"ordering":        {"Ordering markdown", orderingTemplate, true},
-	"js":              {"Javascript markdown", javascriptTemplate, true},
-	"javascript":      {"Javascript markdown", javascriptTemplate, true},
-	"ja":              {"Java markdown", javaTemplate, true},
-	"java":            {"Java markdown", javaTemplate, true},
-	"py":              {"Python markdown", pythonTemplate, true},
-	"python":          {"Python markdown", pythonTemplate, true},
-	"sq":              {"Sql markdown", sqlTemplate, true},
-	"sql":             {"Sql markdown", sqlTemplate, true},
-	"cs":              {"Custom Snippet markdown", customsnippetTemplate, true},
-	"customsnippet":   {"Custom Snippet markdown", customsnippetTemplate, true},
-	"pr":              {"Project markdown", projectTemplate, true},
-	"project":         {"Project markdown", projectTemplate, true},
-	"tpr":             {"Testable Project markdown", testableProjectTemplate, true},
-	"testableproject": {"Testable Project markdown", testableProjectTemplate, true},
-	"cfy":             {"config.yaml syntax", configyamlTemplate, false},
-	"configyaml":      {"config.yaml syntax", configyamlTemplate, false},
-	"cry":             {"course.yaml syntax", courseyamlTemplate, false},
-	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, false},
-	"callout":         {"Callout markdown", calloutTemplate, false},
-	"co":              {"Callout markdown", calloutTemplate, false},
+	"ls":              {"Lesson markdown", lessonTemplate, lessonTemplateMin, true},
+	"lesson":          {"Lesson markdown", lessonTemplate, lessonTemplateMin, true},
+	"cp":              {"Checkpoint markdown", checkpointTemplate, checkpointTemplateMin, true},
+	"checkpoint":      {"Checkpoint markdown", checkpointTemplate, checkpointTemplateMin, true},
+	"sv":              {"Survey markdown", surveyTemplate, surveyTemplateMin, true},
+	"survey":          {"Survey markdown", surveyTemplate, surveyTemplateMin, true},
+	"in":              {"Instructor markdown", instructorTemplate, instructorTemplateMin, true},
+	"instructor":      {"Instructor markdown", instructorTemplate, instructorTemplateMin, true},
+	"rs":              {"Resource markdown", resourceTemplate, resourceTemplateMin, true},
+	"resource":        {"Resource markdown", resourceTemplate, resourceTemplateMin, true},
+	"fh":              {"File header", fileHeaderTemplate, fileHeaderTemplateMin, true},
+	"fileheader":      {"File header", fileHeaderTemplate, fileHeaderTemplateMin, true},
+	"mc":              {"Multiple Choice markdown", multiplechoiceTemplate, multiplechoiceTemplateMin, true},
+	"multiplechoice":  {"Multiple Choice markdown", multiplechoiceTemplate, multiplechoiceTemplateMin, true},
+	"cb":              {"Checkbox markdown", checkboxTemplate, checkboxTemplateMin, true},
+	"checkbox":        {"Checkbox markdown", checkboxTemplate, checkboxTemplateMin, true},
+	"tl":              {"Tasklist markdown", tasklistTemplate, tasklistTemplateMin, true},
+	"tasklist":        {"Tasklist markdown", tasklistTemplate, tasklistTemplateMin, true},
+	"sa":              {"Short Answer markdown", shortanswerTemplate, shortanswerTemplateMin, true},
+	"shortanswer":     {"Short Answer markdown", shortanswerTemplate, shortanswerTemplateMin, true},
+	"nb":              {"Number markdown", numberTemplate, numberTemplateMin, true},
+	"number":          {"Number markdown", numberTemplate, numberTemplateMin, true},
+	"pg":              {"Paragraph markdown", paragraphTemplate, paragraphTemplateMin, true},
+	"paragraph":       {"Paragraph markdown", paragraphTemplate, paragraphTemplateMin, true},
+	"or":              {"Ordering markdown", orderingTemplate, orderingTemplateMin, true},
+	"ordering":        {"Ordering markdown", orderingTemplate, orderingTemplateMin, true},
+	"js":              {"Javascript markdown", javascriptTemplate, javascriptTemplateMin, true},
+	"javascript":      {"Javascript markdown", javascriptTemplate, javascriptTemplateMin, true},
+	"ja":              {"Java markdown", javaTemplate, javaTemplateMin, true},
+	"java":            {"Java markdown", javaTemplate, javaTemplateMin, true},
+	"py":              {"Python markdown", pythonTemplate, pythonTemplateMin, true},
+	"python":          {"Python markdown", pythonTemplate, pythonTemplateMin, true},
+	"sq":              {"Sql markdown", sqlTemplate, sqlTemplateMin, true},
+	"sql":             {"Sql markdown", sqlTemplate, sqlTemplateMin, true},
+	"cs":              {"Custom Snippet markdown", customsnippetTemplate, customsnippetTemplateMin, true},
+	"customsnippet":   {"Custom Snippet markdown", customsnippetTemplate, customsnippetTemplateMin, true},
+	"pr":              {"Project markdown", projectTemplate, projectTemplateMin, true},
+	"project":         {"Project markdown", projectTemplate, projectTemplateMin, true},
+	"tpr":             {"Testable Project markdown", testableProjectTemplate, testableProjectTemplateMin, true},
+	"testableproject": {"Testable Project markdown", testableProjectTemplate, testableProjectTemplateMin, true},
+	"cfy":             {"config.yaml syntax", configyamlTemplate, configyamlTemplateMin, false},
+	"configyaml":      {"config.yaml syntax", configyamlTemplate, configyamlTemplateMin, false},
+	"cry":             {"course.yaml syntax", courseyamlTemplate, courseyamlTemplateMin, false},
+	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, courseyamlTemplateMin, false},
+	"callout":         {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
+	"co":              {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
 }
 
-const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout.\n\n" + argList
+const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout, -m for a minimal template.\n\n" + argList
 
 const argList = `Args, full (abbreviation)--
 
 Files:
   lesson (ls)
+  checkpoint (cp)
+  survey (sv)
+  instructor (in)
+  resource (rs)
+  fileheader (fh)
 Questions:
   multiplechoice (mc)
   checkbox (cb)
@@ -187,23 +217,146 @@ Configuration:
   configyaml (cfy)
   courseyaml (cry)`
 
-const lessonTemplate = `# Title
+const fileHeaderTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Lesson # Options: Lesson, Checkpoint, Survey, Instructor, Resource
+UID: %s
+# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
+# MaxCheckpointSubmissions: 1 # Checkpoints only. Uncomment this line to limit the number of submissions
+# TimeLimit: 60 # Checkpoints only. Uncomment this line to set a time limit in minutes
+# Autoscore: true # Checkpoints only. Uncomment this line to finalize checkpoint scores without instructor review
+# END FILE CONFIGURATION YML HEADER <<<<<
+---`
 
-## Learning Objectives
+const fileHeaderTemplateMin = `---
+Type: Lesson
+UID: %s
+# DefaultVisibility: hidden
+# MaxCheckpointSubmissions: 1
+# TimeLimit: 60
+# Autoscore: true
+---`
 
-By the end of this lesson you will be able to:
+const lessonTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Lesson
+UID: %s
+# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
+# END FILE CONFIGURATION YML HEADER <<<<<
+---
 
-* First Objective
-* [at least one]
-* [no more than four]
+# Title
 
-## Lesson Content
+<!--Lesson content can be markdown, videos, slides, images, gifs, etc. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
+<!--Lessons can include Challenges, which make the content interactive and give instructors visibility into student learning. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
+`
 
-[Can be written content, videos, slides, images, gifs, etc. Think about including a rationale as the first few sentences/paragraph if you feel the lesson requires significant motivation or context. Examples of markdown formatting are at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/03b-markdown-examples.md]
+const lessonTemplateMin = `---
+Type: Lesson
+UID: %s
+# DefaultVisibility: hidden
+---
 
-## Challenges
+# Title
+`
 
-[It's recommended that each lesson has at least one challenge. Challenges make the content interactive and give instructors visibility into student learning. These challenge can be spread out in between content, or can be at the end of the lesson. Examples of all challenge types are in this unit -- https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/Multiple-Choice-Challenge.md]`
+const resourceTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Resource
+UID: %s
+# END FILE CONFIGURATION YML HEADER <<<<<
+---
+
+# Title
+
+<!--A Resource can have all of the same markdown and challenges as a lesson. Resources do not appear in the left nav and don't count toward course completion.-->
+`
+
+const resourceTemplateMin = `---
+Type: Resource
+UID: %s
+---
+
+# Title
+`
+
+const instructorTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Instructor
+UID: %s
+# END FILE CONFIGURATION YML HEADER <<<<<
+---
+
+# Title
+
+<!--An Instructor file can have all of the same markdown and challenges as a lesson. Instructor files are only viewable by instructors. -->
+`
+
+const instructorTemplateMin = `---
+Type: Instructor
+UID: %s
+---
+
+# Title
+`
+
+const surveyTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Survey
+UID: %s
+# DefaultVisibility: hidden # Uncomment this line to default Survey to hidden
+# END FILE CONFIGURATION YML HEADER <<<<<
+---
+
+# Title
+
+<!--A Survey can have any markdown. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
+<!--A Survey must include include one or more Challenges, which are the survey questions a student will answer. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
+`
+
+const surveyTemplateMin = `---
+Type: Survey
+UID: %s
+# DefaultVisibility: hidden
+---
+
+# Title
+`
+
+const checkpointTemplate = `---
+# BEGIN FILE CONFIGURATION YML HEADER >>>>>
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Checkpoint
+UID: %s
+# DefaultVisibility: hidden # Uncomment this line to default Checkpoint to hidden
+# MaxCheckpointSubmissions: 1 # Uncomment this line to limit the number of submissions
+# TimeLimit: 60 # Uncomment this line to set a time limit in minutes
+# Autoscore: true # Uncomment this line to finalize checkpoint scores without instructor review
+# END FILE CONFIGURATION YML HEADER <<<<<
+---
+
+# Title
+
+<!--A Checkpoint is an assessment and must include include one or more Challenges. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
+<!--A Checkpoint can have any markdown. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
+`
+
+const checkpointTemplateMin = `---
+Type: Checkpoint
+UID: %s
+# DefaultVisibility: hidden
+# MaxCheckpointSubmissions: 1
+# TimeLimit: 60
+# Autoscore: true
+---
+
+# Title
+`
 
 const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
@@ -240,6 +393,38 @@ const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const multiplechoiceTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: multiple-choice
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !options
+
+*
+*
+*
+
+##### !end-options
+
+##### !answer
+
+*
+
+##### !end-answer
 
 ### !end-challenge
 
@@ -286,6 +471,39 @@ const checkboxTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const checkboxTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: checkbox
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !options
+
+*
+*
+*
+
+##### !end-options
+
+##### !answer
+
+*
+*
+
+##### !end-answer
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const tasklistTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -315,6 +533,32 @@ const tasklistTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const tasklistTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: tasklist
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !options
+
+*
+*
+*
+
+##### !end-options
 
 ### !end-challenge
 
@@ -353,6 +597,30 @@ const shortanswerTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const shortanswerTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: short-answer
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !answer
+
+
+
+##### !end-answer
 
 ### !end-challenge
 
@@ -397,6 +665,31 @@ const numberTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const numberTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: number
+* id: %s
+* title:
+* decimal:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !answer
+
+
+
+##### !end-answer
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const paragraphTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -424,6 +717,25 @@ const paragraphTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const paragraphTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+<!-- Replace everything in square brackets [] and remove brackets  -->
+
+### !challenge
+
+* type: paragraph
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
 
 ### !end-challenge
 
@@ -458,6 +770,32 @@ const orderingTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const orderingTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: ordering
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !answer
+
+1.
+2.
+3.
+
+##### !end-answer
 
 ### !end-challenge
 
@@ -511,6 +849,39 @@ describe('doSomething', function() {
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const javascriptTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: code-snippet
+* language: javascript
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+##### !tests
+
+
+
+##### !end-tests
+
+
 
 ### !end-challenge
 
@@ -591,6 +962,43 @@ public class SnippetTest {
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const javaTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: code-snippet
+* language: java
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !setup
+
+
+
+##### !end-setup
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+##### !tests
+
+
+
+##### !end-tests
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const pythonTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -648,6 +1056,37 @@ class TestPython1(unittest.TestCase):
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const pythonTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: code-snippet
+* language: python3.6
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+##### !tests
+
+
+
+##### !end-tests
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const sqlTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -699,6 +1138,38 @@ ORDER BY something
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const sqlTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: code-snippet
+* language: sql
+* id: %s
+* title:
+* data_path: /
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+##### !tests
+
+
+
+##### !end-tests
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const customsnippetTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -737,6 +1208,32 @@ function doSomething() {
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const customsnippetTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: custom-snippet
+* language: [text, one of: csharp, html, java, javascript, json, markdown, python, or sql]
+* id: %s
+* title:
+* docker_directory_path: /
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -764,6 +1261,30 @@ const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const projectTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: project
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
 
 ### !end-challenge
 
@@ -798,6 +1319,32 @@ const testableProjectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>
 <!-- !hint - !end-hint (markdown, hidden, students click to view) -->
 <!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
 <!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const testableProjectTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: testable-project
+* id: %s
+* title:
+* upstream:
+* validate_fork: true
+
+##### !question
+
+
+
+##### !end-question
+
+##### !placeholder
+
+
+
+##### !end-placeholder
 
 ### !end-challenge
 
@@ -840,8 +1387,22 @@ Standards:
         Path: /[folder/file.md]
       - Type: Checkpoint
         UID: [unique-id]
-        Path: /[folder/file.md]
-`
+        Path: /[folder/file.md]`
+
+const configyamlTemplateMin = `---
+Standards:
+  - Title:
+    UID:
+    Description:
+    SuccessCriteria:
+      -
+    ContentFiles:
+      - Type: Lesson
+        UID:
+        Path: /
+      - Type: Checkpoint
+        UID:
+        Path: /`
 
 const courseyamlTemplate = `# Course.yaml files specify the grouping and ordering of repos that define a course.
 #
@@ -866,10 +1427,26 @@ Course:
     Repos:
       - URL: https://github.com/gSchool/[Repo name]`
 
+const courseyamlTemplateMin = `---
+# DefaultUnitVisibility: hidden
+Course:
+  - Section:
+    Repos:
+      - URL:`
+
 const calloutTemplate = `<!-- available callout types: info, success, warning, danger, secondary  -->
 ### !callout-info
 
 ## title
+
 body
+
+### !end-callout`
+
+const calloutTemplateMin = `### !callout-info
+
+## title
+
+
 
 ### !end-callout`

@@ -137,6 +137,7 @@ func init() {
 	publishCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
 	publishCmd.Flags().BoolVarP(&IgnoreLocal, "ignore-local", "", false, "Ignore local changes and publish remote only")
 	markdownCmd.Flags().BoolVarP(&PrintTemplate, "out", "o", false, "Prints the template to stdout")
+	markdownCmd.Flags().BoolVarP(&Minimal, "min", "m", false, "Uses a terse, minimal version of the template")
 }
 
 // Execute runs the learn CLI according to the user's command/subcommand/flags
