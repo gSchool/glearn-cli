@@ -12,6 +12,8 @@ import (
 
 var PrintTemplate bool
 
+var Minimal bool
+
 var markdownCmd = &cobra.Command{
 	Use:     "markdown",
 	Aliases: []string{"md"},
@@ -61,32 +63,45 @@ func getTemp(command string) (temp, error) {
 }
 
 type temp struct {
-	Name      string
-	Template  string
-	RequireId bool
+	Name        string
+	Template    string
+	MinTemplate string
+	RequireId   bool
 }
 
 func (t temp) printContent() {
+	template := t.Template
+	if Minimal {
+		template = t.MinTemplate
+	}
 	if t.RequireId {
 		id := uuid.New().String()
-		fmt.Printf(strings.ReplaceAll(t.Template, `~~~`, "```")+"\n", id)
+		fmt.Printf(strings.ReplaceAll(template, `~~~`, "```")+"\n", id)
 	} else {
-		fmt.Println(t.Template)
+		fmt.Println(template)
 	}
 }
 
 func (t temp) copyContent() {
+	template := t.Template
+	if Minimal {
+		template = t.MinTemplate
+	}
 	if t.RequireId {
 		id := uuid.New().String()
-		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id))
+		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(template, `~~~`, "```"), id))
 		fmt.Println(t.Name, "generated with id:", id, "\nCopied to clipboard!")
 	} else {
-		clipboard.WriteAll(t.Template)
+		clipboard.WriteAll(template)
 		fmt.Println(t.Name, "copied to clipboard!")
 	}
 }
 
 func (t temp) appendContent(target string) error {
+	template := t.Template
+	if Minimal {
+		template = t.MinTemplate
+	}
 	if !strings.HasSuffix(target, ".md") {
 		return fmt.Errorf("'%s' must have an `.md` extension to append %s content.\n", target, t.Name)
 	}
@@ -107,12 +122,12 @@ func (t temp) appendContent(target string) error {
 
 	if t.RequireId {
 		id := uuid.New().String()
-		if _, err = f.WriteString(fmt.Sprintf(strings.ReplaceAll(t.Template, `~~~`, "```"), id) + "\n"); err != nil {
+		if _, err = f.WriteString(fmt.Sprintf(strings.ReplaceAll(template, `~~~`, "```"), id) + "\n"); err != nil {
 			return fmt.Errorf("Cannot write to '%s'!\n%s\n", target, err)
 		}
 		fmt.Printf("%s appended to %s!\nid: %s\n", t.Name, target, id)
 	} else {
-		if _, err = f.WriteString(t.Template + "\n"); err != nil {
+		if _, err = f.WriteString(template + "\n"); err != nil {
 			return fmt.Errorf("Cannot write to '%s'!\n%s\n", target, err)
 		}
 		fmt.Printf("%s appended to %s!\n", t.Name, target)
@@ -122,52 +137,52 @@ func (t temp) appendContent(target string) error {
 }
 
 var templates = map[string]temp{
-	"ls":              {"Lesson markdown", lessonTemplate, true},
-	"lesson":          {"Lesson markdown", lessonTemplate, true},
-	"cp":              {"Checkpoint markdown", checkpointTemplate, true},
-	"checkpoint":      {"Checkpoint markdown", checkpointTemplate, true},
-	"sv":              {"Survey markdown", surveyTemplate, true},
-	"survey":          {"Survey markdown", surveyTemplate, true},
-	"in":              {"Instructor markdown", instructorTemplate, true},
-	"instructor":      {"Instructor markdown", instructorTemplate, true},
-	"rs":              {"Resource markdown", resourceTemplate, true},
-	"resource":        {"Resource markdown", resourceTemplate, true},
-	"fh":              {"File header", fileHeaderTemplate, true},
-	"fileheader":      {"File header", fileHeaderTemplate, true},
-	"mc":              {"Multiple Choice markdown", multiplechoiceTemplate, true},
-	"multiplechoice":  {"Multiple Choice markdown", multiplechoiceTemplate, true},
-	"cb":              {"Checkbox markdown", checkboxTemplate, true},
-	"checkbox":        {"Checkbox markdown", checkboxTemplate, true},
-	"tl":              {"Tasklist markdown", tasklistTemplate, true},
-	"tasklist":        {"Tasklist markdown", tasklistTemplate, true},
-	"sa":              {"Short Answer markdown", shortanswerTemplate, true},
-	"shortanswer":     {"Short Answer markdown", shortanswerTemplate, true},
-	"nb":              {"Number markdown", numberTemplate, true},
-	"number":          {"Number markdown", numberTemplate, true},
-	"pg":              {"Paragraph markdown", paragraphTemplate, true},
-	"paragraph":       {"Paragraph markdown", paragraphTemplate, true},
-	"or":              {"Ordering markdown", orderingTemplate, true},
-	"ordering":        {"Ordering markdown", orderingTemplate, true},
-	"js":              {"Javascript markdown", javascriptTemplate, true},
-	"javascript":      {"Javascript markdown", javascriptTemplate, true},
-	"ja":              {"Java markdown", javaTemplate, true},
-	"java":            {"Java markdown", javaTemplate, true},
-	"py":              {"Python markdown", pythonTemplate, true},
-	"python":          {"Python markdown", pythonTemplate, true},
-	"sq":              {"Sql markdown", sqlTemplate, true},
-	"sql":             {"Sql markdown", sqlTemplate, true},
-	"cs":              {"Custom Snippet markdown", customsnippetTemplate, true},
-	"customsnippet":   {"Custom Snippet markdown", customsnippetTemplate, true},
-	"pr":              {"Project markdown", projectTemplate, true},
-	"project":         {"Project markdown", projectTemplate, true},
-	"tpr":             {"Testable Project markdown", testableProjectTemplate, true},
-	"testableproject": {"Testable Project markdown", testableProjectTemplate, true},
-	"cfy":             {"config.yaml syntax", configyamlTemplate, false},
-	"configyaml":      {"config.yaml syntax", configyamlTemplate, false},
-	"cry":             {"course.yaml syntax", courseyamlTemplate, false},
-	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, false},
-	"callout":         {"Callout markdown", calloutTemplate, false},
-	"co":              {"Callout markdown", calloutTemplate, false},
+	"ls":              {"Lesson markdown", lessonTemplate, lessonTemplateMin, true},
+	"lesson":          {"Lesson markdown", lessonTemplate, lessonTemplateMin, true},
+	"cp":              {"Checkpoint markdown", checkpointTemplate, checkpointTemplateMin, true},
+	"checkpoint":      {"Checkpoint markdown", checkpointTemplate, checkpointTemplateMin, true},
+	"sv":              {"Survey markdown", surveyTemplate, surveyTemplateMin, true},
+	"survey":          {"Survey markdown", surveyTemplate, surveyTemplateMin, true},
+	"in":              {"Instructor markdown", instructorTemplate, instructorTemplateMin, true},
+	"instructor":      {"Instructor markdown", instructorTemplate, instructorTemplateMin, true},
+	"rs":              {"Resource markdown", resourceTemplate, resourceTemplateMin, true},
+	"resource":        {"Resource markdown", resourceTemplate, resourceTemplateMin, true},
+	"fh":              {"File header", fileHeaderTemplate, fileHeaderTemplateMin, true},
+	"fileheader":      {"File header", fileHeaderTemplate, fileHeaderTemplateMin, true},
+	"mc":              {"Multiple Choice markdown", multiplechoiceTemplate, multiplechoiceTemplateMin, true},
+	"multiplechoice":  {"Multiple Choice markdown", multiplechoiceTemplate, multiplechoiceTemplateMin, true},
+	"cb":              {"Checkbox markdown", checkboxTemplate, checkboxTemplateMin, true},
+	"checkbox":        {"Checkbox markdown", checkboxTemplate, checkboxTemplateMin, true},
+	"tl":              {"Tasklist markdown", tasklistTemplate, tasklistTemplateMin, true},
+	"tasklist":        {"Tasklist markdown", tasklistTemplate, tasklistTemplateMin, true},
+	"sa":              {"Short Answer markdown", shortanswerTemplate, shortanswerTemplateMin, true},
+	"shortanswer":     {"Short Answer markdown", shortanswerTemplate, shortanswerTemplateMin, true},
+	"nb":              {"Number markdown", numberTemplate, numberTemplateMin, true},
+	"number":          {"Number markdown", numberTemplate, numberTemplateMin, true},
+	"pg":              {"Paragraph markdown", paragraphTemplate, paragraphTemplateMin, true},
+	"paragraph":       {"Paragraph markdown", paragraphTemplate, paragraphTemplateMin, true},
+	"or":              {"Ordering markdown", orderingTemplate, orderingTemplateMin, true},
+	"ordering":        {"Ordering markdown", orderingTemplate, orderingTemplateMin, true},
+	"js":              {"Javascript markdown", javascriptTemplate, javascriptTemplateMin, true},
+	"javascript":      {"Javascript markdown", javascriptTemplate, javascriptTemplateMin, true},
+	"ja":              {"Java markdown", javaTemplate, javaTemplateMin, true},
+	"java":            {"Java markdown", javaTemplate, javaTemplateMin, true},
+	"py":              {"Python markdown", pythonTemplate, pythonTemplateMin, true},
+	"python":          {"Python markdown", pythonTemplate, pythonTemplateMin, true},
+	"sq":              {"Sql markdown", sqlTemplate, sqlTemplateMin, true},
+	"sql":             {"Sql markdown", sqlTemplate, sqlTemplateMin, true},
+	"cs":              {"Custom Snippet markdown", customsnippetTemplate, customsnippetTemplateMin, true},
+	"customsnippet":   {"Custom Snippet markdown", customsnippetTemplate, customsnippetTemplateMin, true},
+	"pr":              {"Project markdown", projectTemplate, projectTemplateMin, true},
+	"project":         {"Project markdown", projectTemplate, projectTemplateMin, true},
+	"tpr":             {"Testable Project markdown", testableProjectTemplate, testableProjectTemplateMin, true},
+	"testableproject": {"Testable Project markdown", testableProjectTemplate, testableProjectTemplateMin, true},
+	"cfy":             {"config.yaml syntax", configyamlTemplate, configyamlTemplateMin, false},
+	"configyaml":      {"config.yaml syntax", configyamlTemplate, configyamlTemplateMin, false},
+	"cry":             {"course.yaml syntax", courseyamlTemplate, courseyamlTemplateMin, false},
+	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, courseyamlTemplateMin, false},
+	"callout":         {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
+	"co":              {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
 }
 
 const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout.\n\n" + argList
