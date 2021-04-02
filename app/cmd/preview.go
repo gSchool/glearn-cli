@@ -658,7 +658,7 @@ func CopyDirectoryContents(src, dst string) error {
 		for _, pattern := range ignorePatterns {
 			matched, err := di.IgnoreMatches(pattern, source)
 			if err != nil {
-				// Do something about it?
+				fmt.Printf("error while parsing at: %s", err)
 			}
 			if matched {
 				ingore = matched
