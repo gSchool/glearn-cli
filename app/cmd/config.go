@@ -37,7 +37,6 @@ func publishFindOrCreateConfigDir(target string) (bool, error) {
 
 // Check whether or nor a config file exists and if it does not we are going to attempt to create one
 func doesConfigExistOrCreate(target string, isSingleFilePreview, publishContext bool, excludePaths []string) (bool, error) {
-
 	// in publish context need to look at root of repo
 	if publishContext {
 		target, _ = GitTopLevelDir()
