@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
+	di "github.com/gSchool/glearn-cli/ignorematcher"
 	"github.com/gSchool/glearn-cli/mdresourceparser"
 	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )
@@ -619,6 +620,19 @@ func Copy(src, dst string) error {
 	return out.Close()
 }
 
+func DockerIgnorePatterns(src string) ([]string, error) {
+	dockerIgnore := src + ".dockerignore"
+	if !strings.HasSuffix(src, "/") {
+		dockerIgnore = src + "/.dockerignore"
+	}
+	ignoreFile, err := ioutil.ReadFile(dockerIgnore)
+	if err != nil {
+		return []string{}, fmt.Errorf("Could not parse dockerignore file: %s", err)
+	}
+
+	return strings.Split(string(ignoreFile), "\n"), nil
+}
+
 func CopyDirectoryContents(src, dst string) error {
 	srcInfo, err := os.Stat(src)
 	if err != nil {
@@ -626,6 +640,12 @@ func CopyDirectoryContents(src, dst string) error {
 	}
 	if !srcInfo.IsDir() {
 		return fmt.Errorf("path specified is not a directory: %s\n", src)
+	}
+
+	ignorePatterns, err := DockerIgnorePatterns(src)
+
+	if err != nil {
+		fmt.Print(err.Error())
 	}
 
 	err = os.MkdirAll(dst, srcInfo.Mode())
@@ -640,6 +660,21 @@ func CopyDirectoryContents(src, dst string) error {
 	for _, file := range files {
 		source := filepath.Join(src, file.Name())
 		destination := filepath.Join(dst, file.Name())
+		ingore := false
+		for _, pattern := range ignorePatterns {
+			localizedPattern := src + "/" + pattern
+			matched, err := di.IgnoreMatches(localizedPattern, source)
+			if err != nil {
+				fmt.Printf("error while parsing at: %s", err)
+			}
+			if matched {
+				ingore = matched
+				break
+			}
+		}
+		if ingore {
+			continue
+		}
 
 		if file.IsDir() {
 			err = CopyDirectoryContents(source, destination)
