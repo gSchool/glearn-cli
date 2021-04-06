@@ -660,7 +660,7 @@ func CopyDirectoryContents(src, dst string) error {
 	for _, file := range files {
 		source := filepath.Join(src, file.Name())
 		destination := filepath.Join(dst, file.Name())
-		ingore := false
+		ignore := false
 		for _, pattern := range ignorePatterns {
 			localizedPattern := src + "/" + pattern
 			matched, err := di.IgnoreMatches(localizedPattern, source)
@@ -668,11 +668,11 @@ func CopyDirectoryContents(src, dst string) error {
 				fmt.Printf("error while parsing at: %s", err)
 			}
 			if matched {
-				ingore = matched
+				ignore = matched
 				break
 			}
 		}
-		if ingore {
+		if ignore {
 			continue
 		}
 
@@ -740,7 +740,7 @@ func compressDirectory(source, target string, configYamlPaths []string) error {
 		var isConfigFile = strings.Contains(path, "config.yml") || strings.Contains(path, "config.yaml") || strings.Contains(path, "autoconfig.yaml")
 		ext := filepath.Ext(path)
 		if !info.IsDir() && info.Size() > 1000000 {
-			fmt.Printf("\nWARNING: Ingoring File For Preview: File chosen/linked to for preview is too large: %s\n", path)
+			fmt.Printf("\nWARNING: Ignoring File For Preview: File chosen/linked to for preview is too large: %s\n", path)
 			return nil
 		}
 
@@ -781,7 +781,7 @@ func compressDirectory(source, target string, configYamlPaths []string) error {
 			}
 
 			// If it was not a directory, we open the file and copy it into the archive writer
-			// ingore zip files
+			// ignore zip files
 			file, err := os.Open(path)
 
 			if err != nil {
