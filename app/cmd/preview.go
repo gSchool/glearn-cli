@@ -726,7 +726,7 @@ func compressDirectory(source, target string, configYamlPaths []string) error {
 
 		fileIsIncluded := false
 		for _, p := range configYamlPaths {
-			var configPathSplits = strings.Split(p, "/")
+			var configPathSplits = strings.Split(p, string(os.PathSeparator))
 			var fileName = configPathSplits[len(configPathSplits)-1]
 			if strings.Contains(path, fileName) {
 				fileIsIncluded = true
@@ -764,7 +764,7 @@ func compressDirectory(source, target string, configYamlPaths []string) error {
 			// Check if the file we are iterating is a directory and update the header.Name
 			// or the header.Method appropriately
 			if info.IsDir() {
-				header.Name += "/"
+				header.Name += string(os.PathSeparator)
 			} else {
 				header.Method = zip.Deflate
 			}
