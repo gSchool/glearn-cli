@@ -11,8 +11,11 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# Output of go build
+glearn-cli
+
 # Dependency directories (remove the comment below to include it)
-# vendor/
+vendor/
 
 .env
 
@@ -23,5 +26,6 @@ autoconfig.yaml
 
 !/fixtures/test-block-no-config/autoconfig.yaml
 !/fixtures/test-block-no-units-dir/autoconfig.yaml
+
 .DS_Store
 .vscode
