@@ -6,8 +6,8 @@ awk -F: '/.+/{files[$1]+=1;} END{for(f in files)print f" "files[f];}' <(staticch
 
 staticcheck ./... | awk -F\: '/.+/{print $4}' | sort -u
 
-[ ] should omit comparison to bool constant, can be simplified to !IgnoreLocal (S1002)
-[ ] should omit comparison to bool constant, can be simplified to !isSingleFilePreview (S1002)
+[x] should omit comparison to bool constant, can be simplified to !IgnoreLocal (S1002)
+[x] should omit comparison to bool constant, can be simplified to !isSingleFilePreview (S1002)
 [ ] should use strings.Contains(".$", string(ch)) instead (S1003)
 [ ] unnecessary assignment to the blank identifier (S1005)
 [ ] should use fmt.Errorf(...) instead of errors.New(fmt.Sprintf(...)) (S1028)

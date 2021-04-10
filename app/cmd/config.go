@@ -87,7 +87,7 @@ func doesConfigExistOrCreate(target string, isSingleFilePreview, publishContext 
 	_, yamlExists := os.Stat(configYamlPath)
 
 	if yamlExists == nil { // Yaml exists
-		if isSingleFilePreview == false {
+		if !isSingleFilePreview {
 			fmt.Printf("INFO: Using existing config.yaml. \n")
 		}
 
@@ -96,13 +96,13 @@ func doesConfigExistOrCreate(target string, isSingleFilePreview, publishContext 
 		_, ymlExists := os.Stat(configYmlPath)
 
 		if ymlExists == nil { // Yml exists
-			if isSingleFilePreview == false {
+			if !isSingleFilePreview {
 				fmt.Printf("INFO: Using existing config.yaml. \n")
 			}
 
 			return createdConfig, nil
 		} else if os.IsNotExist(ymlExists) {
-			if isSingleFilePreview == false {
+			if !isSingleFilePreview {
 				// Neither exists so we are going to create one
 				fmt.Printf("INFO: No configuration found, generating autoconfig.yaml \n")
 			}
