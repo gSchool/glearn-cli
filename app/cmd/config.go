@@ -353,7 +353,7 @@ func parseConfigAndGatherLinkedPaths(target string) ([]string, error) {
 	ret := []string{}
 	config := ConfigYaml{}
 
-	configYaml, err := findConfig(target)
+	configYaml, _ := findConfig(target)
 	data, err := ioutil.ReadFile(configYaml)
 	if err != nil {
 		return ret, err
