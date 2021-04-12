@@ -93,7 +93,7 @@ preview and return/open the preview URL when it is complete.
 		var dockerPaths []string
 		if includeLinks {
 			if filepath.Ext(target) == ".md" {
-				dataPaths, err = collectDataPaths(target)
+				dataPaths, _ = collectDataPaths(target)
 				singleFileLinkPaths, dockerPaths, err = collectResourcePaths(target)
 				if err != nil {
 					previewCmdError(fmt.Sprintf("Failed to attach local images for single file preview for: (%s). Err: %v", target, err))
@@ -515,7 +515,7 @@ func uploadToS3(file *os.File, checksum string, creds *learn.Credentials) (strin
 	if alternateRegion != "" {
 		region = alternateRegion
 	}
-	sess, err := session.NewSession(&aws.Config{
+	sess, _ := session.NewSession(&aws.Config{
 		Region: aws.String(region),
 		Credentials: credentials.NewStaticCredentials(
 			creds.AccessKeyID,
@@ -812,12 +812,15 @@ func compressDirectory(source, target string, configYamlPaths, resourcePaths []s
 			// If it was not a directory, we open the file and copy it into the archive writer
 			// ignore zip files
 			file, err := os.Open(path)
-
 			if err != nil {
 				return err
 			}
 			defer file.Close()
+
 			_, err = io.Copy(writer, file)
+			if err != nil {
+				return err
+			}
 		}
 
 		return err

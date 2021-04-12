@@ -208,7 +208,7 @@ func (api *APIClient) NotifySlack(err error) {
 		Text: fmt.Sprintf("UserId: %s\nUserEmail: %s\n%s", LearnUserId, LearnUserEmail, err),
 	}
 
-	bytePostData, err := json.Marshal(msg)
+	bytePostData, _ := json.Marshal(msg)
 
 	req, err := http.NewRequest("POST", api.Credentials.DevNotifyURL, bytes.NewReader(bytePostData))
 	if err == nil {

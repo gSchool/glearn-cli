@@ -232,7 +232,7 @@ func pushToRemote(branch string) error {
 }
 
 func addAutoConfigAndCommit() error {
-	top, err := GitTopLevelDir()
+	top, _ := GitTopLevelDir()
 	addCmd := "git add " + strings.TrimSpace(top) + "/autoconfig.yaml"
 	out, err := exec.Command("bash", "-c", addCmd).CombinedOutput()
 	if err != nil {
