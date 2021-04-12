@@ -13,7 +13,7 @@ staticcheck ./... | awk -F\: '/.+/{print $4}' | sort -u
 [ ] should use fmt.Errorf(...) instead of errors.New(fmt.Sprintf(...)) (S1028)
 [x] printf-style function with dynamic format string and no further arguments should use print-style function instead (SA1006)
 [x] this value of err is never used (SA4006)
-[ ] should check returned error before deferring file.Close() (SA5001)
+[x] should check returned error before deferring file.Close() (SA5001)
 [ ] error strings should not be capitalized (ST1005)
 [ ] error strings should not end with punctuation or a newline (ST1005)
 [ ] const dockerIgnore is unused (U1000)
