@@ -38,10 +38,6 @@ Question
 ### !end-challenge
 `
 
-const dockerIgnore = `ignore_me.jpg
-*.txt
-`
-
 func Test_compressDirectory(t *testing.T) {
 	source := "../../fixtures/test-block-auto-config"
 	configYamlPaths, err := parseConfigAndGatherLinkedPaths(source)
