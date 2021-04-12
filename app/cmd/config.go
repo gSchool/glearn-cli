@@ -468,7 +468,7 @@ func printExtras(yamlText, path string) error {
 	if err != nil {
 		return fmt.Errorf("yaml header for '%s' is not valid:\n%s\n", path, err)
 	}
-	for key, _ := range attributes {
+	for key := range attributes {
 		acceptableKey := false
 		for _, validKey := range validContentFileAttrs {
 			if key == validKey {

@@ -467,7 +467,7 @@ func collectResourcePaths(target string) ([]string, []string, error) {
 		uniqueMap[v] = struct{}{}
 	}
 	var uniqueDockerPaths []string
-	for v, _ := range uniqueMap {
+	for v := range uniqueMap {
 		uniqueDockerPaths = append(uniqueDockerPaths, v)
 	}
 
