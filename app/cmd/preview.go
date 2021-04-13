@@ -697,6 +697,7 @@ func CopyDirectoryContents(src, dst string) error {
 // Source can either be a directory or a single file. When singleFile is true, all files in
 // the zip are added.
 func compressDirectory(source, target string, configYamlPaths []string) error {
+	baseSource := filepath.Base(source)
 	// Create file with target name and defer its closing
 	zipfile, err := os.Create(target)
 	if err != nil {
@@ -721,7 +722,7 @@ func compressDirectory(source, target string, configYamlPaths []string) error {
 	}
 
 	// Walk the whole filepath
-	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(baseSource, func(path string, info os.FileInfo, err error) error {
 		path = filepath.ToSlash(path)
 
 		fileIsIncluded := false
@@ -758,7 +759,7 @@ func compressDirectory(source, target string, configYamlPaths []string) error {
 			// Check if baseDir has been set (from the IsDir check) and if it has not been
 			// set, update the header.Name to reflect the correct path
 			if baseDir != "" {
-				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
+				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, baseSource))
 			}
 
 			// Check if the file we are iterating is a directory and update the header.Name
