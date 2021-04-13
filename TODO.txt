@@ -1,0 +1,22 @@
+# count the number of issues per file
+
+awk -F: '/.+/{files[$1]+=1;} END{for(f in files)print f" "files[f];}' <(staticcheck github.com/gSchool/glearn-cli/...) | sort
+
+# Unique check errors
+
+staticcheck ./... | awk -F\: '/.+/{print $4}' | sort -u
+
+[ ] should omit comparison to bool constant, can be simplified to !IgnoreLocal (S1002)
+[ ] should omit comparison to bool constant, can be simplified to !isSingleFilePreview (S1002)
+[ ] should use strings.Contains(".$", string(ch)) instead (S1003)
+[ ] unnecessary assignment to the blank identifier (S1005)
+[ ] should use fmt.Errorf(...) instead of errors.New(fmt.Sprintf(...)) (S1028)
+[ ] printf-style function with dynamic format string and no further arguments should use print-style function instead (SA1006)
+[ ] this value of err is never used (SA4006)
+[ ] should check returned error before deferring file.Close() (SA5001)
+[ ] error strings should not be capitalized (ST1005)
+[ ] error strings should not end with punctuation or a newline (ST1005)
+[ ] const dockerIgnore is unused (U1000)
+[ ] field position is unused (U1000)
+[ ] field value is unused (U1000)
+[ ] var fileExtWhitelist is unused (U1000)
