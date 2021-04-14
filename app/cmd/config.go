@@ -417,7 +417,7 @@ func findConfig(target string) (string, error) {
 			_, yamlExists = os.Stat(configPath)
 
 			if yamlExists != nil {
-				return "", fmt.Errorf("Could not find congfig or autoconfig yaml")
+				return "", fmt.Errorf("Could not find config or autoconfig yaml")
 			}
 		}
 	}
