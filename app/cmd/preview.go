@@ -745,7 +745,7 @@ func compressDirectory(source, target string, configYamlPaths []string) error {
 			return nil
 		}
 
-		if isConfigFile || fileIsIncluded || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
+		if isConfigFile || fileIsIncluded || (info.IsDir() && !strings.Contains(path, ".git/") && (ext != ".git" && path != "node_modules")) {
 			if err != nil {
 				return err
 			}
