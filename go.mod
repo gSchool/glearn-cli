@@ -1,5 +1,7 @@
 module github.com/gSchool/glearn-cli
 
+go 1.13
+
 require (
 	github.com/atotto/clipboard v0.1.2
 	github.com/aws/aws-sdk-go v1.25.38
@@ -12,5 +14,3 @@ require (
 	golang.org/x/text v0.3.3 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 )
-
-go 1.13
