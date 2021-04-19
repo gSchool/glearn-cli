@@ -134,9 +134,10 @@ func (api *APIClient) CreateBlockByRepoName(repoPieces RepoPieces) (Block, error
 	return Block{}, nil
 }
 
-// CreateMasterRelease takes a block ID and creates a master release from it by POSTing to the Learn API
-func (api *APIClient) CreateMasterRelease(blockID int) (int, error) {
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/blocks/%d/releases", api.baseURL, blockID), nil)
+// CreateBranchRelease takes a block ID and branch name and creates a release from it by POSTing to the Learn API
+func (api *APIClient) CreateBranchRelease(blockID int, branch string) (int, error) {
+	values := url.Values{"branch": {branch}}
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/v1/blocks/%d/releases?%s", api.baseURL, blockID, values.Encode()), nil)
 	if err != nil {
 		return 0, err
 	}
