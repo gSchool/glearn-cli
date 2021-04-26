@@ -1459,20 +1459,25 @@ const uploadTemplate = `### !challenge
 * type: upload
 * id: %s
 * title:
-* points:
+<!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
+<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
 
 ##### !question
 [markdown, your question]
 ##### !end-question
+
+<!-- other optional sections -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
+<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
+<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
 
 ### !end-challenge`
 
 const uploadTemplateMin = `### !challenge
 
 * type: upload
-* id:
+* id: %s
 * title:
-* points:
 
 ##### !question
 
