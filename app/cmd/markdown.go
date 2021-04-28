@@ -183,6 +183,8 @@ var templates = map[string]temp{
 	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, courseyamlTemplateMin, false},
 	"callout":         {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
 	"co":              {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
+	"upload":          {"Upload markdown", uploadTemplate, uploadTemplateMin, false},
+	"up":              {"Upload markdown", uploadTemplate, uploadTemplateMin, false},
 }
 
 const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout, -m for a minimal template.\n\n" + argList
@@ -208,6 +210,7 @@ Questions:
   java (ja)
   python (py)
   sql (sq)
+  upload (up)
   customsnippet (cs)
   project (pr)
   testableproject (tpr)
@@ -1454,3 +1457,34 @@ const calloutTemplateMin = `### !callout-info
 
 
 ### !end-callout`
+
+const uploadTemplate = `### !challenge
+
+* type: upload
+* id: %s
+* title:
+<!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
+<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+
+##### !question
+[markdown, your question]
+##### !end-question
+
+<!-- other optional sections -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
+<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
+<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge`
+
+const uploadTemplateMin = `### !challenge
+
+* type: upload
+* id: %s
+* title:
+
+##### !question
+
+##### !end-question
+
+### !end-challenge`
