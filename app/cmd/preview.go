@@ -222,7 +222,7 @@ preview and return/open the preview URL when it is complete.
 		// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
 		if isDirectory || fileContainsSQLPaths || fileContainsDocker {
 			var attempts uint8 = 30
-			res, err = learn.API.PollForBuildResponse(res.ReleaseID, &attempts)
+			res, err = learn.API.PollForBuildResponse(res.ReleaseID, fileInfo.IsDir(), fileInfo.Name(), &attempts)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
 				return

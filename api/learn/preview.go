@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -20,8 +21,15 @@ type PreviewResponse struct {
 }
 
 // PollForBuildResponse attempts to check if a release has finished building every 2 seconds.
-func (api *APIClient) PollForBuildResponse(releaseID int, attempts *uint8) (*PreviewResponse, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/releases/%d/release_polling", api.baseURL, releaseID), nil)
+func (api *APIClient) PollForBuildResponse(releaseID int, isDir bool, fileName string, attempts *uint8) (*PreviewResponse, error) {
+	context := fileName
+	if isDir {
+		context = "DIRECTORY"
+	}
+	v := url.Values{
+		"context": {context},
+	}
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/releases/%d/release_polling?%s", api.baseURL, releaseID, v.Encode()), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +67,7 @@ func (api *APIClient) PollForBuildResponse(releaseID int, attempts *uint8) (*Pre
 
 		time.Sleep(2 * time.Second)
 
-		return api.PollForBuildResponse(releaseID, attempts)
+		return api.PollForBuildResponse(releaseID, isDir, fileName, attempts)
 	}
 
 	return &p, nil

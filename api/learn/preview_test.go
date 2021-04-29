@@ -18,7 +18,7 @@ func Test_PollForBuildResponse(t *testing.T) {
 	API, _ := NewAPI("https://example.com", mockClient)
 
 	attempts := uint8(1)
-	previewResponse, err := API.PollForBuildResponse(1, &attempts)
+	previewResponse, err := API.PollForBuildResponse(1, false, "foo.md", &attempts)
 	if err != nil {
 		t.Errorf("error not nil: %s\n", err)
 	}
@@ -42,7 +42,7 @@ func Test_PollForBuildResponse(t *testing.T) {
 		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
 	}
 
-	urlTarget := "https://example.com/api/v1/releases/1/release_polling"
+	urlTarget := "https://example.com/api/v1/releases/1/release_polling?context=foo.md"
 	if req.URL.String() != urlTarget {
 		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", urlTarget, req.URL.String())
 	}
@@ -60,7 +60,7 @@ func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
 	API, _ := NewAPI("https://example.com", mockClient)
 
 	attempts := uint8(1)
-	_, err := API.PollForBuildResponse(1, &attempts)
+	_, err := API.PollForBuildResponse(1, true, "", &attempts)
 	if err == nil {
 		t.Errorf("error should be present if attempts are exausted nil: %s\n", err)
 	}
@@ -84,7 +84,7 @@ func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
 		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
 	}
 
-	urlTarget := "https://example.com/api/v1/releases/1/release_polling"
+	urlTarget := "https://example.com/api/v1/releases/1/release_polling?context=DIRECTORY"
 	if req.URL.String() != urlTarget {
 		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", urlTarget, req.URL.String())
 	}
