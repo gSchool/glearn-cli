@@ -133,8 +133,8 @@ func Test_CreateBranchRelease(t *testing.T) {
 	if req.Method != "POST" {
 		t.Errorf("Request made to Learn should be a POST, was %s", req.Method)
 	}
-	if req.URL.String() != "https://example.com/api/v1/blocks/1/releases?branch=testbranch" {
-		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", "https://example.com/api/v1/blocks/1/releases?branch=testbranch", req.URL.String())
+	if req.URL.String() != "https://example.com/api/v1/blocks/1/releases?branch_name=testbranch" {
+		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", "https://example.com/api/v1/blocks/1/releases?branch_name=testbranch", req.URL.String())
 	}
 	if req.Header.Get("Content-Type") != "application/json" {
 		t.Errorf("Content-Type header should be 'application/json', was '%s'\n", req.Header.Get("Content-Type"))

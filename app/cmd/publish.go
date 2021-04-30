@@ -153,7 +153,7 @@ new block. If the block already exists, it will update the existing block.
 
 		s.Stop()
 
-		fmt.Printf("Block released! %s/blocks/%d?branch=%s\n", learn.API.BaseURL(), block.ID, branch)
+		fmt.Printf("Block released! %s/blocks/%d?branch_name=%s\n", learn.API.BaseURL(), block.ID, branch)
 
 		if len(p.SyncWarnings) > 0 {
 			fmt.Println("\nWarnings on new release:")
