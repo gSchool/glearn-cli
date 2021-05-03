@@ -75,10 +75,9 @@ new block. If the block already exists, it will update the existing block.
 		}
 
 		if IgnoreLocal == false {
-			notCurrentWithRemote := notCurrentWithRemote(branch)
-			if notCurrentWithRemote {
+			if notCurrentWithRemote(branch) {
 				fmt.Println("\nRelease failed.")
-				fmt.Println("You have local changes that are not on remote, run `git status` for details.")
+				fmt.Println("You have local changes that are not on remote, run `git status` or `git remote show origin` for details.")
 				fmt.Println("Add/commit/push your existing changes and run `learn publish` again, or continue to publish from current remote with `learn publish --ignore-local`")
 				os.Exit(1)
 			}
@@ -250,8 +249,34 @@ func notCurrentWithRemote(branch string) bool {
 			return false
 		}
 	} else {
-		if strings.Contains(out, fmt.Sprintf("On branch %s", branch)) && strings.Contains(out, "nothing to commit, working tree clean") {
+		if strings.Contains(out, "Changes not staged for commit:") || strings.Contains(out, "Changes to be committed:") {
+			return true
+		}
+		// non-master branches require we look up the remote branches and their push state
+		remoteOut, err := runBashCommand("git remote show origin")
+		if err != nil {
 			return false
+		}
+		// Get to the section which defines local refs configured for git push
+		// read the lines until we find one which starts with the branch name
+		// If it contains (up to date) then we would be in the clear to publish
+		var afterPushRefs bool
+		for _, line := range strings.Split(remoteOut, "\n") {
+			if afterPushRefs {
+				trimLine := strings.TrimSpace(line)
+				// Lines we are concerned with look like this:
+				//   main        pushes to main        (up to date)
+				if strings.HasPrefix(trimLine, branch+" ") { // branch names can't have whitespace, and the name now starts and ends in whitespace
+					if strings.Contains(trimLine, "(up to date)") {
+						return false
+					} else {
+						return true
+					}
+				}
+			}
+			if strings.Contains(line, "Local refs configured for 'git push'") && !afterPushRefs {
+				afterPushRefs = true
+			}
 		}
 	}
 
