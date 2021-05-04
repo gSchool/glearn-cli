@@ -739,12 +739,12 @@ func compressDirectory(source, target string, configYamlPaths []string) error {
 
 		var isConfigFile = strings.Contains(path, "config.yml") || strings.Contains(path, "config.yaml") || strings.Contains(path, "autoconfig.yaml")
 		ext := filepath.Ext(path)
-		if !info.IsDir() && info.Size() > 1000000 {
+		if !info.IsDir() && info.Size() > 1000000 && !strings.Contains(path, ".git/") {
 			fmt.Printf("\nWARNING: Ignoring File For Preview: File chosen/linked to for preview is too large: %s\n", path)
 			return nil
 		}
 
-		if isConfigFile || fileIsIncluded || (info.IsDir() && (ext != ".git" && path != "node_modules")) {
+		if isConfigFile || fileIsIncluded || (info.IsDir() && !strings.Contains(path, ".git/") && (ext != ".git" && path != "node_modules")) {
 			if err != nil {
 				return err
 			}
