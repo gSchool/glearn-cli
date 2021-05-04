@@ -183,8 +183,8 @@ var templates = map[string]temp{
 	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, courseyamlTemplateMin, false},
 	"callout":         {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
 	"co":              {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
-	"upload":          {"Upload markdown", uploadTemplate, uploadTemplateMin, false},
-	"up":              {"Upload markdown", uploadTemplate, uploadTemplateMin, false},
+	"upload":          {"Upload markdown", uploadTemplate, uploadTemplateMin, true},
+	"up":              {"Upload markdown", uploadTemplate, uploadTemplateMin, true},
 }
 
 const incorrectNumArgs = "Copy curriculum markdown to clipboard. \n\nTakes 1-2 arguments, the type of content to copy to clipboard and optionally a markdown file to append. Specify -o to print to stdout, -m for a minimal template.\n\n" + argList
