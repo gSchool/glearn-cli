@@ -1441,7 +1441,7 @@ Course:
       - URL:
         DefaultUpdates: auto`
 
-const calloutTemplate = `<!-- available callout types: info, success, warning, danger, secondary  -->
+const calloutTemplate = `<!-- available callout types: info, success, warning, danger, secondary, star  -->
 ### !callout-info
 
 ## title
