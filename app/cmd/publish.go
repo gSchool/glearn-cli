@@ -274,7 +274,7 @@ func notCurrentWithRemote(branch string) bool {
 					}
 				}
 			}
-			if strings.Contains(line, "Local refs configured for 'git push'") && !afterPushRefs {
+			if strings.Contains(line, "configured for 'git push'") && !afterPushRefs {
 				afterPushRefs = true
 			}
 		}
