@@ -82,10 +82,9 @@ new block. If the block already exists, it will update the existing block.
 		if IgnoreLocal == false {
 			notCurrentWithRemote := notCurrentWithRemote(branch)
 			if notCurrentWithRemote {
-				fmt.Println("\nRelease failed.")
+				fmt.Println("\nWARNING:")
 				fmt.Println("You have local changes that are not on remote, run `git status` for details.")
-				fmt.Println("Add/commit/push your existing changes and run `learn publish` again, or continue to publish from current remote with `learn publish --ignore-local`")
-				os.Exit(1)
+				fmt.Println("\nPublishing from current remote")
 			}
 		}
 
