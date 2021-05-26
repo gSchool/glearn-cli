@@ -74,11 +74,6 @@ new block. If the block already exists, it will update the existing block.
 			os.Exit(1)
 		}
 
-		if branch != "master" {
-			fmt.Printf("Branch publishing is cohort-specific. To continue publishing from branch '%s', go to %s/cohorts/<cohortID>/setup and click the 'recycle' button for this repo.\n", branch, learn.API.BaseURL())
-			os.Exit(1)
-		}
-
 		if IgnoreLocal == false {
 			notCurrentWithRemote := notCurrentWithRemote(branch)
 			if notCurrentWithRemote {
@@ -95,13 +90,13 @@ new block. If the block already exists, it will update the existing block.
 			fmt.Printf(fmt.Sprintf("Failed to find or create a config file for repo: (%s). Err: %v", branch, err))
 			os.Exit(1)
 		}
-		fmt.Printf("Publishing block with repo name %s\n", repoPieces.RepoName)
+		fmt.Printf("Publishing block with repo name %s from branch %s\n", repoPieces.RepoName, branch)
 
 		if createdConfig {
 			fmt.Println("Committing autoconfig.yaml to", branch)
 			err = addAutoConfigAndCommit()
 
-			if err != nil && !strings.Contains(err.Error(), "Your branch is up to date with 'origin/master'.") {
+			if err != nil && !strings.Contains(err.Error(), fmt.Sprintf("Your branch is up to date with 'origin/%s'.", branch)) {
 				fmt.Printf("Error committing the autoconfig.yaml to origin remote on branch, run 'git rm autoconfig.yaml' to remove it from reference then add a new commit: %s", err)
 				os.Exit(1)
 			}
@@ -125,7 +120,7 @@ new block. If the block already exists, it will update the existing block.
 		s.Start()
 
 		// Create a release on learn, notify user
-		releaseID, err := learn.API.CreateMasterRelease(block.ID)
+		releaseID, err := learn.API.CreateBranchRelease(block.ID, branch)
 		if err != nil || releaseID == 0 {
 			fmt.Printf("Release failed. releaseID: %d. Error: %s\n", releaseID, err)
 			os.Exit(1)
@@ -157,7 +152,7 @@ new block. If the block already exists, it will update the existing block.
 
 		s.Stop()
 
-		fmt.Printf("Block released! %s/blocks/%d\n", learn.API.BaseURL(), block.ID)
+		fmt.Printf("Block released! %s/blocks/%d?branch_name=%s\n", learn.API.BaseURL(), block.ID, branch)
 
 		if len(p.SyncWarnings) > 0 {
 			fmt.Println("\nWarnings on new release:")
@@ -249,8 +244,40 @@ func notCurrentWithRemote(branch string) bool {
 		return false
 	}
 
-	if strings.Contains(out, fmt.Sprintf("Your branch is up to date with 'origin/%v'", branch)) && strings.Contains(out, "nothing to commit, working tree clean") {
-		return false
+	if branch == "master" {
+		if strings.Contains(out, fmt.Sprintf("Your branch is up to date with 'origin/%v'", branch)) && strings.Contains(out, "nothing to commit, working tree clean") {
+			return false
+		}
+	} else {
+		if strings.Contains(out, "Changes not staged for commit:") || strings.Contains(out, "Changes to be committed:") {
+			return true
+		}
+		// non-master branches require we look up the remote branches and their push state
+		remoteOut, err := runBashCommand("git remote show origin")
+		if err != nil {
+			return false
+		}
+		// Get to the section which defines local refs configured for git push
+		// read the lines until we find one which starts with the branch name
+		// If it contains (up to date) then we would be in the clear to publish
+		var afterPushRefs bool
+		for _, line := range strings.Split(remoteOut, "\n") {
+			if afterPushRefs {
+				trimLine := strings.TrimSpace(line)
+				// Lines we are concerned with look like this:
+				//   main        pushes to main        (up to date)
+				if strings.HasPrefix(trimLine, branch+" ") { // branch names can't have whitespace, and the name now starts and ends in whitespace
+					if strings.Contains(trimLine, "(up to date)") {
+						return false
+					} else {
+						return true
+					}
+				}
+			}
+			if strings.Contains(line, "configured for 'git push'") && !afterPushRefs {
+				afterPushRefs = true
+			}
+		}
 	}
 
 	return true

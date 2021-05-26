@@ -105,12 +105,12 @@ func Test_CreateBlockByRepoName(t *testing.T) {
 
 const validMasterReleaseResponse = `{"release_id":9}`
 
-func Test_CreateMasterRelease(t *testing.T) {
+func Test_CreateBranchRelease(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validMasterReleaseResponse)
 	API, _ := NewAPI("https://example.com", mockClient)
 
-	id, err := API.CreateMasterRelease(1)
+	id, err := API.CreateBranchRelease(1, "testbranch")
 	if err != nil {
 		t.Errorf("error not nil: %s\n", err)
 	}
@@ -133,8 +133,8 @@ func Test_CreateMasterRelease(t *testing.T) {
 	if req.Method != "POST" {
 		t.Errorf("Request made to Learn should be a POST, was %s", req.Method)
 	}
-	if req.URL.String() != "https://example.com/api/v1/blocks/1/releases" {
-		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", "https://example.com/api/v1/blocks/1/releases", req.URL.String())
+	if req.URL.String() != "https://example.com/api/v1/blocks/1/releases?branch_name=testbranch" {
+		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", "https://example.com/api/v1/blocks/1/releases?branch_name=testbranch", req.URL.String())
 	}
 	if req.Header.Get("Content-Type") != "application/json" {
 		t.Errorf("Content-Type header should be 'application/json', was '%s'\n", req.Header.Get("Content-Type"))
