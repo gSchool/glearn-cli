@@ -131,12 +131,12 @@ new block. If the block already exists, it will update the existing block.
 		if err != nil {
 			s.Stop()
 
-			if p.Errors != "" {
+			if p != nil && p.Errors != "" {
 				fmt.Printf("Release failed: %s\n", p.Errors)
 				os.Exit(1)
 			}
 
-			if len(p.SyncWarnings) > 0 {
+			if p != nil && len(p.SyncWarnings) > 0 {
 				fmt.Printf("Release warnings:")
 
 				for _, sw := range p.SyncWarnings {
