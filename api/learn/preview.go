@@ -48,7 +48,7 @@ func (api *APIClient) PollForBuildResponse(releaseID int, isDir bool, fileName s
 
 	if res.StatusCode != http.StatusOK {
 		json.NewDecoder(res.Body).Decode(&p)
-		return nil, fmt.Errorf("Error: response status: %d, response body: %s", res.StatusCode, p.Errors)
+		return &p, fmt.Errorf("Error: response status: %d, response body: %s", res.StatusCode, p.Errors)
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&p)

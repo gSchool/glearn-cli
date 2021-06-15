@@ -131,14 +131,29 @@ new block. If the block already exists, it will update the existing block.
 		if err != nil {
 			s.Stop()
 
+			if p != nil && p.Errors != "" {
+				fmt.Printf("Release failed: %s\n", p.Errors)
+				os.Exit(1)
+			}
+
+			if p != nil && len(p.SyncWarnings) > 0 {
+				fmt.Printf("Release warnings:")
+
+				for _, sw := range p.SyncWarnings {
+					fmt.Println(sw)
+				}
+			}
+
 			block, err := learn.API.GetBlockByRepoName(repoPieces)
 			if err != nil {
 				fmt.Printf("Release failed. Error fetching block from learn: %s\n", err)
 				os.Exit(1)
 			}
-			fmt.Println("Release failed. Errors on block:")
-			for _, e := range block.SyncErrors {
-				fmt.Println(e)
+			if len(block.SyncErrors) > 0 {
+				fmt.Println("Release failed. Errors on block:")
+				for _, e := range block.SyncErrors {
+					fmt.Println(e)
+				}
 			}
 			os.Exit(1)
 		}
