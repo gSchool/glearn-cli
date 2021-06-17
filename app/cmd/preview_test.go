@@ -207,7 +207,7 @@ func Test_createNewTargetSingleFile(t *testing.T) {
 	}
 }
 
-func Test_createNewTarget_DockerDirectory(t *testing.T) {
+func Test_createNewTarget_DockerDirectoryIgnore(t *testing.T) {
 	err := createTestMD(dockerMDContent)
 	err = os.MkdirAll("path/to/dir/child", os.FileMode(0777))
 	if err != nil {
@@ -221,23 +221,22 @@ func Test_createNewTarget_DockerDirectory(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
+	_, err = os.Create("path/to/dir/ignore_me.png")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+
+	_, err = os.Create("path/to/dir/child/ignore_me.png")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
 	// DockerIgnore stuff
-	_, err = os.Create("path/to/dir/child/.dockerignore")
+	ignoreFile, err := os.Create("path/to/dir/.dockerignore")
 	if err != nil {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
-	err = os.Mkdir("path/to/dir/.dockerignore", os.FileMode(0777))
-	if err != nil {
-		t.Errorf("Error generating test fixtures: %s\n", err)
-	}
-	_, err = os.Create("path/to/dir/.dockerignore/ignore_me.jpg")
-	if err != nil {
-		t.Errorf("Error generating test fixtures: %s\n", err)
-	}
-	_, err = os.Create("path/to/dir/.dockerignore/badFile.txt")
-	if err != nil {
-		t.Errorf("Error generating test fixtures: %s\n", err)
-	}
+	defer ignoreFile.Close()
+	ignoreFile.Write([]byte("ignore_me.png"))
 
 	output := captureOutput(func() {
 		result, err := createNewTarget("test.md", []string{}, []string{"/path/to/dir"})
@@ -253,16 +252,12 @@ func Test_createNewTarget_DockerDirectory(t *testing.T) {
 			t.Errorf("test.md should have been created")
 		}
 
-		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/root.png")); os.IsNotExist(err) {
-			t.Errorf("path/to/dir/root.png should have been created and it's image dir moved to the root of the single file directory, was not")
-		}
-
-		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/badFile.txt")); !os.IsNotExist(err) {
-			t.Errorf("path/to/dir/badFile.txt should NOT have been created because its in the docker ignore file")
-		}
-
 		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/ignore_me.jpg")); !os.IsNotExist(err) {
 			t.Errorf("path/to/dir/ignore_me.jpg should NOT have been created because its in the docker ignore file")
+		}
+
+		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/child/ignore_me.jpg")); !os.IsNotExist(err) {
+			t.Errorf("path/to/dir/child/ignore_me.jpg should NOT have been created because its in the docker ignore file")
 		}
 
 		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/child/nest.png")); os.IsNotExist(err) {
