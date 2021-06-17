@@ -153,7 +153,7 @@ preview and return/open the preview URL when it is complete.
 		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpZipFile
-		err = compressDirectory(target, tmpZipFile, configYamlPaths)
+		err = compressDirectory(target, tmpZipFile, configYamlPaths, dockerPaths)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", target, err))
 			return
@@ -657,14 +657,6 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 		return fmt.Errorf("path specified is not a directory: %s\n", src)
 	}
 
-	//ignorePatterns, err := DockerIgnorePatterns(src)
-	//fmt.Println("ignorePatterns")
-	//fmt.Println(ignorePatterns)
-
-	//if err != nil {
-	//	fmt.Print(err.Error())
-	//}
-
 	err = os.MkdirAll(dst, srcInfo.Mode())
 	if err != nil {
 		return err
@@ -713,7 +705,7 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 // and a target file path (where to put the zip file) and recursively compresses the source.
 // Source can either be a directory or a single file. When singleFile is true, all files in
 // the zip are added.
-func compressDirectory(source, target string, configYamlPaths []string) error {
+func compressDirectory(source, target string, configYamlPaths, dockerPaths []string) error {
 	// Create file with target name and defer its closing
 	zipfile, err := os.Create(target)
 	if err != nil {
@@ -746,6 +738,11 @@ func compressDirectory(source, target string, configYamlPaths []string) error {
 			var configPathSplits = strings.Split(p, string(os.PathSeparator))
 			var fileName = configPathSplits[len(configPathSplits)-1]
 			if strings.Contains(path, fileName) {
+				fileIsIncluded = true
+			}
+		}
+		for _, d := range dockerPaths {
+			if strings.Contains(path, d) {
 				fileIsIncluded = true
 			}
 		}
