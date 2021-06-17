@@ -230,6 +230,10 @@ func Test_createNewTarget_DockerDirectoryIgnore(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
+	_, err = os.Create("path/to/dir/child/dont_agnore_me.png")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
 	// DockerIgnore stuff
 	ignoreFile, err := os.Create("path/to/dir/.dockerignore")
 	if err != nil {
@@ -250,6 +254,10 @@ func Test_createNewTarget_DockerDirectoryIgnore(t *testing.T) {
 
 		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
 			t.Errorf("test.md should have been created")
+		}
+
+		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/child/%s", "dont_agnore_me.png")); os.IsNotExist(err) {
+			t.Errorf("dont_agnore_me.png should have been created")
 		}
 
 		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/ignore_me.jpg")); !os.IsNotExist(err) {
