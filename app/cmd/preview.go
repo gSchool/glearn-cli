@@ -376,7 +376,12 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 
 			if newDirPath != "" {
 				// the directory was found after checkpoing porents, copy contents
-				err = CopyDirectoryContents(newDirPath, newSrcPath+"/"+dirPath)
+				ignorePatterns, err := DockerIgnorePatterns(newDirPath)
+				if err != nil {
+					fmt.Print(err.Error())
+				}
+
+				err = CopyDirectoryContents(newDirPath, newSrcPath+"/"+dirPath, ignorePatterns)
 				if err != nil {
 					return "", err
 				}
@@ -385,7 +390,12 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		} else if !fileDir.IsDir() {
 			return "", fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
 		} else {
-			err = CopyDirectoryContents(dirPath, newSrcPath+"/"+dirPath)
+			ignorePatterns, err := DockerIgnorePatterns(dirPath)
+			if err != nil {
+				fmt.Print(err.Error())
+			}
+
+			err = CopyDirectoryContents(dirPath, newSrcPath+"/"+dirPath, ignorePatterns)
 			if err != nil {
 				return "", err
 			}
@@ -625,15 +635,20 @@ func DockerIgnorePatterns(src string) ([]string, error) {
 	if !strings.HasSuffix(src, "/") {
 		dockerIgnore = src + "/.dockerignore"
 	}
+	_, err := os.Stat(dockerIgnore)
+	if err != nil && os.IsNotExist(err) {
+		return []string{}, nil
+	}
+
 	ignoreFile, err := ioutil.ReadFile(dockerIgnore)
 	if err != nil {
-		return []string{}, fmt.Errorf("Could not parse dockerignore file: %s", err)
+		return []string{}, fmt.Errorf("Could not parse dockerignore file: %s\n", err)
 	}
 
 	return strings.Split(string(ignoreFile), "\n"), nil
 }
 
-func CopyDirectoryContents(src, dst string) error {
+func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 	srcInfo, err := os.Stat(src)
 	if err != nil {
 		return err
@@ -642,11 +657,13 @@ func CopyDirectoryContents(src, dst string) error {
 		return fmt.Errorf("path specified is not a directory: %s\n", src)
 	}
 
-	ignorePatterns, err := DockerIgnorePatterns(src)
+	//ignorePatterns, err := DockerIgnorePatterns(src)
+	//fmt.Println("ignorePatterns")
+	//fmt.Println(ignorePatterns)
 
-	if err != nil {
-		fmt.Print(err.Error())
-	}
+	//if err != nil {
+	//	fmt.Print(err.Error())
+	//}
 
 	err = os.MkdirAll(dst, srcInfo.Mode())
 	if err != nil {
@@ -677,7 +694,7 @@ func CopyDirectoryContents(src, dst string) error {
 		}
 
 		if file.IsDir() {
-			err = CopyDirectoryContents(source, destination)
+			err = CopyDirectoryContents(source, destination, ignorePatterns)
 			if err != nil {
 				return err
 			}
