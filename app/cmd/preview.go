@@ -666,11 +666,21 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 	if err != nil {
 		return err
 	}
+	var alwaysAllowSlice = []string{"test.sh", "Dockerfile", "docker-compose.yaml", "docker-compose.yml"}
 	for _, file := range files {
 		source := filepath.Join(src, file.Name())
 		destination := filepath.Join(dst, file.Name())
 		ignore := false
 		for _, pattern := range ignorePatterns {
+			var alwaysAllowBool = false
+			for _, aa := range alwaysAllowSlice {
+				if aa == pattern {
+					alwaysAllowBool = true
+				}
+			}
+			if alwaysAllowBool {
+				continue
+			}
 			localizedPattern := src + "/" + pattern
 			matched, err := di.IgnoreMatches(localizedPattern, source)
 			if err != nil {
