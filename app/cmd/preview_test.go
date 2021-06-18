@@ -225,6 +225,23 @@ func Test_createNewTarget_DockerDirectoryIgnore(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
+	// Always allow files
+	_, err = os.Create("path/to/dir/Dockerfile")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+	_, err = os.Create("path/to/dir/test.sh")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+	_, err = os.Create("path/to/dir/docker-compose.yaml")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+	_, err = os.Create("path/to/dir/docker-compose.yml")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
 
 	_, err = os.Create("path/to/dir/child/ignore_me.png")
 	if err != nil {
@@ -234,6 +251,7 @@ func Test_createNewTarget_DockerDirectoryIgnore(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error generating test fixtures: %s\n", err)
 	}
+
 	// DockerIgnore stuff
 	ignoreFile, err := os.Create("path/to/dir/.dockerignore")
 	if err != nil {
@@ -241,6 +259,10 @@ func Test_createNewTarget_DockerDirectoryIgnore(t *testing.T) {
 	}
 	defer ignoreFile.Close()
 	ignoreFile.Write([]byte("ignore_me.png"))
+	ignoreFile.Write([]byte("Dockerfile"))
+	ignoreFile.Write([]byte("test.sh"))
+	ignoreFile.Write([]byte("docker-compose.yaml"))
+	ignoreFile.Write([]byte("docker-compose.yml"))
 
 	output := captureOutput(func() {
 		result, err := createNewTarget("test.md", []string{}, []string{"/path/to/dir"})
@@ -254,6 +276,20 @@ func Test_createNewTarget_DockerDirectoryIgnore(t *testing.T) {
 
 		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
 			t.Errorf("test.md should have been created")
+		}
+
+		// Always allow files
+		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/%s", "Dockerfile")); os.IsNotExist(err) {
+			t.Errorf("Dockerfile should have been created")
+		}
+		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/%s", "test.sh")); os.IsNotExist(err) {
+			t.Errorf("test.sh should have been created")
+		}
+		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/%s", "docker-compose.yaml")); os.IsNotExist(err) {
+			t.Errorf("docker-compose.yaml should have been created")
+		}
+		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/%s", "docker-compose.yml")); os.IsNotExist(err) {
+			t.Errorf("docker-compose.yml should have been created")
 		}
 
 		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/child/%s", "dont_agnore_me.png")); os.IsNotExist(err) {
