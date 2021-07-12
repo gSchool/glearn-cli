@@ -196,6 +196,9 @@ func Test_RetrieveCredentials(t *testing.T) {
 	if API.Credentials.BucketName != "buqet" {
 		t.Errorf("Error unmarshaling S3 Credentials, bad bucket_name")
 	}
+	if API.Credentials.LatestCLIVersion != "v0.9" {
+		t.Errorf("Error unmarshaling LatestCliVersion, bad latest_cli_version")
+	}
 
 	// verify that requests were made properly
 	if len(mockClient.Requests) != 1 {

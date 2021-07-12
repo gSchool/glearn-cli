@@ -163,7 +163,7 @@ func setupLearnAPI() {
 		return
 	}
 
-	if api.Credentials.LatestCliVersion != currentReleaseVersion {
+	if api.Credentials.LatestCLIVersion != currentReleaseVersion {
 		fmt.Printf("\nWARNING: There is newer version of the learn tool available.\nAvailable: %s\nCurrent: %s\nTo avoid issues, upgrade by following the instructions at this link:\nhttps://github.com/gSchool/glearn-cli/blob/master/upgrade_instructions.md\n\n", api.Credentials.LatestCliVersion, currentReleaseVersion)
 	}
 
