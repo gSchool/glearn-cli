@@ -10,7 +10,7 @@ import (
 
 const validPreviewResponse = `{"status":"success","release_id":1,"preview_url":"http://example.com"}`
 const pendingPreviewResponse = `{"status":"pending","release_id":1,"preview_url":"http://example.com"}`
-const credentialsResponse = `{"s3":{"access_key_id":"access_keyin","secret_access_key":"secret_keyin","key_prefix":"keykey's delivery service","bucket_name":"buqet"}, "slack":{"dev_notify_url": "development"}, "latest_cli_version": "v0.9"}`
+const credentialsResponse = `{"s3":{"access_key_id":"access_keyin","secret_access_key":"secret_keyin","key_prefix":"keykey's delivery service","bucket_name":"buqet"}, "slack":{"dev_notify_url": "development"}}`
 
 func Test_PollForBuildResponse(t *testing.T) {
 	viper.Set("api_token", "apiToken")
@@ -195,9 +195,6 @@ func Test_RetrieveCredentials(t *testing.T) {
 	}
 	if API.Credentials.BucketName != "buqet" {
 		t.Errorf("Error unmarshaling S3 Credentials, bad bucket_name")
-	}
-	if API.Credentials.LatestCliVersion != "v0.9" {
-		t.Errorf("Error unmarshaling LatestCliVersion, bad latest_cli_version")
 	}
 
 	// verify that requests were made properly

@@ -20,7 +20,7 @@ You can get your api token at https://learn-2.galvanize.com/api_token
 `
 
 // currentReleaseVersion is used to print the version the user currently has downloaded
-const currentReleaseVersion = "v0.8.20"
+const currentReleaseVersion = "v0.8.19"
 
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
@@ -161,10 +161,6 @@ func setupLearnAPI() {
 		fmt.Printf("Error creating API client. Err: %v", err)
 		os.Exit(1)
 		return
-	}
-
-	if api.Credentials.LatestCliVersion != currentReleaseVersion {
-		fmt.Println("\nWARNING: There is newer version of the learn tool available. To avoid issues, upgrade by following the instructions at this link:\nhttps://github.com/gSchool/glearn-cli/blob/master/upgrade_instructions.md\n")
 	}
 
 	learn.API = api
