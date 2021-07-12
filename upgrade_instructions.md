@@ -2,7 +2,7 @@
 Depending on how you installed your cli tool, please use the apropiate method to upgrade below:
 
 ## Homebrew
-Homebrew: `brew upgrade learn`
+Homebrew: `brew tap gSchool/learn && brew upgrade learn`
 
 ## Binary download
 Binary download: Download new binaries from https://github.com/gSchool/glearn-cli/releases
