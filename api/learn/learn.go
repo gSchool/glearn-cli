@@ -32,6 +32,7 @@ type Credentials struct {
 	*APIToken         `json:"api_token"`
 	*S3Credentials    `json:"s3_credentials"`
 	*SlackCredentials `json:"slack_credentials"`
+	LatestCliVersion  string `json:"latest_cli_version"`
 }
 
 // S3Credentials represents the important AWS credentials we retrieve from Learn
@@ -57,10 +58,11 @@ type APIToken struct {
 // CredentialsResponse describes the shape of the return data from the call
 // to RetrieveCredentials
 type CredentialsResponse struct {
-	UserId string           `json:"user_id"`
-	Email  string           `json:"user_email"`
-	S3     S3Credentials    `json:"s3"`
-	Slack  SlackCredentials `json:"slack"`
+	UserId           string           `json:"user_id"`
+	Email            string           `json:"user_email"`
+	S3               S3Credentials    `json:"s3"`
+	Slack            SlackCredentials `json:"slack"`
+	LatestCliVersion string           `json:"latest_cli_version"`
 }
 
 // CLIBenchmarkPayload is the shape of the payload to send to Learn's learn_cli_metadata
@@ -154,7 +156,8 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 		SlackCredentials: &SlackCredentials{
 			DevNotifyURL: c.Slack.DevNotifyURL,
 		},
-		APIToken: &APIToken{apiToken},
+		APIToken:         &APIToken{apiToken},
+		LatestCliVersion: c.LatestCliVersion,
 	}, nil
 }
 
