@@ -1,4 +1,4 @@
-# Update
+# Update Learn CLI
 Depending on how you installed your cli tool, please use the apropiate method to upgrade below:
 
 ## Homebrew
