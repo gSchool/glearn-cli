@@ -28,6 +28,7 @@ type APIClient struct {
 
 // Credentials represents the shape of data that the initial call to Learn
 // for s3 and slack credentials will hydrate
+// test
 type Credentials struct {
 	*APIToken         `json:"api_token"`
 	*S3Credentials    `json:"s3_credentials"`
