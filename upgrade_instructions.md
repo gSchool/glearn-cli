@@ -1,5 +1,5 @@
 # Update Learn CLI
-Depending on how you installed your cli tool, please use the apropiate method to upgrade below:
+Depending on how you installed your cli tool, please use the appropriate method to upgrade below:
 
 ## Homebrew
 Homebrew: `brew tap gSchool/learn && brew upgrade learn`
