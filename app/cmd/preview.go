@@ -153,7 +153,7 @@ preview and return/open the preview URL when it is complete.
 		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpZipFile
-		err = compressDirectory(target, tmpZipFile, configYamlPaths, dockerPaths)
+		err = compressDirectory(target, tmpZipFile, configYamlPaths, append(dockerPaths, dataPaths...))
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", target, err))
 			return
@@ -714,8 +714,8 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 // compressDirectory takes a source file path (where the content you want zipped lives)
 // and a target file path (where to put the zip file) and recursively compresses the source.
 // Source can either be a directory or a single file. When singleFile is true, all files in
-// the zip are added.
-func compressDirectory(source, target string, configYamlPaths, dockerPaths []string) error {
+// the zip are added. resourcePaths specify non-config paths which should be included in the zip.
+func compressDirectory(source, target string, configYamlPaths, resourcePaths []string) error {
 	// Create file with target name and defer its closing
 	zipfile, err := os.Create(target)
 	if err != nil {
@@ -751,7 +751,7 @@ func compressDirectory(source, target string, configYamlPaths, dockerPaths []str
 				fileIsIncluded = true
 			}
 		}
-		for _, d := range dockerPaths {
+		for _, d := range resourcePaths {
 			if strings.Contains(path, d) {
 				fileIsIncluded = true
 			}
