@@ -175,7 +175,7 @@ func createYamlConfig(target, requestedUnitsDir string, excludePaths []string, p
 	return nil
 }
 
-// newConfigYaml lreates a ConfigYaml struct given certain conditions
+// newConfigYaml creates a ConfigYaml struct given certain conditions
 // 1. Did you give us a units directory?
 // 2. Do you have a units directory?
 // Units must exist in units dir or one provided!
@@ -203,7 +203,7 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 		return config, fmt.Errorf("No content found at '%s'. Preview of an individual unit is not supported, make sure '%s' is the root of a repo or a single lesson.", target, target)
 	}
 
-	// sort unit keys in lexigraphical order
+	// sort unit keys in lexicographical order
 	unitKeys := make([]string, 0, len(unitToContentFileMap))
 	for unit := range unitToContentFileMap {
 		unitKeys = append(unitKeys, unit)
@@ -339,7 +339,7 @@ func formattedName(name string) string {
 	return strings.TrimSpace(strings.Join(parts, ""))
 }
 
-// anyMatchingPrefix reports if any of the given prefixes haveb been found to be a prefix of the target
+// anyMatchingPrefix reports if any of the given prefixes have been found to be a prefix of the target
 func anyMatchingPrefix(target string, prefixes []string) bool {
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(target, prefix) {

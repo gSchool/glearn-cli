@@ -22,7 +22,7 @@ var publishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "Publish master for your curriculum repository",
 	Long: `
-The Learn system recognizes blocks of content held in GitHub respositories. This
+The Learn system recognizes blocks of content held in GitHub repositories. This
 command pushes the latest commit for the remote origin master (which should be
 GitHub), then attempts the release of a new Learn block version at the HEAD of
 master. If the block doesn't exist, running the publish command will create a
@@ -113,7 +113,7 @@ new block. If the block already exists, it will update the existing block.
 		// Start benchmark for creating master release & building on learn
 		startOfMasterReleaseAndBuild := time.Now()
 
-		// Start a processing spinner that runs until Learn is finsihed building the preview
+		// Start a processing spinner that runs until Learn is finished building the preview
 		fmt.Println("\nBuilding release...")
 		s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
 		s.Color("green")

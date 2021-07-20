@@ -133,7 +133,7 @@ func init() {
 	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
 	previewCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
 	previewCmd.Flags().BoolVarP(&OpenPreview, "open", "o", false, "Open the preview in the browser")
-	previewCmd.Flags().BoolVarP(&FileOnly, "fileonly", "x", false, "E(x)cludes images when previewing a single file, defaults false")
+	previewCmd.Flags().BoolVarP(&FileOnly, "fileonly", "x", false, "Excludes images when previewing a single file, defaults false")
 	publishCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
 	publishCmd.Flags().BoolVarP(&IgnoreLocal, "ignore-local", "", false, "Ignore local changes and publish remote only")
 	markdownCmd.Flags().BoolVarP(&PrintTemplate, "out", "o", false, "Prints the template to stdout")

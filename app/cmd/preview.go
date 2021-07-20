@@ -202,7 +202,7 @@ preview and return/open the preview URL when it is complete.
 
 		fmt.Println("\nBuilding preview...")
 
-		// Start a processing spinner that runs until Learn is finsihed building the preview
+		// Start a processing spinner that runs until Learn is finished building the preview
 		s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)
 		s.Color("blue")
 		s.Start()
@@ -233,8 +233,8 @@ preview and return/open the preview URL when it is complete.
 		bench.LearnBuild = time.Since(startBuildAndPollRelease).Milliseconds()
 		bench.TotalCmdTime = time.Since(startOfCmd).Milliseconds()
 
-		// Set final message for dislpay
-		s.FinalMSG = fmt.Sprintf("Sucessfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
+		// Set final message for display
+		s.FinalMSG = fmt.Sprintf("Successfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
 
 		// Stop the processing spinner
 		s.Stop()
@@ -277,7 +277,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		pathArray := []string{}
 		var containsPeriodPeriod bool
 		for _, dir := range strings.Split(filePath, "/") {
-			if dir != ".." { // sanitize any .. so we don't have to worry about nexted things
+			if dir != ".." { // sanitize any .. so we don't have to worry about nested things
 				containsPeriodPeriod = true
 				pathArray = append(pathArray, dir)
 			}
@@ -375,7 +375,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 			}
 
 			if newDirPath != "" {
-				// the directory was found after checkpoing porents, copy contents
+				// the directory was found after checkpoint parents, copy contents
 				ignorePatterns, err := DockerIgnorePatterns(newDirPath)
 				if err != nil {
 					fmt.Print(err.Error())
