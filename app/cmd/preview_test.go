@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"archive/zip"
 	"bytes"
 	"fmt"
 	"io/ioutil"
@@ -40,6 +41,57 @@ Question
 const dockerIgnore = `ignore_me.jpg
 *.txt
 `
+
+func Test_compressDirectory(t *testing.T) {
+	target := "../../fixtures/test-block-auto-config"
+	configYamlPaths, err := parseConfigAndGatherLinkedPaths(target)
+	if err != nil {
+		t.Errorf("Attempting to parseConfigAndGatherLinkedPaths errored: %s\n", err)
+	}
+	if len(configYamlPaths) < 1 {
+		t.Errorf("There should be paths parsed from the target")
+	}
+
+	var paths = make(map[string]bool)
+
+	tmpZipFile := "../../fixtures/test-block-auto-config/preview-curriculum.zip"
+	var resourcePaths []string
+	resourcePaths = append(resourcePaths, "test-block-auto-config/docker/text.text")
+	resourcePaths = append(resourcePaths, "test-block-auto-config/sql/database.sql")
+	compressDirectory(target, tmpZipFile, configYamlPaths, resourcePaths)
+
+	read, err := zip.OpenReader(tmpZipFile)
+	defer read.Close()
+	for _, file := range read.File {
+		if strings.HasSuffix(file.Name, "/") == false {
+			paths[file.Name] = false
+		}
+	}
+
+	for path, _ := range paths {
+		for _, includedPath := range configYamlPaths {
+			if strings.Contains(includedPath, path) {
+				paths[path] = true
+			}
+		}
+		for _, includedPath := range resourcePaths {
+			if strings.Contains(includedPath, path) {
+				paths[path] = true
+			}
+		}
+		if strings.Contains(path, "autoconfig.yaml") {
+			paths[path] = true
+		}
+	}
+
+	for path, found := range paths {
+		if found == false {
+			t.Errorf("Should of found: %s In zipped dir", path)
+		}
+	}
+
+	os.Remove(tmpZipFile)
+}
 
 func Test_createNewTarget(t *testing.T) {
 	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{"./mrsmall-invert.png", "../mrsmall.png", "../image/nested-small.png", "deeper/deep-small.png"}, []string{})
