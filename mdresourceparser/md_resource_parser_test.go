@@ -8,7 +8,6 @@ import (
 func Test_ParseLink(t *testing.T) {
 	tableTest := map[string][]string{
 		"[example](linkresult)":   []string{"linkresult"},
-		"[example]()":             []string{""},
 		"[example](ends-in.md)":   []string{"ends-in.md"},
 		"[](has-no-link-text)":    []string{"has-no-link-text"},
 		"[more](than)[one](link)": []string{"than", "link"},
@@ -32,6 +31,12 @@ myarr[0]("code-test-case");`: []string{"\"code-test-case\""},
 		if strings.Join(result, "") != strings.Join(v, "") {
 			t.Errorf("Links %s expected %v but got %v", k, v, result)
 		}
+	}
+
+	emptyParser := New([]rune("[empty]()"))
+	emptyParser.ParseResources()
+	if len(emptyParser.Links) != 0 {
+		t.Errorf("A valid link syntax with an empty link should produce no links")
 	}
 }
 
