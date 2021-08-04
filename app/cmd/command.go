@@ -5,8 +5,8 @@
 package cmd
 
 import (
-	"os/exec"
 	"fmt"
+	"os/exec"
 )
 
 // isCommandAvailable checks to see if a command is available.
