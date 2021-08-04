@@ -763,6 +763,7 @@ func compressDirectory(source, target string, configYamlPaths, resourcePaths []s
 
 		var isConfigFile = strings.Contains(path, "config.yml") || strings.Contains(path, "config.yaml") || strings.Contains(path, "autoconfig.yaml")
 		ext := filepath.Ext(path)
+		// Ignoring all files over 1mb for preivew and warning users if the file is over 20mb that it will be ignored in publish action as well.
 		if !info.IsDir() && info.Size() > 1000000 && !strings.Contains(path, ".git/") {
 			if info.Size() > 20000000 {
 				fmt.Printf("\nWARNING: Ignoring File For Preview: File chosen/linked is too large to preview and too large to publish: %s\n", path)
