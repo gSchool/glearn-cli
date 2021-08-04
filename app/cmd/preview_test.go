@@ -43,8 +43,8 @@ const dockerIgnore = `ignore_me.jpg
 `
 
 func Test_compressDirectory(t *testing.T) {
-	target := "../../fixtures/test-block-auto-config"
-	configYamlPaths, err := parseConfigAndGatherLinkedPaths(target)
+	source := "../../fixtures/test-block-auto-config"
+	configYamlPaths, err := parseConfigAndGatherLinkedPaths(source)
 	if err != nil {
 		t.Errorf("Attempting to parseConfigAndGatherLinkedPaths errored: %s\n", err)
 	}
@@ -55,10 +55,15 @@ func Test_compressDirectory(t *testing.T) {
 	var paths = make(map[string]bool)
 
 	tmpZipFile := "../../fixtures/test-block-auto-config/preview-curriculum.zip"
+
 	var resourcePaths []string
 	resourcePaths = append(resourcePaths, "test-block-auto-config/docker/text.text")
 	resourcePaths = append(resourcePaths, "test-block-auto-config/sql/database.sql")
-	compressDirectory(target, tmpZipFile, configYamlPaths, resourcePaths)
+
+	err = compressDirectory(source, tmpZipFile, configYamlPaths, resourcePaths)
+	if err != nil {
+		t.Errorf("compressDirectory failed to do its job: %s\n", err)
+	}
 
 	read, err := zip.OpenReader(tmpZipFile)
 	defer read.Close()
@@ -68,7 +73,7 @@ func Test_compressDirectory(t *testing.T) {
 		}
 	}
 
-	for path, _ := range paths {
+	for path := range paths {
 		for _, includedPath := range configYamlPaths {
 			if strings.Contains(includedPath, path) {
 				paths[path] = true
