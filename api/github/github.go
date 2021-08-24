@@ -13,16 +13,16 @@ var API *APIClient
 const tagUrl = "https://api.github.com/repos/gSchool/glearn-cli/tags"
 
 type tag struct {
-	Name       string
-	Commit     commit
-	ZipballUrl string
-	TarballUrl string
-	Node_id    string
+	Name       string `json:"name"`
+	Commit     commit `json:"commit"`
+	ZipballUrl string `json:"zipball_url"`
+	TarballUrl string `json:"tarball_url"`
+	NodeId     string `json:"node_id"`
 }
 
 type commit struct {
-	Sha string
-	Url string
+	Sha string `json:"sha"`
+	Url string `json:"url"`
 }
 
 type APIClient struct {
@@ -30,7 +30,7 @@ type APIClient struct {
 }
 
 func NewAPI(client api.Client) *APIClient {
-	return &APIClient{client: client}
+	return &APIClient{Client: client}
 }
 
 func (api *APIClient) GetLatestVersion() (string, error) {
@@ -56,7 +56,9 @@ func (api *APIClient) GetLatestVersion() (string, error) {
 		return "", err
 	}
 
-	fmt.Println(tags)
+	for _, t := range tags {
+		fmt.Println(t)
+	}
 	if len(tags) > 0 {
 		return tags[0].Name, nil
 	}
