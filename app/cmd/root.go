@@ -9,6 +9,7 @@ import (
 	"os/user"
 	"time"
 
+	"github.com/gSchool/glearn-cli/api/github"
 	"github.com/gSchool/glearn-cli/api/learn"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,7 +21,7 @@ You can get your api token at https://learn-2.galvanize.com/api_token
 `
 
 // currentReleaseVersion is used to print the version the user currently has downloaded
-const currentReleaseVersion = "v0.8.21"
+const currentReleaseVersion = "v0.8.22"
 
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
@@ -141,8 +142,12 @@ func setupLearnAPI() {
 		return
 	}
 
-	if api.Credentials.LatestCLIVersion != currentReleaseVersion {
-		fmt.Printf("\nWARNING: There is newer version of the learn tool available.\nLatest: %s\nCurrent: %s\nTo avoid issues, upgrade by following the instructions at this link:\nhttps://github.com/gSchool/glearn-cli/blob/master/upgrade_instructions.md\n\n", api.Credentials.LatestCLIVersion, currentReleaseVersion)
+	githubAPI := github.NewAPI(&client)
+	version, err := githubAPI.GetLatestVersion()
+	if err != nil {
+		fmt.Printf("Something went wrong when fetching latest CLI version: %s\n", err)
+	} else if version != currentReleaseVersion {
+		fmt.Printf("\nWARNING: There is newer version of the learn tool available.\nLatest: %s\nCurrent: %s\nTo avoid issues, upgrade by following the instructions at this link:\nhttps://github.com/gSchool/glearn-cli/blob/master/upgrade_instructions.md\n\n", version, currentReleaseVersion)
 	}
 
 	learn.API = api
