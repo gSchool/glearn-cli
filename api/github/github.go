@@ -56,9 +56,6 @@ func (api *APIClient) GetLatestVersion() (string, error) {
 		return "", err
 	}
 
-	for _, t := range tags {
-		fmt.Println(t)
-	}
 	if len(tags) > 0 {
 		return tags[0].Name, nil
 	}
