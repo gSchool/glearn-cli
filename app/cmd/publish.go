@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -167,7 +168,8 @@ new block. If the block already exists, it will update the existing block.
 
 		s.Stop()
 
-		fmt.Printf("Block released! %s/blocks/%d?branch_name=%s\n", learn.API.BaseURL(), block.ID, branch)
+		blockUrl := fmt.Sprintf("%s/blocks/%d?branch_name=%s", learn.API.BaseURL(), block.ID, url.QueryEscape(branch))
+		fmt.Printf("Block released! %s\n", blockUrl)
 
 		if len(p.SyncWarnings) > 0 {
 			fmt.Println("\nWarnings on new release:")
