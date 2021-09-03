@@ -90,8 +90,8 @@ func NewAPI(baseURL string, client api.Client) (*APIClient, error) {
 	// Retrieve the application credentials for the CLI using a user's API token
 	creds, err := apiClient.RetrieveCredentials()
 	if err != nil {
-		return nil, errors.New(
-			fmt.Sprintf("Could not retrieve credentials from Learn. Please reset your API token with this command: learn set --api_token=your-token-from-%s/api_token", baseURL),
+		return nil, fmt.Errorf(
+			"Could not retrieve credentials from Learn. Please reset your API token with this command: learn set --api_token=your-token-from-%s/api_token", baseURL,
 		)
 	}
 

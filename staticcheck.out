@@ -1,6 +1,6 @@
 api/github/github.go:62:13: error strings should not be capitalized (ST1005)
 api/github/github.go:62:13: error strings should not end with punctuation or a newline (ST1005)
-api/learn/learn.go:93:15: should use fmt.Errorf(...) instead of errors.New(fmt.Sprintf(...)) (S1028)
+api/learn/learn.go:93:15: error strings should not be capitalized (ST1005)
 api/learn/learn.go:114:15: error strings should not be capitalized (ST1005)
 api/learn/learn.go:133:15: error strings should not be capitalized (ST1005)
 api/learn/learn.go:192:10: error strings should not be capitalized (ST1005)
