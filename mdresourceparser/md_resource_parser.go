@@ -14,7 +14,7 @@ type MDResourceParser struct {
 	char                 rune        // current char under examination
 	position             int         // current position in input (points to current char)
 	readPosition         int         // current reading position in input (after current char)
-	newline              bool        // sets to true when char was preceeded by a new line character \n
+	newline              bool        // sets to true when char was preceded by a new line character \n
 	Links                []string    // collection of links paths
 	DockerDirectoryPaths []string    // collection of docker_directory_paths
 	dockerDirMatch       *startMatch // keeps track of parsing a newline matcher for docker directories

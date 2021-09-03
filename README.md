@@ -2,7 +2,7 @@
 
 This is the command line interface for developing, previewing, and publishing curriculum on Learn.
 
-## Option 1 (Mac Users only): Installation with Homebrew
+## Option 1: Installation with Homebrew (using WSL2 on Windows)
 
 ### Install
 ```
@@ -17,7 +17,7 @@ brew install learn
 learn set --api_token=[Your API Token from https://learn-2.galvanize.com/api_token]
 ```
 
-## Option 2 (Windows, Linux, and Mac Users): Install binaries directly from Github
+## Option 2: Install binaries directly from Github
 
 ### Download
 
@@ -31,7 +31,7 @@ Place in an appropriate location and include in your system Path so that command
 learn set --api_token=[Your API Token from https://learn-2.galvanize.com/api_token]
 ```
 
-## Option 3 (Linux and Mac users only): Install with curl
+## Option 3: Install with curl (using WSL2 on Windows)
 
 ### Curl commands
 
@@ -40,7 +40,7 @@ Mac users
 curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Darwin_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
 ```
 
-Linux users
+Linux & WSL2 users
 ```
 curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Linux_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
 ```
