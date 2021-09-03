@@ -418,9 +418,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 			}
 			contents := string(b)
 			for _, pathToSub := range substringPaths {
-				if strings.HasPrefix(pathToSub, "/") { // undo the add of a slash we did at the beginning
-					pathToSub = strings.TrimPrefix(pathToSub, "/")
-				}
+				pathToSub = strings.TrimPrefix(pathToSub, "/")
 				imgPathWithoutPeriodPeriod := strings.Replace(pathToSub, "../", "", -1)
 				contents = strings.ReplaceAll(contents, pathToSub, imgPathWithoutPeriodPeriod)
 			}

@@ -8,7 +8,7 @@ staticcheck ./... >staticcheck.out
 awk -F\: '/.+/{print "[ ]"$4}' staticcheck.out | sort -u -t \( -k2 -k1
 
 [x] should use strings.Contains(".$", string(ch)) instead (S1003)
-[ ] should replace this if statement with an unconditional strings.TrimPrefix (S1017)
+[x] should replace this if statement with an unconditional strings.TrimPrefix (S1017)
 [ ] should use fmt.Errorf(...) instead of errors.New(fmt.Sprintf(...)) (S1028)
 [ ] error strings should not be capitalized (ST1005)
 [ ] error strings should not end with punctuation or a newline (ST1005)
