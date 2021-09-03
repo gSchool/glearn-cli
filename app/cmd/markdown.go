@@ -1301,8 +1301,8 @@ const testableProjectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>
 * type: testable-project
 * id: %s
 * title: [text, a short question title]
-* upstream: [URL, the upstream repo URL like https://github.com/gSchool/js-native-array-methods/]
-* validate_fork: true
+* upstream: [URL, the upstream repo URL like https://github.com/gSchool/simple-compose-upstream]
+* validate_fork: false
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
 <!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
 
@@ -1335,7 +1335,7 @@ const testableProjectTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE 
 * id: %s
 * title:
 * upstream:
-* validate_fork: true
+* validate_fork: false
 
 ##### !question
 

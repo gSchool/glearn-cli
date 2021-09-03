@@ -9,6 +9,7 @@ import (
 	"os/user"
 	"time"
 
+	"github.com/gSchool/glearn-cli/api/github"
 	"github.com/gSchool/glearn-cli/api/learn"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -141,8 +142,12 @@ func setupLearnAPI() {
 		return
 	}
 
-	if api.Credentials.LatestCLIVersion != currentReleaseVersion {
-		fmt.Printf("\nWARNING: There is newer version of the learn tool available.\nLatest: %s\nCurrent: %s\nTo avoid issues, upgrade by following the instructions at this link:\nhttps://github.com/gSchool/glearn-cli/blob/master/upgrade_instructions.md\n\n", api.Credentials.LatestCLIVersion, currentReleaseVersion)
+	githubAPI := github.NewAPI(&client)
+	version, err := githubAPI.GetLatestVersion()
+	if err != nil {
+		fmt.Printf("Something went wrong when fetching latest CLI version: %s\n", err)
+	} else if version != currentReleaseVersion {
+		fmt.Printf("\nWARNING: There is newer version of the learn tool available.\nLatest: %s\nCurrent: %s\nTo avoid issues, upgrade by following the instructions at this link:\nhttps://github.com/gSchool/glearn-cli/blob/master/upgrade_instructions.md\n\n", version, currentReleaseVersion)
 	}
 
 	learn.API = api
