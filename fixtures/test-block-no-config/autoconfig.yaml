@@ -24,6 +24,15 @@ Standards:
   - Type: Resource
     Path: /units/03.resource/name.resource.md
     UID: 2726a7a33276eaef4a8e143d824d9d1e
+- Title: Description
+  UID: b5a7adde1af5c87d7fd797b6245c2a39
+  Description: Description
+  SuccessCriteria:
+  - success criteria
+  ContentFiles:
+  - Type: Lesson
+    Path: /units/04.description/01-lesson.md
+    UID: e553eccf229583b91a7a0f4efdfee2dd
 - Title: Unit 1
   UID: 02210548f12da09aa7a0bd1f1308c423
   Description: Unit 1

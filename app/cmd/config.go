@@ -229,18 +229,16 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 			continue
 		}
 
-		formattedUnitName := formattedName(unit)
-		if formattedUnitName == "" {
-			formattedUnitName = formattedTargetName
+		unitTitle, UID, description, successCriteria := standardAttributes(unit)
+		if unitTitle == "" {
+			unitTitle = formattedTargetName
 		}
-		unitUID := []byte(formattedUnitName)
-		md5unitUID := md5.Sum(unitUID)
 
 		standard := Standard{
-			Title:           formattedUnitName,
-			UID:             hex.EncodeToString(md5unitUID[:]),
-			Description:     formattedUnitName,
-			SuccessCriteria: []string{"success criteria"},
+			Title:           unitTitle,
+			UID:             UID,
+			Description:     description,
+			SuccessCriteria: successCriteria,
 		}
 
 		for _, contentFile := range unitToContentFileMap[unit] {
@@ -574,6 +572,18 @@ func GitTopLevelDir() (string, error) {
 	}
 
 	return strings.TrimSpace(string(out)), err
+}
+
+// standardAttributes returns the Title, UID, Description, and SuccessCriteria
+func standardAttributes(unit string) (title, UID, description string, successCriteria []string) {
+	// no description yaml found,
+	title = formattedName(unit)
+	unitUID := []byte(title)
+	md5unitUID := md5.Sum(unitUID)
+	UID = hex.EncodeToString(md5unitUID[:])
+	description = title
+	successCriteria = []string{"success criteria"}
+	return
 }
 
 // split is the bufio Scanner Split interface implementation for fetching content file header attributes

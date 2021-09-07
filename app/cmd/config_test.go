@@ -40,8 +40,8 @@ func Test_PublishBuildsAutoConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("File created could not unmarshal into ConfigYaml struct: %s", err)
 	}
-	if len(configMade.Standards) != 3 {
-		t.Errorf("test-block-with-config fixture should have made 3 standards but made %d", len(configMade.Standards))
+	if len(configMade.Standards) != 4 {
+		t.Errorf("test-block-with-config fixture should have made 4 standards but made %d", len(configMade.Standards))
 	}
 	// standard 1
 	standardOne := configMade.Standards[0]
@@ -75,67 +75,88 @@ func Test_PublishBuildsAutoConfig(t *testing.T) {
 
 	// standard 3
 	standardThree := configMade.Standards[2]
-	if standardThree.Title != "Unit 1" {
-		t.Errorf("test-block-with-config fixture third standard should have title Unit 1, but had '%s'", standardThree.Title)
+	if standardThree.Title != "Title From Yaml" {
+		t.Errorf("test-block-with-config fixture third standard should have yaml supplied title 'Title From Yaml', but had '%s'", standardThree.Title)
 	}
-	if len(standardThree.ContentFiles) != 5 {
-		t.Errorf("test-block-with-config fixture third standard should have 5 content files but had %d", len(standardThree.ContentFiles))
+	if standardThree.Description != "My description here" {
+		t.Errorf("test-block-with-config fixture third standard should have yaml supplied description 'My description here', but had '%s'", standardThree.Description)
 	}
-	// standard 3 file 1
-	if standardThree.ContentFiles[0].Type != "Lesson" {
-		t.Errorf("test-block-with-config fixture third standard first content file should be of type Lesson but was '%s'", standardThree.ContentFiles[0].Type)
+	if standardThree.UID != "02210548f12da09aa7a0bd1f1308c423" {
+		t.Errorf("test-block-with-config fixture third standard should have yaml supplied UID '02210548f12da09aa7a0bd1f1308c423', but had '%s'", standardThree.UID)
 	}
-	if standardThree.ContentFiles[0].Path != "/units/file.hidden.file.md" {
-		t.Errorf("test-block-with-config fixture third standard first content file path should be '/units/file.hidden.file.md' but was '%s'", standardThree.ContentFiles[0].Path)
+	if len(standardThree.SuccessCriteria) != 2 {
+		t.Errorf("test-block-with-config fixture third standard should have 2 SuccessCriteria but had %d", len(standardThree.SuccessCriteria))
 	}
-	if standardThree.ContentFiles[0].DefaultVisibility != "hidden" {
-		t.Errorf("test-block-with-config fixture third standard first content file DefaultVisibility should be 'hidden' but was '%s'", standardThree.ContentFiles[0].DefaultVisibility)
+	if standardThree.SuccessCriteria[0] != "success" {
+		t.Errorf("test-block-with-config fixture third standard first success criteria should be 'success' but was %s", standardThree.SuccessCriteria[0])
 	}
-	// standard 3 file 2
-	if standardThree.ContentFiles[1].Type != "Survey" {
-		t.Errorf("test-block-with-config fixture third standard second content file should be of type Survey but was '%s'", standardThree.ContentFiles[1].Type)
+	if standardThree.SuccessCriteria[1] != "criteria" {
+		t.Errorf("test-block-with-config fixture third standard first success criteria should be 'criteria' but was %s", standardThree.SuccessCriteria[1])
 	}
-	if standardThree.ContentFiles[1].Path != "/units/file.survey.md" {
-		t.Errorf("test-block-with-config fixture third standard second content file path should be '/units/file.survey.md' but was '%s'", standardThree.ContentFiles[1].Path)
+
+	// standard 4
+	standardFour := configMade.Standards[3]
+	if standardFour.Title != "Unit 1" {
+		t.Errorf("test-block-with-config fixture fourth standard should have title Unit 1, but had '%s'", standardFour.Title)
 	}
-	// standard 3 file 3
-	if standardThree.ContentFiles[2].Type != "Resource" {
-		t.Errorf("test-block-with-config fixture third standard third content file should be of type Resource but was '%s'", standardThree.ContentFiles[2].Type)
+	if len(standardFour.ContentFiles) != 5 {
+		t.Errorf("test-block-with-config fixture fourth standard should have 5 content files but had %d", len(standardFour.ContentFiles))
 	}
-	if standardThree.ContentFiles[2].Path != "/units/hidden.resource.md" {
-		t.Errorf("test-block-with-config fixture third standard third content file path should be '/units/hidden.resource.md' but was '%s'", standardThree.ContentFiles[2].Path)
+	// standard 4 file 1
+	if standardFour.ContentFiles[0].Type != "Lesson" {
+		t.Errorf("test-block-with-config fixture fourth standard first content file should be of type Lesson but was '%s'", standardFour.ContentFiles[0].Type)
 	}
-	if standardThree.ContentFiles[2].DefaultVisibility != "hidden" {
-		t.Errorf("test-block-with-config fixture third standard third content file DefaultVisibility should be 'hidden' but was '%s'", standardThree.ContentFiles[2].DefaultVisibility)
+	if standardFour.ContentFiles[0].Path != "/units/file.hidden.file.md" {
+		t.Errorf("test-block-with-config fixture fourth standard first content file path should be '/units/file.hidden.file.md' but was '%s'", standardFour.ContentFiles[0].Path)
 	}
-	// standard 3 file 4
-	if standardThree.ContentFiles[3].Type != "Instructor" {
-		t.Errorf("test-block-with-config fixture third standard fourth content file should be of type Instructor but was '%s'", standardThree.ContentFiles[3].Type)
+	if standardFour.ContentFiles[0].DefaultVisibility != "hidden" {
+		t.Errorf("test-block-with-config fixture fourth standard first content file DefaultVisibility should be 'hidden' but was '%s'", standardFour.ContentFiles[0].DefaultVisibility)
 	}
-	if standardThree.ContentFiles[3].Path != "/units/teacher-instructor.md" {
-		t.Errorf("test-block-with-config fixture third standard fourth content file path should be '/units/teacher-instructor.md' but was '%s'", standardThree.ContentFiles[3].Path)
+	// standard 4 file 2
+	if standardFour.ContentFiles[1].Type != "Survey" {
+		t.Errorf("test-block-with-config fixture fourth standard second content file should be of type Survey but was '%s'", standardFour.ContentFiles[1].Type)
 	}
-	// standard 3 file 5 values set from header
-	if standardThree.ContentFiles[4].Type != "Checkpoint" {
-		t.Errorf("test-block-with-config fixture third standard fifth content file should be of type Instructor but was '%s'", standardThree.ContentFiles[4].Type)
+	if standardFour.ContentFiles[1].Path != "/units/file.survey.md" {
+		t.Errorf("test-block-with-config fixture fourth standard second content file path should be '/units/file.survey.md' but was '%s'", standardFour.ContentFiles[1].Path)
 	}
-	if standardThree.ContentFiles[4].Path != "/units/test.md" {
-		t.Errorf("test-block-with-config fixture third standard fifth content file path should be '/units/test.md' but was '%s'", standardThree.ContentFiles[4].Path)
+	// standard 4 file 3
+	if standardFour.ContentFiles[2].Type != "Resource" {
+		t.Errorf("test-block-with-config fixture fourth standard third content file should be of type Resource but was '%s'", standardFour.ContentFiles[2].Type)
 	}
-	if standardThree.ContentFiles[4].DefaultVisibility != "hidden" {
-		t.Errorf("test-block-with-config fixture third standard fifth content file DefaultVisibility should be 'hidden' but was '%s'", standardThree.ContentFiles[4].DefaultVisibility)
+	if standardFour.ContentFiles[2].Path != "/units/hidden.resource.md" {
+		t.Errorf("test-block-with-config fixture fourth standard third content file path should be '/units/hidden.resource.md' but was '%s'", standardFour.ContentFiles[2].Path)
 	}
-	if standardThree.ContentFiles[4].UID != "abc123" {
-		t.Errorf("test-block-with-config fixture third standard fifth content file UID should be 'abc123' but was '%s'", standardThree.ContentFiles[4].UID)
+	if standardFour.ContentFiles[2].DefaultVisibility != "hidden" {
+		t.Errorf("test-block-with-config fixture fourth standard third content file DefaultVisibility should be 'hidden' but was '%s'", standardFour.ContentFiles[2].DefaultVisibility)
 	}
-	if standardThree.ContentFiles[4].MaxCheckpointSubmissions != 1 {
-		t.Errorf("test-block-with-config fixture third standard fifth content file MaxCheckpointSubmissions should be 1 but was %d", standardThree.ContentFiles[4].MaxCheckpointSubmissions)
+	// standard 4 file 4
+	if standardFour.ContentFiles[3].Type != "Instructor" {
+		t.Errorf("test-block-with-config fixture fourth standard fourth content file should be of type Instructor but was '%s'", standardFour.ContentFiles[3].Type)
 	}
-	if standardThree.ContentFiles[4].TimeLimit != 45 {
-		t.Errorf("test-block-with-config fixture third standard fifth content file TimeLimit should be 45 but was %d", standardThree.ContentFiles[4].TimeLimit)
+	if standardFour.ContentFiles[3].Path != "/units/teacher-instructor.md" {
+		t.Errorf("test-block-with-config fixture fourth standard fourth content file path should be '/units/teacher-instructor.md' but was '%s'", standardFour.ContentFiles[3].Path)
 	}
-	if !standardThree.ContentFiles[4].Autoscore {
-		t.Errorf("test-block-with-config fixture third standard fifth content file Autscore should be true but was false")
+	// standard 4 file 5 values set from header
+	if standardFour.ContentFiles[4].Type != "Checkpoint" {
+		t.Errorf("test-block-with-config fixture fourth standard fifth content file should be of type Instructor but was '%s'", standardFour.ContentFiles[4].Type)
+	}
+	if standardFour.ContentFiles[4].Path != "/units/test.md" {
+		t.Errorf("test-block-with-config fixture fourth standard fifth content file path should be '/units/test.md' but was '%s'", standardFour.ContentFiles[4].Path)
+	}
+	if standardFour.ContentFiles[4].DefaultVisibility != "hidden" {
+		t.Errorf("test-block-with-config fixture fourth standard fifth content file DefaultVisibility should be 'hidden' but was '%s'", standardFour.ContentFiles[4].DefaultVisibility)
+	}
+	if standardFour.ContentFiles[4].UID != "abc123" {
+		t.Errorf("test-block-with-config fixture fourth standard fifth content file UID should be 'abc123' but was '%s'", standardFour.ContentFiles[4].UID)
+	}
+	if standardFour.ContentFiles[4].MaxCheckpointSubmissions != 1 {
+		t.Errorf("test-block-with-config fixture fourth standard fifth content file MaxCheckpointSubmissions should be 1 but was %d", standardFour.ContentFiles[4].MaxCheckpointSubmissions)
+	}
+	if standardFour.ContentFiles[4].TimeLimit != 45 {
+		t.Errorf("test-block-with-config fixture fourth standard fifth content file TimeLimit should be 45 but was %d", standardFour.ContentFiles[4].TimeLimit)
+	}
+	if !standardFour.ContentFiles[4].Autoscore {
+		t.Errorf("test-block-with-config fixture fourth standard fifth content file Autscore should be true but was false")
 	}
 }
 
