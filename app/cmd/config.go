@@ -230,7 +230,13 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 		}
 
 		// unitTitle, UID, description, successCriteria := newStandard(fmt.Sprintf("%s%s", blockRoot, unitsRootDirName), unit)
-		standard := newStandard(fmt.Sprintf("%s%s", blockRoot, unitsRootDirName), unit)
+		unitsDirectoryFile, err := os.Stat(unitsDir)
+
+		whereToLookForUnits := blockRoot
+		if err == nil && unitsDirectoryFile.IsDir() {
+			whereToLookForUnits = fmt.Sprintf("%s%s", blockRoot, unitsRootDirName)
+		}
+		standard := newStandard(whereToLookForUnits, unit)
 		if standard.Title == "" {
 			standard.Title = formattedTargetName
 		}
