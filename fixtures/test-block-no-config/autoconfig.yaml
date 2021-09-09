@@ -24,6 +24,16 @@ Standards:
   - Type: Resource
     Path: /units/03.resource/name.resource.md
     UID: 2726a7a33276eaef4a8e143d824d9d1e
+- Title: Title From Yaml
+  UID: 02210548f12da09aa7a0bd1f1308c423
+  Description: My description here
+  SuccessCriteria:
+  - success
+  - criteria
+  ContentFiles:
+  - Type: Lesson
+    Path: /units/04.description/01-lesson.md
+    UID: 124943de1a85fe1e147273bd967b2eec
 - Title: Unit 1
   UID: 02210548f12da09aa7a0bd1f1308c423
   Description: Unit 1

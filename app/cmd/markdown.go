@@ -181,6 +181,8 @@ var templates = map[string]temp{
 	"configyaml":      {"config.yaml syntax", configyamlTemplate, configyamlTemplateMin, false},
 	"cry":             {"course.yaml syntax", courseyamlTemplate, courseyamlTemplateMin, false},
 	"courseyaml":      {"course.yaml syntax", courseyamlTemplate, courseyamlTemplateMin, false},
+	"dsy":             {"description.yaml syntax", descYamlTemplate, descYamlTemplateMin, true},
+	"descyaml":        {"description.yaml syntax", descYamlTemplate, descYamlTemplateMin, true},
 	"callout":         {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
 	"co":              {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
 	"upload":          {"Upload markdown", uploadTemplate, uploadTemplateMin, true},
@@ -216,9 +218,10 @@ Questions:
   testableproject (tpr)
 Other Markdown:
   callout (co)
-Configuration:
+Yaml Configuration:
   configyaml (cfy)
-  courseyaml (cry)`
+  courseyaml (cry)
+  descyaml (dsy)`
 
 const fileHeaderTemplate = `---
 # BEGIN FILE CONFIGURATION YML HEADER >>>>>
@@ -1440,6 +1443,23 @@ Course:
     Repos:
       - URL:
         DefaultUpdates: auto`
+
+const descYamlTemplate = `# description.yaml file template, defines Unit/Standard details when generating an autoconfig.yaml
+# Populates a file called 'description.yaml'. When placed in a unit directory, autoconfig.yaml generation will read this file
+# and apply these settings to the block's autoconfig.
+---
+Title: [Unit Title] (appears when viewing content files or curriculum overview)
+Description: [Description] (longer text shown with each Title on curriculum overview)
+UID: %s
+SuccessCriteria:
+ - [Success Criteria] (define what success for this Unit means)
+`
+const descYamlTemplateMin = `---
+Title:
+Description:
+UID: %s
+SuccessCriteria:
+ -`
 
 const calloutTemplate = `<!-- available callout types: info, success, warning, danger, secondary, star  -->
 ### !callout-info

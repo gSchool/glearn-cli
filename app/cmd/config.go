@@ -229,18 +229,15 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 			continue
 		}
 
-		formattedUnitName := formattedName(unit)
-		if formattedUnitName == "" {
-			formattedUnitName = formattedTargetName
-		}
-		unitUID := []byte(formattedUnitName)
-		md5unitUID := md5.Sum(unitUID)
+		unitsDirectoryFile, err := os.Stat(unitsDir)
 
-		standard := Standard{
-			Title:           formattedUnitName,
-			UID:             hex.EncodeToString(md5unitUID[:]),
-			Description:     formattedUnitName,
-			SuccessCriteria: []string{"success criteria"},
+		whereToLookForUnits := blockRoot
+		if err == nil && unitsDirectoryFile.IsDir() {
+			whereToLookForUnits = fmt.Sprintf("%s%s", blockRoot, unitsRootDirName)
+		}
+		standard := newStandard(whereToLookForUnits, unit)
+		if standard.Title == "" {
+			standard.Title = formattedTargetName
 		}
 
 		for _, contentFile := range unitToContentFileMap[unit] {
@@ -267,7 +264,7 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 					}
 					// when it came from the header but UID is not set, fall back to detecting from path
 					if contentFile.UID == "" {
-						cfUID := []byte(formattedUnitName + contentFile.Path)
+						cfUID := []byte(standard.Title + contentFile.Path)
 						md5cfUID := md5.Sum(cfUID)
 						contentFile.UID = hex.EncodeToString(md5cfUID[:])
 					}
@@ -277,7 +274,7 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 					}
 					standard.ContentFiles = append(standard.ContentFiles, contentFile)
 				} else {
-					cfUID := []byte(formattedUnitName + contentFile.Path)
+					cfUID := []byte(standard.Title + contentFile.Path)
 					md5cfUID := md5.Sum(cfUID)
 
 					contentFile.Type = detectContentType(contentFile.Path)
@@ -483,6 +480,11 @@ func printExtras(yamlText, path string) error {
 }
 
 // buildUnitToContentFileMap reads contents from the unit directory and includes md files. It returns attributes from the header for each file
+// TODO refactor inputs, should be simplified like unitsDir is just the first and last inputs put together; example from test
+// bockRoot ../../fixtures/test-block-no-config/
+// unitsDir ../../fixtures/test-block-no-config/units
+// unitsDirName Unit 1
+// unitsRootDirName units
 func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirName string) (map[string][]ContentFileAttrs, error) {
 	unitToContentFileMap := map[string][]ContentFileAttrs{}
 
@@ -574,6 +576,41 @@ func GitTopLevelDir() (string, error) {
 	}
 
 	return strings.TrimSpace(string(out)), err
+}
+
+// newStandard returns a standard from tne unitDir and unit name combination
+// unitDir is the location of the individual unit, with unit the directory beneath it
+// Either a description yaml file is read from, or the unit name is used to build a standard
+//func standardAttributes(unitDir, unit string) (title, UID, description string, successCriteria []string) {
+func newStandard(unitDir, unit string) Standard {
+	yamlLocation := fmt.Sprintf("%s/%s/%s", unitDir, unit, "description.yaml")
+	yamlBytes, err := os.ReadFile(yamlLocation)
+	if err != nil {
+		// no description yaml found,
+		return standardFromUnit(unit)
+	} else {
+		// read yaml contents of file
+		standard := Standard{}
+		if err = yaml.NewDecoder(bytes.NewReader(yamlBytes)).Decode(&standard); err != nil {
+			return standardFromUnit(unit)
+		}
+		return standard
+	}
+}
+
+func standardFromUnit(unit string) Standard {
+	title := formattedName(unit)
+	unitUID := []byte(title)
+	md5unitUID := md5.Sum(unitUID)
+	UID := hex.EncodeToString(md5unitUID[:])
+	description := title
+	successCriteria := []string{"success criteria"}
+	return Standard{
+		Title:           title,
+		UID:             UID,
+		Description:     description,
+		SuccessCriteria: successCriteria,
+	}
 }
 
 // split is the bufio Scanner Split interface implementation for fetching content file header attributes
