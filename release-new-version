@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# TODO: Tag and Push before release
+# get version from a file
+
+#release_message=${@:?must specify release message}
+#git tag -a v0.1.0 -m "$release_message"
+#git push origin v0.1.0
+
+docker run --rm --privileged \
+  -v $PWD:/go/src/github.com/gSchool/glearn-cli \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -w /go/src/github.com/gSchool/glearn-cli \
+  -e GITHUB_TOKEN \
+  goreleaser/goreleaser release --rm-dist
