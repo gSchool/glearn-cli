@@ -122,5 +122,5 @@ git push origin v0.1.0
 
 To release run:
 ```
-GITHUB_TOKEN=your_githhub_token goreleaser release --rm-dist
+GITHUB_TOKEN=your_githhub_token ./release-new-version
 ```
