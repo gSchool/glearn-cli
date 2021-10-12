@@ -239,6 +239,9 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 		if standard.Title == "" {
 			standard.Title = formattedTargetName
 		}
+		if standard.Description == "" {
+			standard.Description = formattedTargetName
+		}
 
 		for _, contentFile := range unitToContentFileMap[unit] {
 			if anyMatchingPrefix("/"+contentFile.Path, excludePaths) {
