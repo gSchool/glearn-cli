@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	branchCommand     = `git branch | grep \* | cut -d ' ' -f2`
+	branchCommand     = `git rev-parse --abbrev-ref HEAD`
 	pushRemoteCommand = `git remote get-url --push origin`
 )
 
