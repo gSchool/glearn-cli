@@ -12,7 +12,8 @@ import (
 const withConfigFixture = "../../fixtures/test-block-with-config"
 
 func Test_PreviewDetectsConfig(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withConfigFixture, false, false, []string{})
+	createdConfig, _ := previewFindOrCreateConfig(withConfigFixture, false, []string{})
+
 	if createdConfig {
 		t.Errorf("Created a config when one existed")
 	}
@@ -22,7 +23,7 @@ const withNoConfigFixture = "../../fixtures/test-block-no-config"
 
 func Test_PublishBuildsAutoConfig(t *testing.T) {
 	gitTopLevelCmd = "echo ../../fixtures/test-block-no-config"
-	createdConfig, err := doesConfigExistOrCreate(withNoConfigFixture, false, true, []string{})
+	createdConfig, err := publishFindOrCreateConfig(withNoConfigFixture)
 	if err != nil {
 		t.Errorf("Should not have errored but got error: '%s'\n", err)
 	}
@@ -164,7 +165,7 @@ const withNoUnitsDirFixture = "../../fixtures/test-block-no-units-dir"
 
 func Test_PreviewBuildsAutoConfigDeclaredUnitsDir(t *testing.T) {
 	UnitsDirectory = "foo"
-	createdConfig, _ := doesConfigExistOrCreate(withNoUnitsDirFixture, false, false, []string{})
+	createdConfig, _ := previewFindOrCreateConfig(withNoUnitsDirFixture, false, []string{})
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
@@ -188,7 +189,7 @@ func Test_PreviewBuildsAutoConfigDeclaredUnitsDir(t *testing.T) {
 
 func Test_PreviewBuildFailsWhenPreviewingSingleUnit(t *testing.T) {
 	gitTopLevelCmd = "echo ../../fixtures/test-block-no-units-dir"
-	createdConfig, err := doesConfigExistOrCreate(withNoUnitsDirFixture+"/single_unit", false, false, []string{})
+	createdConfig, err := previewFindOrCreateConfig(withNoUnitsDirFixture+"/single_unit", false, []string{})
 
 	if createdConfig == true {
 		t.Errorf("Should not of created a config file")
@@ -201,7 +202,7 @@ func Test_PreviewBuildFailsWhenPreviewingSingleUnit(t *testing.T) {
 
 func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
 	gitTopLevelCmd = "echo ../../fixtures/test-block-no-config"
-	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{})
+	createdConfig, _ := previewFindOrCreateConfig(withNoConfigFixture, false, []string{})
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
@@ -235,7 +236,7 @@ func Test_AutoConfigAddsInFileTypesOrVisibility(t *testing.T) {
 }
 
 func Test_IgnoresFilesAndUnitsThatStartWithTwoUnderscores(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{})
+	createdConfig, _ := previewFindOrCreateConfig(withNoConfigFixture, false, []string{})
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
@@ -257,7 +258,7 @@ func Test_IgnoresFilesAndUnitsThatStartWithTwoUnderscores(t *testing.T) {
 }
 
 func Test_IgnoresExcludedFiles(t *testing.T) {
-	createdConfig, _ := doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{"/units"})
+	createdConfig, _ := previewFindOrCreateConfig(withNoConfigFixture, false, []string{"/units"})
 	if createdConfig == false {
 		t.Errorf("Should of created a config file")
 	}
@@ -279,7 +280,7 @@ func Test_IgnoresExcludedFiles(t *testing.T) {
 }
 
 func Test_findConfigMethodReturnsProperConfig(t *testing.T) {
-	doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{})
+	previewFindOrCreateConfig(withNoConfigFixture, false, []string{})
 
 	configString, _ := findConfig(withNoConfigFixture)
 
@@ -289,7 +290,7 @@ func Test_findConfigMethodReturnsProperConfig(t *testing.T) {
 }
 
 func Test_ParseConfigFileForPaths(t *testing.T) {
-	doesConfigExistOrCreate(withNoConfigFixture, false, false, []string{})
+	previewFindOrCreateConfig(withNoConfigFixture, false, []string{})
 	paths, err := parseConfigAndGatherLinkedPaths(withNoConfigFixture)
 
 	if err != nil || len(paths) == 0 {

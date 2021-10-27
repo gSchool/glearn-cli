@@ -29,6 +29,18 @@ const autoComment = `# This file is auto-generated and orders your content based
 
 var validContentFileAttrs = []string{"Type", "UID", "DefaultVisibility", "MaxCheckpointSubmissions", "TimeLimit", "Autoscore"}
 
+type ConfigBuilder struct {
+	ConfigYaml          ConfigYaml
+	target              string
+	isSingleFilePreview bool
+	publishContext      bool
+	excludePaths        []string
+	blockRoot           string
+	unitsDir            string
+	unitsDirName        string
+	unitsRootDirName    string
+}
+
 // Note: struct fields must be public in order for unmarshal to
 // correctly populate the data.
 type ConfigYaml struct {
@@ -57,83 +69,22 @@ type ContentFileAttrs struct {
 var gitTopLevelCmd = "git rev-parse --show-toplevel"
 
 // only used from publish, just going to send
-func publishFindOrCreateConfigDir(target string) (bool, error) {
-	return doesConfigExistOrCreate(target, false, true, []string{})
+func publishFindOrCreateConfig(target string) (bool, error) {
+	cb := NewConfigBuilder(target, false, true, []string{})
+	return cb.findOrCreateConfig()
 }
 
-// Check whether or nor a config file exists and if it does not we are going to attempt to create one
-func doesConfigExistOrCreate(target string, isSingleFilePreview, publishContext bool, excludePaths []string) (bool, error) {
-	// in publish context need to look at root of repo
-	if publishContext {
-		target, _ = GitTopLevelDir()
-	}
-
-	// Configs can be `yaml` or `yml`
-	configYamlPath := ""
-	if strings.HasSuffix(target, "/") {
-		configYamlPath = target + "config.yaml"
-	} else {
-		configYamlPath = target + "/config.yaml"
-	}
-
-	configYmlPath := ""
-	if strings.HasSuffix(target, "/") {
-		configYmlPath = target + "config.yml"
-	} else {
-		configYmlPath = target + "/config.yml"
-	}
-
-	createdConfig := false
-	_, yamlExists := os.Stat(configYamlPath)
-
-	if yamlExists == nil { // Yaml exists
-		if !isSingleFilePreview {
-			fmt.Printf("INFO: Using existing config.yaml. \n")
-		}
-
-		return createdConfig, nil
-	} else if os.IsNotExist(yamlExists) {
-		_, ymlExists := os.Stat(configYmlPath)
-
-		if ymlExists == nil { // Yml exists
-			if !isSingleFilePreview {
-				fmt.Printf("INFO: Using existing config.yaml. \n")
-			}
-
-			return createdConfig, nil
-		} else if os.IsNotExist(ymlExists) {
-			if !isSingleFilePreview {
-				// Neither exists so we are going to create one
-				fmt.Printf("INFO: No configuration found, generating autoconfig.yaml \n")
-			}
-			if target == tmpSingleFileDir {
-				err := createYamlConfig(target, ".", excludePaths, publishContext)
-				if err != nil {
-					return false, err
-				}
-			} else {
-				// UnitsDirectory supplied from a string flag
-				err := createYamlConfig(target, UnitsDirectory, excludePaths, publishContext)
-				if err != nil {
-					return false, err
-				}
-			}
-			createdConfig = true
-		}
-	}
-	return createdConfig, nil
+func previewFindOrCreateConfig(target string, isSingleFilePreview bool, excludePaths []string) (bool, error) {
+	cb := NewConfigBuilder(target, isSingleFilePreview, false, excludePaths)
+	return cb.findOrCreateConfig()
 }
 
-// createYamlConfig determines the context for creating a new config yaml and handles file creation and encoding
-func createYamlConfig(target, requestedUnitsDir string, excludePaths []string, publishContext bool) error {
+func NewConfigBuilder(target string, isSingleFilePreview, publishContext bool, excludePaths []string) *ConfigBuilder {
 	// Make sure we have an ending slash on the root dir
 	blockRoot := ""
 	if publishContext {
-		blockRootStr, err := GitTopLevelDir()
-		if err != nil {
-			return fmt.Errorf("%s", err)
-		}
-		blockRoot = blockRootStr + "/"
+		target, _ = GitTopLevelDir()
+		blockRoot = target + "/"
 	} else {
 		if strings.HasSuffix(target, "/") {
 			blockRoot = target
@@ -142,8 +93,94 @@ func createYamlConfig(target, requestedUnitsDir string, excludePaths []string, p
 		}
 	}
 
+	// UnitsDirectory supplied from a string flag
+	unitsDirectory := UnitsDirectory
+	if target == tmpSingleFileDir {
+		unitsDirectory = "."
+	}
+
+	// If no unitsDir was passed in, create a Units directory string
+	// UnitsDir is always blockroot + unitsDirName
+	unitsDir := ""
+	unitsDirName := ""
+	unitsRootDirName := "units"
+
+	if unitsDirectory == "" {
+		unitsDir = blockRoot + unitsRootDirName
+		unitsDirName = "Unit 1"
+	} else {
+		unitsDir = blockRoot + unitsDirectory
+		unitsDirName = unitsDirectory
+		unitsRootDirName = unitsDirectory
+	}
+
+	return &ConfigBuilder{
+		target:              target,
+		isSingleFilePreview: isSingleFilePreview,
+		publishContext:      publishContext,
+		excludePaths:        excludePaths,
+		blockRoot:           blockRoot,
+		unitsDir:            unitsDir,
+		unitsDirName:        unitsDirName,
+		unitsRootDirName:    unitsRootDirName,
+	}
+}
+
+func (cb *ConfigBuilder) ConfigExists() bool {
+	// Configs can be `yaml` or `yml`
+	configYamlPath := ""
+	configYmlPath := ""
+	if strings.HasSuffix(cb.target, "/") {
+		configYamlPath = cb.target + "config.yaml"
+		configYmlPath = cb.target + "config.yml"
+	} else {
+		configYamlPath = cb.target + "/config.yaml"
+		configYmlPath = cb.target + "/config.yml"
+	}
+
+	_, yamlErr := os.Stat(configYamlPath)
+	_, ymlErr := os.Stat(configYmlPath)
+
+	yamlPresent := !os.IsNotExist(yamlErr)
+	ymlPresent := !os.IsNotExist(ymlErr)
+
+	if !yamlPresent && !ymlPresent {
+		return false
+	}
+
+	if !cb.isSingleFilePreview {
+		if yamlPresent {
+			fmt.Printf("INFO: Using existing config.yaml. \n")
+		} else if ymlPresent {
+			fmt.Printf("INFO: Using existing config.yml. \n")
+		}
+	}
+
+	return yamlPresent || ymlPresent
+}
+
+// findOrCreateConfig returns true when a config.yaml was created
+func (cb *ConfigBuilder) findOrCreateConfig() (bool, error) {
+	if cb.ConfigExists() {
+		return false, nil
+	}
+
+	if !cb.isSingleFilePreview {
+		fmt.Printf("INFO: Using existing config.yaml. \n")
+	}
+
+	err := cb.createYamlConfig()
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// createYamlConfig determines the context for creating a new config yaml and handles file creation and encoding
+func (cb *ConfigBuilder) createYamlConfig() error {
 	// The config file location that we will be creating
-	autoConfigYamlPath := blockRoot + "autoconfig.yaml"
+	autoConfigYamlPath := cb.blockRoot + "autoconfig.yaml"
 
 	// Remove the existing one if its around
 	_, err := os.Stat(autoConfigYamlPath)
@@ -167,7 +204,7 @@ func createYamlConfig(target, requestedUnitsDir string, excludePaths []string, p
 	encoder := yaml.NewEncoder(configFile)
 	defer encoder.Close()
 
-	autoConfig, err := newConfigYaml(target, blockRoot, requestedUnitsDir, excludePaths)
+	autoConfig, err := cb.newConfigYaml()
 	if err != nil {
 		return err
 	}
@@ -179,28 +216,15 @@ func createYamlConfig(target, requestedUnitsDir string, excludePaths []string, p
 // 1. Did you give us a units directory?
 // 2. Do you have a units directory?
 // Units must exist in units dir or one provided!
-func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []string) (ConfigYaml, error) {
+func (cb *ConfigBuilder) newConfigYaml() (ConfigYaml, error) {
 	config := ConfigYaml{Standards: []Standard{}}
-	// If no unitsDir was passed in, create a Units directory string
-	unitsDir := ""
-	unitsDirName := ""
-	unitsRootDirName := "units"
 
-	if requestedUnitsDir == "" {
-		unitsDir = blockRoot + unitsRootDirName
-		unitsDirName = "Unit 1"
-	} else {
-		unitsDir = blockRoot + requestedUnitsDir
-		unitsDirName = requestedUnitsDir
-		unitsRootDirName = requestedUnitsDir
-	}
-
-	unitToContentFileMap, err := buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirName)
+	unitToContentFileMap, err := cb.buildUnitToContentFileMap()
 	if err != nil {
 		return config, err
 	}
 	if len(unitToContentFileMap) == 0 {
-		return config, fmt.Errorf("No content found at '%s'. Preview of an individual unit is not supported, make sure '%s' is the root of a repo or a single lesson.", target, target)
+		return config, fmt.Errorf("No content found at '%s'. Preview of an individual unit is not supported, make sure '%s' is the root of a repo or a single lesson.", cb.target, cb.target)
 	}
 
 	// sort unit keys in lexicographical order
@@ -210,7 +234,7 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 	}
 	sort.Strings(unitKeys)
 
-	formattedTargetName := formattedName(target)
+	formattedTargetName := formattedName(cb.target)
 	for _, unit := range unitKeys {
 		parts := strings.Split(unit, "/")
 		if strings.HasPrefix(parts[0], "__") {
@@ -220,7 +244,7 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 		// skip the unit when all content files are excluded
 		allFilesExcluded := true
 		for _, contentFile := range unitToContentFileMap[unit] {
-			if !anyMatchingPrefix("/"+contentFile.Path, excludePaths) {
+			if !anyMatchingPrefix("/"+contentFile.Path, cb.excludePaths) {
 				allFilesExcluded = false
 				break
 			}
@@ -229,11 +253,11 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 			continue
 		}
 
-		unitsDirectoryFile, err := os.Stat(unitsDir)
+		unitsDirectoryFile, err := os.Stat(cb.unitsDir)
 
-		whereToLookForUnits := blockRoot
+		whereToLookForUnits := cb.blockRoot
 		if err == nil && unitsDirectoryFile.IsDir() {
-			whereToLookForUnits = fmt.Sprintf("%s%s", blockRoot, unitsRootDirName)
+			whereToLookForUnits = fmt.Sprintf("%s%s", cb.blockRoot, cb.unitsRootDirName)
 		}
 		standard := newStandard(whereToLookForUnits, unit)
 		if standard.Title == "" {
@@ -244,7 +268,7 @@ func newConfigYaml(target, blockRoot, requestedUnitsDir string, excludePaths []s
 		}
 
 		for _, contentFile := range unitToContentFileMap[unit] {
-			if anyMatchingPrefix("/"+contentFile.Path, excludePaths) {
+			if anyMatchingPrefix("/"+contentFile.Path, cb.excludePaths) {
 				continue
 			}
 			parts := strings.Split(contentFile.Path, "/")
@@ -488,16 +512,16 @@ func printExtras(yamlText, path string) error {
 // unitsDir ../../fixtures/test-block-no-config/units
 // unitsDirName Unit 1
 // unitsRootDirName units
-func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirName string) (map[string][]ContentFileAttrs, error) {
+func (cb *ConfigBuilder) buildUnitToContentFileMap() (map[string][]ContentFileAttrs, error) {
 	unitToContentFileMap := map[string][]ContentFileAttrs{}
 
 	// Check to see if units directory exists
-	_, err := os.Stat(unitsDir)
+	_, err := os.Stat(cb.unitsDir)
 
-	whereToLookForUnits := blockRoot
+	whereToLookForUnits := cb.blockRoot
 
 	if err == nil {
-		whereToLookForUnits = unitsDir
+		whereToLookForUnits = cb.unitsDir
 
 		allItems, err := ioutil.ReadDir(whereToLookForUnits)
 		if err != nil {
@@ -506,13 +530,13 @@ func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirNa
 
 		for _, info := range allItems {
 			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
-				readPath := blockRoot + unitsRootDirName + "/" + info.Name()
-				path := unitsRootDirName + "/" + info.Name()
+				readPath := cb.blockRoot + cb.unitsRootDirName + "/" + info.Name()
+				path := cb.unitsRootDirName + "/" + info.Name()
 				contentFile, err := readContentFileAttrs(path, readPath)
 				if err != nil {
 					return unitToContentFileMap, err
 				}
-				unitToContentFileMap[unitsDirName] = append(unitToContentFileMap[unitsDirName], contentFile)
+				unitToContentFileMap[cb.unitsDirName] = append(unitToContentFileMap[cb.unitsDirName], contentFile)
 			}
 		}
 	}
@@ -546,13 +570,13 @@ func buildUnitToContentFileMap(blockRoot, unitsDir, unitsDirName, unitsRootDirNa
 						return err
 					}
 
-					if len(blockRoot) > 0 && len(path) > len(blockRoot) && strings.HasSuffix(path, ".md") {
+					if len(cb.blockRoot) > 0 && len(path) > len(cb.blockRoot) && strings.HasSuffix(path, ".md") {
 						localPath := path
-						if blockRoot != "./" {
-							localPath = path[len(blockRoot):]
+						if cb.blockRoot != "./" {
+							localPath = path[len(cb.blockRoot):]
 						}
 
-						readPath := blockRoot + "/" + localPath
+						readPath := cb.blockRoot + "/" + localPath
 						contentFile, err := readContentFileAttrs(localPath, readPath)
 						if err != nil {
 							return err
