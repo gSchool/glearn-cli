@@ -1,18 +1,20 @@
 # Update Learn CLI
+
 Depending on how you installed your cli tool, please use the appropriate method to upgrade below:
 
 ## Homebrew
-Homebrew: `brew tap gSchool/learn && brew upgrade learn`
 
-## Binary download
-Binary download: Download new binaries from https://github.com/gSchool/glearn-cli/releases
+```
+brew tap gSchool/learn
+brew upgrade learn
+```
 
 ## Curl
-Mac users
+
 ```
-curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Darwin_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
+curl -sSL $(curl -sSL https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*$(uname -sm | sed 's/ /_/').tar.gz") | tar -C /usr/local/bin -xzf - learn
 ```
 
-Linux users
-```
-curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Linux_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
+## Binary download
+
+Download a new version from https://github.com/gSchool/glearn-cli/releases/latest

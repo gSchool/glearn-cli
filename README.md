@@ -1,69 +1,56 @@
-# learn-cli
+# Learn CLI
 
-This is the command line interface for developing, previewing, and publishing curriculum on Learn.
+The Learn CLI is the command line interface for developing, previewing, and publishing curriculum on Learn.
 
-## Option 1: Installation with Homebrew (using WSL2 on Windows)
+## Requirements
 
-### Install
+The learn command is supported on Mac, Linux, and Windows.
+
+## Installation
+
+### Option 1: Install with Homebrew (use WSL2 on Windows)
+
+The easiest installation is with Homebrew, which is for MacOS and Linux. Follow these directions to install Homebrew. Once installed, run these commands on your command line.
+
 ```
 brew tap gSchool/learn
-```
-```
 brew install learn
 ```
 
-### Set your API token
+### Option 2: Install with curl (use WSL2 on Windows)
+
+Use the command line utility `curl` to download and install the latest version. The learn command will be placed in the `/usr/local/bin` directory.
+
 ```
-learn set --api_token=[Your API Token from https://learn-2.galvanize.com/api_token]
-```
-
-## Option 2: Install binaries directly from Github
-
-### Download
-
-Download binaries for all platforms directly from
-https://github.com/gSchool/glearn-cli/releases
-
-Place in an appropriate location and include in your system Path so that commands can be called from any directory.
-
-### Set your API token
-```
-learn set --api_token=[Your API Token from https://learn-2.galvanize.com/api_token]
+curl -sSL $(curl -sSL https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*$(uname -sm | sed 's/ /_/').tar.gz") | tar -C /usr/local/bin -xzf - learn
 ```
 
-## Option 3: Install with curl (using WSL2 on Windows)
+### Option 3: Install binaries directly from GitHub
 
-### Curl commands
+Download binaries for all platforms directly from https://github.com/gSchool/glearn-cli/releases
 
-Mac users
-```
-curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Darwin_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
-```
+Place the `learn` executable in a location included in your `PATH` so that it can be called from any directory.
 
-Linux & WSL2 users
-```
-curl -L $(curl -s https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*Linux_x86_64.tar.gz") | tar -xzf - -C /usr/local/bin
-```
+## Set API Token
 
-Both of these commands should place the binary in a location that is already covered by your system Path.
+After installation, you must set your API token. Copy your token from https://learn-2.galvanize.com/api_token and run this command, replacing YOUR_LEARN_API_TOKEN with your token.
 
-### Set your API token
 ```
-learn set --api_token=[Your API Token from https://learn-2.galvanize.com/api_token]
+learn set --api_token=YOUR_LEARN_API_TOKEN
 ```
 
-## Get Started: Walkthrough
+## Confirm Installation
+Run the command
 
-Visit https://galvanize-learn.zendesk.com/hc/en-us/articles/1500000930401-Introduction for a short walkthrough to publish your first curriculum.
+```
+learn version
+```
 
-## Get Started: Quick Edits to Existing Curriculum
+You should get a response like
 
-1. Clone and edit curriculum
-2. Preview your changes. Run:
-    `learn preview -o <directory|file>`
-3. Git add / commit / push changes to the master branch
-4. Publish changes for any cohort in Learn. Run:
-    `learn publish`
+```
+v0.9.3
+```
 
 ## Help with other commands
 
@@ -71,56 +58,29 @@ Visit https://galvanize-learn.zendesk.com/hc/en-us/articles/1500000930401-Introd
 learn help
 ```
 
+## Get Started: Walkthrough
+
+Visit [Guru](https://app.getguru.com/boards/iEdB57dT/Creating-Content-in-Learn) for a short walkthrough to publish your first curriculum.
+
+### Get Started: Quick Edits to Existing Curriculum
+
+1. Clone and edit curriculum
+2. Preview your changes. Run:
+    `learn preview -o <directory|file>`
+3. Git add / commit / push changes to any branch
+4. Publish changes as a new Block revision. Run:
+    `learn publish`
+
 ## Update
-Depending on how you installed above--
 
-Homebrew: `brew upgrade learn`
-
-Binary download: Download new binaries from https://github.com/gSchool/glearn-cli/releases
-
-Curl: Run curl commands listed under "install" again.
+Follow the instructions in the [upgrade](./upgrade_instructions.md) document.
 
 ## Uninstall
 
 Homebrew: `brew uninstall learn`
 
-Other users: delete binary
+Other installations: delete `learn` executable
 
 ## Development
-Build
-```
-go build -o glearn-cli main.go
-```
 
-Run
-```
-./learn [commands...] [flags...]
-```
-
-Or for quicker iterations:
-```
-go run main.go [commands...] [flags...]
-```
-
-### Specifying Learn App URL
-
-By default, the CLI tool will use Learn's base url `https://learn-2.galvanize.com`. This value can be changed by exporting the environment variable `LEARN_BASE_URL` to specify the desired address. This is convenient for testing stage/PR environments.
-
-## Releases
-
-Create a github token with `repo` access. This gives you the ability to push releases and their binaries and allows glearn-cli write commits when necessary.
-
-Create a new semantic version tag (ex. v0.1.0)
-```
-git tag -a v0.1.0 -m "Some new release commit"
-```
-
-Push new tag
-```
-git push origin v0.1.0
-```
-
-To release run:
-```
-GITHUB_TOKEN=your_githhub_token ./release-new-version
-```
+To contribute, look at the [development](./development_instructions.md) instructions.
