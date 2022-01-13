@@ -170,7 +170,7 @@ preview and return/open the preview URL when it is complete.
 		printlnGreen("√")
 
 		// Removes artifacts on user's machine
-		defer removeArtifacts()
+		defer removeArtifacts(target)
 
 		// Open file so we can get a checksum as well as send to s3
 		f, err := os.Open(tmpZipFile)
@@ -248,7 +248,7 @@ preview and return/open the preview URL when it is complete.
 			CLIBenchmark: bench,
 		})
 		if err != nil {
-			removeArtifacts()
+			removeArtifacts(target)
 			learn.API.NotifySlack(err)
 			os.Exit(1)
 		}
@@ -438,7 +438,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 // artifacts are cleaned up with a call to removeArtifacts
 func previewCmdError(msg string) {
 	fmt.Println(msg)
-	removeArtifacts()
+	removeArtifacts("")
 	learn.API.NotifySlack(errors.New(msg))
 	os.Exit(1)
 }
@@ -592,7 +592,7 @@ func createChecksumFromZip(file *os.File) (string, error) {
 // removeArtifacts removes the tmp zipfile and the tmp single file preview directory (if there
 // was one) that were created for uploading to s3 and including local images. We wouldn't
 // want to leave artifacts on user's machines
-func removeArtifacts() {
+func removeArtifacts(target string) {
 	err := os.Remove(tmpZipFile)
 	if err != nil {
 		fmt.Println("Sorry, we had trouble cleaning up the zip file created for curriculum preview")
@@ -603,6 +603,27 @@ func removeArtifacts() {
 		err = os.RemoveAll(tmpSingleFileDir)
 		if err != nil {
 			fmt.Println("Sorry, we had trouble cleaning up the tmp single file preview directory")
+		}
+	}
+
+	// only attempt autoconfig cleanup if we've been given a target
+	if target == "" {
+		return
+	}
+
+	// If the command wasn't issued from the root of the git repository, remove autoconfig.yaml
+	targetAbsolutePath, err := filepath.Abs(target)
+	if err != nil {
+		return
+	}
+	topLevelDirectory, err := GitTopLevelDir()
+	if err != nil {
+		return
+	}
+	if _, err = os.Stat("autoconfig.yaml"); err == nil && targetAbsolutePath != topLevelDirectory {
+		err = os.Remove("autoconfig.yaml")
+		if err != nil {
+			fmt.Println("Sorry, we had trouble cleaning up the autoconfig.yaml created for curriculum preview")
 		}
 	}
 }

@@ -506,6 +506,32 @@ func printExtras(yamlText, path string) error {
 	return nil
 }
 
+func (cb *ConfigBuilder) singleUnitContentFileMap() (map[string][]ContentFileAttrs, error) {
+	unitToContentFileMap := map[string][]ContentFileAttrs{}
+	currentDirectory, err := os.Stat(cb.blockRoot)
+	if err != nil {
+		return unitToContentFileMap, err
+	}
+	if currentDirectory.IsDir() {
+		allItems, err := ioutil.ReadDir(cb.blockRoot)
+		if err != nil {
+			return unitToContentFileMap, err
+		}
+		for _, info := range allItems {
+			if info.Mode().IsRegular() && strings.HasSuffix(info.Name(), ".md") {
+				readPath := cb.blockRoot + info.Name()
+				path := info.Name()
+				contentFile, err := readContentFileAttrs(path, readPath)
+				if err != nil {
+					return unitToContentFileMap, err
+				}
+				unitToContentFileMap["Preview"] = append(unitToContentFileMap["Preview"], contentFile)
+			}
+		}
+	}
+	return unitToContentFileMap, nil
+}
+
 // buildUnitToContentFileMap reads contents from the unit directory and includes md files. It returns attributes from the header for each file
 // TODO refactor inputs, should be simplified like unitsDir is just the first and last inputs put together; example from test
 // bockRoot ../../fixtures/test-block-no-config/
@@ -516,11 +542,12 @@ func (cb *ConfigBuilder) buildUnitToContentFileMap() (map[string][]ContentFileAt
 	unitToContentFileMap := map[string][]ContentFileAttrs{}
 
 	// Check to see if units directory exists
-	_, err := os.Stat(cb.unitsDir)
+	_, unitDirErr := os.Stat(cb.unitsDir)
 
 	whereToLookForUnits := cb.blockRoot
 
-	if err == nil {
+	// If there's no error, we found the units directory
+	if unitDirErr == nil {
 		whereToLookForUnits = cb.unitsDir
 
 		allItems, err := ioutil.ReadDir(whereToLookForUnits)
@@ -552,6 +579,11 @@ func (cb *ConfigBuilder) buildUnitToContentFileMap() (map[string][]ContentFileAt
 		if info.IsDir() {
 			directories = append(directories, info.Name())
 		}
+	}
+
+	// if we found no directories, it's a preview, and there was no unit dir, treat the current directory as a unit to preview.
+	if (len(directories) == 1 && directories[0] == tmpSingleFileDir) && !cb.publishContext && unitDirErr != nil {
+		return cb.singleUnitContentFileMap()
 	}
 
 	if len(directories) > 0 {
