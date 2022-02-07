@@ -27,13 +27,13 @@ curl -sSL $(curl -sSL https://api.github.com/repos/gSchool/glearn-cli/releases/l
 
 ### Option 3: Install binaries directly from GitHub
 
-Download binaries for all platforms directly from https://github.com/gSchool/glearn-cli/releases
+Download binaries for all platforms directly from https://github.com/gSchool/glearn-cli/releases
 
 Place the `learn` executable in a location included in your `PATH` so that it can be called from any directory.
 
 ## Set API Token
 
-After installation, you must set your API token. Copy your token from https://learn-2.galvanize.com/api_token and run this command, replacing YOUR_LEARN_API_TOKEN with your token.
+After installation, you must set your API token. Copy your token from https://learn-2.galvanize.com/api_token and run this command, replacing YOUR_LEARN_API_TOKEN with your token.
 
 ```
 learn set --api_token=YOUR_LEARN_API_TOKEN
