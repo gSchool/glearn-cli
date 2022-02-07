@@ -2,12 +2,12 @@
 
 Build
 ```
-go build -o glearn-cli main.go
+go build -o glearn main.go
 ```
 
 Run
 ```
-./learn [commands...] [flags...]
+./glearn [commands...] [flags...]
 ```
 
 Or for quicker iterations:
