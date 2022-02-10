@@ -49,7 +49,7 @@ learn version
 You should get a response like
 
 ```
-v0.9.4
+v0.10.0
 ```
 
 ## Help with other commands
