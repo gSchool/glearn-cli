@@ -93,7 +93,11 @@ new block. If the block already exists, it will update the existing block.
 		}
 		fmt.Printf("Publishing block with repo name %s from branch %s\n", repoPieces.RepoName, branch)
 
-		if createdConfig {
+		if createdConfig && CiCdEnvironment {
+			fmt.Println("\nError: You cannot use autoconfig.yaml from a CI/CD environment.")
+			fmt.Println("Please create a config.yaml file and commit it.")
+			os.Exit(1)
+		} else if createdConfig {
 			fmt.Println("Committing autoconfig.yaml to", branch)
 			err = addAutoConfigAndCommit()
 
@@ -103,12 +107,15 @@ new block. If the block already exists, it will update the existing block.
 			}
 		}
 
-		fmt.Println("Pushing work to remote origin", branch)
+		// Do not push if in a CI/CD environment
+		if !CiCdEnvironment {
+			fmt.Println("Pushing work to remote origin", branch)
 
-		err = pushToRemote(branch)
-		if err != nil {
-			fmt.Printf("\nError pushing to origin remote on branch:\n\n%s", err)
-			os.Exit(1)
+			err = pushToRemote(branch)
+			if err != nil {
+				fmt.Printf("\nError pushing to origin remote on branch:\n\n%s", err)
+				os.Exit(1)
+			}
 		}
 
 		// Start benchmark for creating master release & building on learn
