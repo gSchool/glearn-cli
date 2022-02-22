@@ -37,6 +37,135 @@ const tmpZipFile string = "preview-curriculum.zip"
 // is the name of the tmp dir we build when needing to attach relative links.
 const tmpSingleFileDir string = "single-file-upload"
 
+type previewBuilder struct {
+	target              string
+	fileInfo            os.FileInfo
+	singleFileLinkPaths []string
+	dataPaths           []string
+	dockerPaths         []string
+	configYamlPaths     []string
+	startOfCmd          time.Time
+}
+
+func NewPreviewBuilder(args []string) (*previewBuilder, error) {
+	setupLearnAPI()
+
+	if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
+		return &previewBuilder{}, fmt.Errorf(setAPITokenMessage)
+	}
+
+	// Takes one argument which is the filepath to the directory/file you want zipped and previewed
+	if len(args) != 1 {
+		return &previewBuilder{}, fmt.Errorf("Usage: `learn preview` takes just one argument")
+	}
+
+	fileInfo, err := os.Stat(args[0])
+	if err != nil {
+		return &previewBuilder{}, fmt.Errorf("Failed to get stats on file. Err: %v", err)
+	}
+	p := &previewBuilder{
+		target:              args[0],
+		fileInfo:            fileInfo,
+		singleFileLinkPaths: []string{},
+		dataPaths:           []string{},
+		dockerPaths:         []string{},
+		configYamlPaths:     []string{},
+		startOfCmd:          time.Now(),
+	}
+
+	if p.invalidPreviewTarget() {
+		return &previewBuilder{}, fmt.Errorf("The preview file that you chose is not able to be rendered as a single file preview in learn")
+	}
+
+	return p, nil
+}
+
+func (p *previewBuilder) collectPaths() error {
+	// collect nothing if we do not include links
+	if !p.includesLinks() || filepath.Ext(p.target) != ".md" {
+		return nil
+	}
+
+	dataPaths, err := collectDataPaths(p.target)
+	if err != nil {
+		return fmt.Errorf("Failed to attach local images for single file preview for: (%s). Err: %v", p.target, err)
+	}
+	singleFileLinkPaths, dockerPaths, err := collectResourcePaths(p.target)
+	if err != nil {
+		return fmt.Errorf("Failed to attach local images for single file preview for: (%s). Err: %v", p.target, err)
+	}
+
+	p.dataPaths = dataPaths
+	p.singleFileLinkPaths = singleFileLinkPaths
+	p.dockerPaths = dockerPaths
+
+	return nil
+}
+
+func (p *previewBuilder) buildAlternateTarget() error {
+	paths := append(p.singleFileLinkPaths, p.dataPaths...)
+	alternateTarget, err := createNewTarget(p.target, paths, p.dockerPaths)
+	if err != nil {
+		return err
+	}
+
+	// reset target if there has been a new one created
+	if alternateTarget != "" {
+		p.target = alternateTarget
+	}
+	return nil
+}
+
+func (p *previewBuilder) setConfigYamlPaths() error {
+	_, err := previewFindOrCreateConfig(p.target, p.isSingleFilePreview(), p.dockerPaths)
+	if err != nil {
+		return fmt.Errorf("Failed to find or create a config file for: (%s).\nErr: %v", p.target, err)
+	}
+
+	configYamlPaths, err = parseConfigAndGatherLinkedPaths(p.target)
+	if err != nil {
+		return fmt.Errorf("Failed to parse config/autoconfig yaml for: (%s).\nErr: %v", p.target, err)
+	}
+	p.configYamlPaths = configYamlPaths
+
+	return nil
+}
+
+// invalidForPreview requires that non-dierctory targets be of markdown or ipynb type
+func (p *previewBuilder) invalidPreviewTarget() bool {
+	return !p.fileInfo.IsDir() && (!strings.HasSuffix(p.target, ".md") && !strings.HasSuffix(p.target, ".ipynb"))
+}
+
+// includesLinks reports if the target file info is not a directory and not overidden by the FileOnly flag
+func (p *previewBuilder) includesLinks() bool {
+	return !p.fileInfo.IsDir() && !FileOnly
+}
+
+func (p *previewBuilder) fileContainsLinks() bool {
+	return len(p.singleFileLinkPaths) > 0
+}
+
+func (p *previewBuilder) fileContainsSQLPaths() bool {
+	return len(p.dataPaths) > 0
+}
+
+func (p *previewBuilder) fileContainsDocker() bool {
+	return len(p.dockerPaths) > 0
+}
+
+func (p *previewBuilder) containsAnyResources() bool {
+	return p.fileContainsLinks() || p.fileContainsSQLPaths() || p.fileContainsDocker()
+}
+
+func (p *previewBuilder) isSingleFilePreview() bool {
+	return !p.isDirectory() && p.containsAnyResources()
+}
+
+// isDirectory reports if either the target is a directory, or if the target contains resources and a directory is required for content
+func (p *previewBuilder) isDirectory() bool {
+	p.fileInfo.IsDir() || (!p.fileInfo.IsDir() && (p.fileContainsLinks() || p.fileContainsDocker()))
+}
+
 // previewCmd is executed when the `learn preview` command is used. Preview's concerns:
 // 1. Compress directory/file into target location.
 // 2. Defer cleaning up the file after command is finished.
@@ -54,93 +183,97 @@ preview and return/open the preview URL when it is complete.
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// Start benchmarking the total time spent in preview cmd
-		startOfCmd := time.Now()
-
-		setupLearnAPI()
-
-		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			previewCmdError(setAPITokenMessage)
-		}
-
-		// Takes one argument which is the filepath to the directory you want zipped/previewed
-		if len(args) != 1 {
-			previewCmdError("Usage: `learn preview` takes just one argument")
-			return
-		}
-
-		// Set target file path
-		target := args[0]
 
 		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
-		fileInfo, err := os.Stat(target)
+		// fileInfo, err := os.Stat(target) //--a
+		// if err != nil { //--a
+		// 	previewCmdError(fmt.Sprintf("Failed to get stats on file. Err: %v", err)) //--a
+		// 	return //--a
+		// } //--a
+		// isDirectory := fileInfo.IsDir() //--a
+		// includeLinks := !isDirectory && !FileOnly // not a dir, false //--a
+		// if !isDirectory && (!strings.HasSuffix(target, ".md") && !strings.HasSuffix(target, ".ipynb")) { //--a
+		// 	previewCmdError("The preview file that you chose is not able to be rendered as a single file preview in learn") //--a
+		// 	return //--a
+		// } //--a
+
+		err, previewer := NewPreviewBuilder(args)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to get stats on file. Err: %v", err))
+			previewCmdError(fmt.Sprintf("%v", err))
 			return
 		}
-		isDirectory := fileInfo.IsDir()
-		includeLinks := !isDirectory && !FileOnly // not a dir, false
 
-		if !isDirectory && (!strings.HasSuffix(target, ".md") && !strings.HasSuffix(target, ".ipynb")) {
-			previewCmdError("The preview file that you chose is not able to be rendered as a single file preview in learn")
+		err = previewer.collectPaths()
+		if err != nil {
+			previewCmdError(fmt.Sprintf("%v", err))
 			return
 		}
 
 		// If it is a single file preview we need to parse the target for any md link tags
 		// linking to local files. If there are any, add them to the target
-		var singleFileLinkPaths []string
-		var dataPaths []string
-		var dockerPaths []string
-		if includeLinks {
-			if filepath.Ext(target) == ".md" {
-				dataPaths, _ = collectDataPaths(target)
-				singleFileLinkPaths, dockerPaths, err = collectResourcePaths(target)
-				if err != nil {
-					previewCmdError(fmt.Sprintf("Failed to attach local images for single file preview for: (%s). Err: %v", target, err))
-					return
-				}
-			} else {
-				previewCmdError("Sorry we only support markdown files for single file previews")
-				return
-			}
-		}
-		fileContainsLinks := len(singleFileLinkPaths) > 0
-		fileContainsSQLPaths := len(dataPaths) > 0
-		fileContainsDocker := len(dockerPaths) > 0
+		// var singleFileLinkPaths []string //--a
+		// var dataPaths []string //--a
+		// var dockerPaths []string //--a
+		// if previewer.includesLinks() { \\--a
+		// 	if filepath.Ext(target) == ".md" { \\--a
+		// 		dataPaths, _ = collectDataPaths(target) \\--a
+		// 		singleFileLinkPaths, dockerPaths, err = collectResourcePaths(target) \\--a
+		// 		if err != nil { \\--a
+		// 			previewCmdError(fmt.Sprintf("Failed to attach local images for single file preview for: (%s). Err: %v", target, err)) \\--a
+		// 			return \\--a
+		// 		} \\--a
+		// 	} else { \\--a
+		// 		previewCmdError("Sorry we only support markdown files for single file previews") \\--a
+		// 		return \\--a
+		// 	} \\--a
+		// } \\--a
+		// fileContainsLinks := len(singleFileLinkPaths) > 0 \\--a
+		// fileContainsSQLPaths := len(dataPaths) > 0 \\--a
+		// fileContainsDocker := len(dockerPaths) > 0 \\--a
 
 		// variable holding whether or not source is a dir OR when it is a single file preview
 		// AND singleFileLinkPaths is > 0 that means it is now a dir again (tmp one we created)
-		isDirectory = isDirectory || (!isDirectory && (fileContainsLinks || fileContainsDocker))
+		// isDirectory = isDirectory || (!isDirectory && (fileContainsLinks || fileContainsDocker)) \\--a
 
-		var alternateTarget string
-		if fileContainsLinks || fileContainsSQLPaths || fileContainsDocker {
-			paths := append(singleFileLinkPaths, dataPaths...)
-			alternateTarget, err = createNewTarget(target, paths, dockerPaths)
+		// if fileContainsLinks || fileContainsSQLPaths || fileContainsDocker {
+		//  paths := append(singleFileLinkPaths, dataPaths...)
+		//  alternateTarget, err = createNewTarget(target, paths, dockerPaths)
+		//  if err != nil {
+		//  	previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
+		//  	return
+		//  }
+		// }
+		if previewer.containsAnyResources() {
+			err = previewer.buildAlternateTarget()
 			if err != nil {
-				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
+				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", previewer.target, err))
 				return
 			}
 		}
 
-		if alternateTarget != "" {
-			target = alternateTarget
-		}
+		//var configYamlPaths []string
+		//// Detect config file and paths
+		//if fileContainsLinks || fileContainsSQLPaths || isDirectory || fileContainsDocker {
+		//	isSingleFilePreview := !isDirectory && (fileContainsLinks || fileContainsSQLPaths || fileContainsDocker)
+		//	_, err = previewFindOrCreateConfig(target, isSingleFilePreview, dockerPaths)
+		//	if err != nil {
+		//		previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s).\nErr: %v", target, err))
+		//		return
+		//	}
 
-		var configYamlPaths []string
-		// Detect config file and paths
-		if fileContainsLinks || fileContainsSQLPaths || isDirectory || fileContainsDocker {
-			isSingleFilePreview := !isDirectory && (fileContainsLinks || fileContainsSQLPaths || fileContainsDocker)
-			_, err = previewFindOrCreateConfig(target, isSingleFilePreview, dockerPaths)
+		//	configYamlPaths, err = parseConfigAndGatherLinkedPaths(target)
+		//	if err != nil {
+		//		previewCmdError(fmt.Sprintf("Failed to parse config/autoconfig yaml for: (%s).\nErr: %v", target, err))
+		//	}
+
+		//}
+
+		if previewer.containsAnyResources() || p.isDirectory() {
+			err = previewer.setConfigYamlPaths()
 			if err != nil {
-				previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s).\nErr: %v", target, err))
+				previewCmdError(fmt.Sprintf("%v", err))
 				return
 			}
-
-			configYamlPaths, err = parseConfigAndGatherLinkedPaths(target)
-			if err != nil {
-				previewCmdError(fmt.Sprintf("Failed to parse config/autoconfig yaml for: (%s).\nErr: %v", target, err))
-			}
-
 		}
 
 		// Start a processing spinner that runs until a user's content is compressed
@@ -153,9 +286,10 @@ preview and return/open the preview URL when it is complete.
 		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpZipFile
-		err = compressDirectory(target, tmpZipFile, configYamlPaths, append(dockerPaths, dataPaths...))
+		//err = compressDirectory(target, tmpZipFile, configYamlPaths, append(dockerPaths, dataPaths...))
+		err = previewer.compressDirectory(tmpZipFile)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", target, err))
+			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", previewer.target, err))
 			return
 		}
 
@@ -211,7 +345,7 @@ preview and return/open the preview URL when it is complete.
 		startBuildAndPollRelease := time.Now()
 
 		// Let Learn know there is new preview content on s3, where it is, and to build it
-		res, err := learn.API.BuildReleaseFromS3(bucketKey, (isDirectory || fileContainsSQLPaths || fileContainsDocker))
+		res, err := learn.API.BuildReleaseFromS3(bucketKey, (p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker()))
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to build new preview content in learn. Err: %v", err))
 			return
@@ -220,9 +354,9 @@ preview and return/open the preview URL when it is complete.
 		// If content is a directory, rewrite the res from polling for build response. Directories
 		// can take much longer to build, however single files build instantly so we do not need to
 		// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
-		if isDirectory || fileContainsSQLPaths || fileContainsDocker {
+		if p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker() {
 			var attempts uint8 = 30
-			res, err = learn.API.PollForBuildResponse(res.ReleaseID, fileInfo.IsDir(), fileInfo.Name(), &attempts)
+			res, err = learn.API.PollForBuildResponse(res.ReleaseID, previewer.fileInfo.IsDir(), previewer.fileInfo.Name(), &attempts)
 			if err != nil {
 				previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
 				return
@@ -231,7 +365,7 @@ preview and return/open the preview URL when it is complete.
 
 		// Add benchmark in milliseconds for the Learn build stage and total time in preview cmd
 		bench.LearnBuild = time.Since(startBuildAndPollRelease).Milliseconds()
-		bench.TotalCmdTime = time.Since(startOfCmd).Milliseconds()
+		bench.TotalCmdTime = time.Since(previewer.startOfCmd).Milliseconds()
 
 		// Set final message for display
 		s.FinalMSG = fmt.Sprintf("Successfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
@@ -713,9 +847,10 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 // and a target file path (where to put the zip file) and recursively compresses the source.
 // Source can either be a directory or a single file. When singleFile is true, all files in
 // the zip are added. resourcePaths specify non-config paths which should be included in the zip.
-func compressDirectory(source, target string, configYamlPaths, resourcePaths []string) error {
-	// Create file with target name and defer its closing
-	zipfile, err := os.Create(target)
+func (p *previewBuilder) compressDirectory(zipTarget string) error {
+	resourcePaths := append(p.dockerPaths, p.dataPaths...)
+	// Create file with zipTarget name and defer its closing
+	zipfile, err := os.Create(zipTarget)
 	if err != nil {
 		return err
 	}
@@ -726,7 +861,7 @@ func compressDirectory(source, target string, configYamlPaths, resourcePaths []s
 	defer archive.Close()
 
 	// Get os.FileInfo about our source
-	info, err := os.Stat(source)
+	info, err := os.Stat(p.target)
 	if err != nil {
 		return nil
 	}
@@ -734,7 +869,7 @@ func compressDirectory(source, target string, configYamlPaths, resourcePaths []s
 	// Check to see if the provided source file is a directory and set baseDir if so
 	var baseDir string
 	if info.IsDir() {
-		baseDir = filepath.Base(source)
+		baseDir = filepath.Base(p.target)
 	}
 
 	// Walk the whole filepath
@@ -742,7 +877,7 @@ func compressDirectory(source, target string, configYamlPaths, resourcePaths []s
 		path = filepath.ToSlash(path)
 
 		fileIsIncluded := false
-		for _, p := range configYamlPaths {
+		for _, p := range p.configYamlPaths {
 			var configPathSplits = strings.Split(p, string(os.PathSeparator))
 			var fileName = configPathSplits[len(configPathSplits)-1]
 			if strings.Contains(path, fileName) {
@@ -754,7 +889,7 @@ func compressDirectory(source, target string, configYamlPaths, resourcePaths []s
 				fileIsIncluded = true
 			}
 		}
-		if len(configYamlPaths) == 0 && !info.IsDir() {
+		if len(p.configYamlPaths) == 0 && !info.IsDir() {
 			// This accounts for the single file preview which won't have yaml files and won't be a directory
 			fileIsIncluded = true
 		}
