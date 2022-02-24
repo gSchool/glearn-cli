@@ -45,6 +45,7 @@ type previewBuilder struct {
 	dockerPaths         []string
 	configYamlPaths     []string
 	startOfCmd          time.Time
+	bench               *learn.CLIBenchmark
 }
 
 func NewPreviewBuilder(args []string) (*previewBuilder, error) {
@@ -71,6 +72,7 @@ func NewPreviewBuilder(args []string) (*previewBuilder, error) {
 		dockerPaths:         []string{},
 		configYamlPaths:     []string{},
 		startOfCmd:          time.Now(),
+		startOfCompression:  time.Time{},
 	}
 
 	if p.invalidPreviewTarget() {
@@ -80,12 +82,14 @@ func NewPreviewBuilder(args []string) (*previewBuilder, error) {
 	return p, nil
 }
 
+// collectPaths reads from a file and collects required docker paths, file link paths, and other resources needed for preview
 func (p *previewBuilder) collectPaths() error {
 	// collect nothing if we do not include links
 	if !p.includesLinks() || filepath.Ext(p.target) != ".md" {
 		return nil
 	}
 
+	// TODO collectDataPaths and collectResourcePaths parse the file twice, should be able to do this in one pass
 	dataPaths, err := collectDataPaths(p.target)
 	if err != nil {
 		return fmt.Errorf("Failed to attach local images for single file preview for: (%s). Err: %v", p.target, err)
@@ -122,13 +126,40 @@ func (p *previewBuilder) setConfigYamlPaths() error {
 		return fmt.Errorf("Failed to find or create a config file for: (%s).\nErr: %v", p.target, err)
 	}
 
-	configYamlPaths, err = parseConfigAndGatherLinkedPaths(p.target)
+	configYamlPaths, err := parseConfigAndGatherLinkedPaths(p.target)
 	if err != nil {
 		return fmt.Errorf("Failed to parse config/autoconfig yaml for: (%s).\nErr: %v", p.target, err)
 	}
 	p.configYamlPaths = configYamlPaths
 
 	return nil
+}
+
+func (p *previewBuilder) uploadZip(tmpZipFile string) (bucketKey string, err error) {
+	f, err := os.Open(tmpZipFile)
+	if err != nil {
+		return bucketKey, fmt.Errorf("Failed opening file (%q). Err: %v", tmpZipFile, err)
+	}
+	defer f.Close()
+
+	// Create checksum of files in directory
+	checksum, err := createChecksumFromZip(f)
+	if err != nil {
+		return bucketKey, fmt.Errorf("Failed to create a checksum for compressed file. Err: %v", err)
+	}
+
+	// Start benchmark for uploadToS3
+	startOfUploadToS3 := time.Now()
+
+	// Send compressed zip file to s3
+	bucketKey, err = uploadToS3(f, checksum, learn.API.Credentials)
+	if err != nil {
+		return bucketKey, fmt.Errorf("Failed to upload zip file to s3. Err: %v", err)
+	}
+
+	// Add benchmark in milliseconds for uploadToS3
+	p.bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
+	return bucketKey, nil
 }
 
 // invalidForPreview requires that non-dierctory targets be of markdown or ipynb type
@@ -197,7 +228,7 @@ preview and return/open the preview URL when it is complete.
 		// 	return //--a
 		// } //--a
 
-		err, previewer := NewPreviewBuilder(args)
+		previewer, err := NewPreviewBuilder(args)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("%v", err))
 			return
@@ -268,22 +299,13 @@ preview and return/open the preview URL when it is complete.
 
 		//}
 
-		if previewer.containsAnyResources() || p.isDirectory() {
+		if previewer.containsAnyResources() || previewer.isDirectory() {
 			err = previewer.setConfigYamlPaths()
 			if err != nil {
 				previewCmdError(fmt.Sprintf("%v", err))
 				return
 			}
 		}
-
-		// Start a processing spinner that runs until a user's content is compressed
-		fmt.Println("Compressing your content...")
-		s := spinner.New(spinner.CharSets[26], 100*time.Millisecond)
-		s.Color("blue")
-		s.Start()
-
-		// Start benchmark for compressDirectory
-		startOfCompression := time.Now()
 
 		// Compress directory, output -> tmpZipFile
 		//err = compressDirectory(target, tmpZipFile, configYamlPaths, append(dockerPaths, dataPaths...))
@@ -294,45 +316,53 @@ preview and return/open the preview URL when it is complete.
 		}
 
 		// Add benchmark in milliseconds for compressDirectory
-		bench := &learn.CLIBenchmark{
-			Compression: time.Since(startOfCompression).Milliseconds(),
-			CmdName:     "preview",
-		}
+		//bench := &learn.CLIBenchmark{
+		//	Compression: time.Since(startOfCompression).Milliseconds(),
+		//	CmdName:     "preview",
+		//}
 
 		// Stop the processing spinner
-		s.Stop()
-		printlnGreen("√")
+		//s.Stop()
+		//printlnGreen("√")
 
 		// Removes artifacts on user's machine
 		defer removeArtifacts()
 
+		bucketKey, err = previewer.uploadZip(tmpZipFile)
+		if err != nil {
+			previewCmdError(fmt.Sprintf("%v", err))
+			return
+		}
+
+		// BEGIN S3 UPLOAD
 		// Open file so we can get a checksum as well as send to s3
-		f, err := os.Open(tmpZipFile)
-		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed opening file (%q). Err: %v", tmpZipFile, err))
-			return
-		}
-		defer f.Close()
+		//f, err := os.Open(tmpZipFile)
+		//if err != nil {
+		//	previewCmdError(fmt.Sprintf("Failed opening file (%q). Err: %v", tmpZipFile, err))
+		//	return
+		//}
+		//defer f.Close()
 
-		// Create checksum of files in directory
-		checksum, err := createChecksumFromZip(f)
-		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to create a checksum for compressed file. Err: %v", err))
-			return
-		}
+		//// Create checksum of files in directory
+		//checksum, err := createChecksumFromZip(f)
+		//if err != nil {
+		//	previewCmdError(fmt.Sprintf("Failed to create a checksum for compressed file. Err: %v", err))
+		//	return
+		//}
 
-		// Start benchmark for uploadToS3
-		startOfUploadToS3 := time.Now()
+		//// Start benchmark for uploadToS3
+		//startOfUploadToS3 := time.Now()
 
-		// Send compressed zip file to s3
-		bucketKey, err := uploadToS3(f, checksum, learn.API.Credentials)
-		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to upload zip file to s3. Err: %v", err))
-			return
-		}
+		//// Send compressed zip file to s3
+		//bucketKey, err := uploadToS3(f, checksum, learn.API.Credentials)
+		//if err != nil {
+		//	previewCmdError(fmt.Sprintf("Failed to upload zip file to s3. Err: %v", err))
+		//	return
+		//}
 
-		// Add benchmark in milliseconds for uploadToS3
-		bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
+		//// Add benchmark in milliseconds for uploadToS3
+		//bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
+		// END S3 UPLOAD
 
 		fmt.Println("\nBuilding preview...")
 
@@ -345,7 +375,7 @@ preview and return/open the preview URL when it is complete.
 		startBuildAndPollRelease := time.Now()
 
 		// Let Learn know there is new preview content on s3, where it is, and to build it
-		res, err := learn.API.BuildReleaseFromS3(bucketKey, (p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker()))
+		res, err := learn.API.BuildReleaseFromS3(bucketKey, (previewer.isDirectory() || previewer.fileContainsSQLPaths() || previewer.fileContainsDocker()))
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to build new preview content in learn. Err: %v", err))
 			return
@@ -848,6 +878,15 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 // Source can either be a directory or a single file. When singleFile is true, all files in
 // the zip are added. resourcePaths specify non-config paths which should be included in the zip.
 func (p *previewBuilder) compressDirectory(zipTarget string) error {
+	// Start a processing spinner that runs until a user's content is compressed
+	fmt.Println("Compressing your content...")
+	zipSpinner := spinner.New(spinner.CharSets[26], 100*time.Millisecond)
+	zipSpinner.Color("blue")
+	zipSpinner.Start()
+
+	// Start benchmark for compressDirectory
+	startOfCompression := time.Now()
+
 	resourcePaths := append(p.dockerPaths, p.dataPaths...)
 	// Create file with zipTarget name and defer its closing
 	zipfile, err := os.Create(zipTarget)
@@ -873,7 +912,7 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 	}
 
 	// Walk the whole filepath
-	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(p.target, func(path string, info os.FileInfo, err error) error {
 		path = filepath.ToSlash(path)
 
 		fileIsIncluded := false
@@ -958,6 +997,14 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 
 		return err
 	})
+
+	p.bench = &learn.CLIBenchmark{
+		Compression: time.Since(startOfCompression).Milliseconds(),
+		CmdName:     "preview",
+	}
+
+	zipSpinner.Stop()
+	printlnGreen("√")
 
 	return err
 }
