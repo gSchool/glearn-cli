@@ -135,6 +135,146 @@ func (p *previewBuilder) setConfigYaml() error {
 	return nil
 }
 
+// compressDirectory takes a source file path (where the content you want zipped lives)
+// and a target file path (where to put the zip file) and recursively compresses the source.
+// Source can either be a directory or a single file. When singleFile is true, all files in
+// the zip are added. resourcePaths specify non-config paths which should be included in the zip.
+func (p *previewBuilder) compressDirectory(zipTarget string) error {
+	// Start a processing spinner that runs until a user's content is compressed
+	fmt.Println("Compressing your content...")
+	zipSpinner := spinner.New(spinner.CharSets[26], 100*time.Millisecond)
+	zipSpinner.Color("blue")
+	zipSpinner.Start()
+
+	// Start benchmark for compressDirectory
+	startOfCompression := time.Now()
+
+	resourcePaths := append(p.dockerPaths, p.dataPaths...)
+	// Create file with zipTarget name and defer its closing
+	zipfile, err := os.Create(zipTarget)
+	if err != nil {
+		return err
+	}
+	defer zipfile.Close()
+
+	// Create a new zip writer and pass our zipfile in
+	archive := zip.NewWriter(zipfile)
+	defer archive.Close()
+
+	// Get os.FileInfo about our source
+	info, err := os.Stat(p.target)
+	if err != nil {
+		return nil
+	}
+
+	// Check to see if the provided source file is a directory and set baseDir if so
+	var baseDir string
+	if info.IsDir() {
+		baseDir = filepath.Base(p.target)
+	}
+
+	// Walk the whole filepath
+	filepath.Walk(p.target, func(path string, info os.FileInfo, err error) error {
+		path = filepath.ToSlash(path)
+
+		fileIsIncluded := false
+		for _, p := range p.configYamlPaths {
+			var configPathSplits = strings.Split(p, string(os.PathSeparator))
+			var fileName = configPathSplits[len(configPathSplits)-1]
+			if strings.Contains(path, fileName) {
+				fileIsIncluded = true
+			}
+		}
+		for _, d := range resourcePaths {
+			if strings.Contains(path, d) {
+				fileIsIncluded = true
+			}
+		}
+		if len(p.configYamlPaths) == 0 && !info.IsDir() {
+			// This accounts for the single file preview which won't have yaml files and won't be a directory
+			fileIsIncluded = true
+		}
+
+		var isConfigFile = strings.Contains(path, "config.yml") || strings.Contains(path, "config.yaml") || strings.Contains(path, "autoconfig.yaml")
+		ext := filepath.Ext(path)
+		// Ignoring all files over 1mb for preivew and warning users if the file is over 20mb that it will be ignored in publish action as well.
+		if !info.IsDir() && info.Size() > 1000000 && !strings.Contains(path, ".git/") {
+			if path == "preview-curriculum.zip" { // don't warn on preview-curriculum, it gets read here but still cleaned up
+				return nil
+			}
+			if info.Size() > 20000000 {
+				fmt.Printf("\nWARNING: Ignoring File For Preview: File chosen/linked is too large to preview and too large to publish: %s\n", path)
+			} else {
+				fmt.Printf("\nWARNING: Ignoring File For Preview: File chosen/linked is too large to preview, but will successfully publish: %s\n", path)
+			}
+			return nil
+		}
+
+		if isConfigFile || fileIsIncluded || (info.IsDir() && !strings.Contains(path, ".git/") && (ext != ".git" && path != "node_modules")) {
+			if err != nil {
+				return err
+			}
+
+			// Creates a partially-populated FileHeader from an os.FileInfo
+			header, err := zip.FileInfoHeader(info)
+			if err != nil {
+				return err
+			}
+
+			// Check if baseDir has been set (from the IsDir check) and if it has not been
+			// set, update the header.Name to reflect the correct path
+			if baseDir != "" {
+				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, p.target))
+			}
+
+			// Check if the file we are iterating is a directory and update the header.Name
+			// or the header.Method appropriately
+			if info.IsDir() {
+				header.Name += string(os.PathSeparator)
+			} else {
+				header.Method = zip.Deflate
+			}
+
+			//  Add a file to the zip archive using the provided FileHeader for the file metadata
+			writer, err := archive.CreateHeader(header)
+			if err != nil {
+				return err
+			}
+
+			// Return nil if at this point if info is a directory
+			if info.IsDir() {
+				return nil
+			}
+
+			// If it was not a directory, we open the file and copy it into the archive writer
+			// ignore zip files
+			file, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+
+			_, err = io.Copy(writer, file)
+			if err != nil {
+				return err
+			}
+		}
+
+		return err
+	})
+
+	p.bench = &learn.CLIBenchmark{
+		Compression: time.Since(startOfCompression).Milliseconds(),
+		CmdName:     "preview",
+	}
+
+	zipSpinner.Stop()
+	printlnGreen("√")
+
+	return err
+}
+
+// uploadZip is responsible for taking a compressed preview directory and uploading it to be built by Learn.
 func (p *previewBuilder) uploadZip(tmpZipFile string) (bucketKey string, err error) {
 	f, err := os.Open(tmpZipFile)
 	if err != nil {
@@ -162,6 +302,7 @@ func (p *previewBuilder) uploadZip(tmpZipFile string) (bucketKey string, err err
 	return bucketKey, nil
 }
 
+// buildLearnPreview triggers the Learn preview building process and montiors its completion via polling
 func (p *previewBuilder) buildLearnPreview(bucketKey string) error {
 	fmt.Println("\nBuilding preview...")
 
@@ -260,20 +401,6 @@ preview and return/open the preview URL when it is complete.
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-
-		// Get os.FileInfo from call to os.Stat so we can see if it is a single file or directory
-		// fileInfo, err := os.Stat(target) //--a
-		// if err != nil { //--a
-		// 	previewCmdError(fmt.Sprintf("Failed to get stats on file. Err: %v", err)) //--a
-		// 	return //--a
-		// } //--a
-		// isDirectory := fileInfo.IsDir() //--a
-		// includeLinks := !isDirectory && !FileOnly // not a dir, false //--a
-		// if !isDirectory && (!strings.HasSuffix(target, ".md") && !strings.HasSuffix(target, ".ipynb")) { //--a
-		// 	previewCmdError("The preview file that you chose is not able to be rendered as a single file preview in learn") //--a
-		// 	return //--a
-		// } //--a
-
 		previewer, err := NewPreviewBuilder(args)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("%v", err))
@@ -286,40 +413,6 @@ preview and return/open the preview URL when it is complete.
 			return
 		}
 
-		// If it is a single file preview we need to parse the target for any md link tags
-		// linking to local files. If there are any, add them to the target
-		// var singleFileLinkPaths []string //--a
-		// var dataPaths []string //--a
-		// var dockerPaths []string //--a
-		// if previewer.includesLinks() { \\--a
-		// 	if filepath.Ext(target) == ".md" { \\--a
-		// 		dataPaths, _ = collectDataPaths(target) \\--a
-		// 		singleFileLinkPaths, dockerPaths, err = collectResourcePaths(target) \\--a
-		// 		if err != nil { \\--a
-		// 			previewCmdError(fmt.Sprintf("Failed to attach local images for single file preview for: (%s). Err: %v", target, err)) \\--a
-		// 			return \\--a
-		// 		} \\--a
-		// 	} else { \\--a
-		// 		previewCmdError("Sorry we only support markdown files for single file previews") \\--a
-		// 		return \\--a
-		// 	} \\--a
-		// } \\--a
-		// fileContainsLinks := len(singleFileLinkPaths) > 0 \\--a
-		// fileContainsSQLPaths := len(dataPaths) > 0 \\--a
-		// fileContainsDocker := len(dockerPaths) > 0 \\--a
-
-		// variable holding whether or not source is a dir OR when it is a single file preview
-		// AND singleFileLinkPaths is > 0 that means it is now a dir again (tmp one we created)
-		// isDirectory = isDirectory || (!isDirectory && (fileContainsLinks || fileContainsDocker)) \\--a
-
-		// if fileContainsLinks || fileContainsSQLPaths || fileContainsDocker {
-		//  paths := append(singleFileLinkPaths, dataPaths...)
-		//  alternateTarget, err = createNewTarget(target, paths, dockerPaths)
-		//  if err != nil {
-		//  	previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", target, err))
-		//  	return
-		//  }
-		// }
 		if previewer.containsAnyResources() {
 			err = previewer.buildAlternateTarget()
 			if err != nil {
@@ -327,23 +420,6 @@ preview and return/open the preview URL when it is complete.
 				return
 			}
 		}
-
-		//var configYamlPaths []string
-		//// Detect config file and paths
-		//if fileContainsLinks || fileContainsSQLPaths || isDirectory || fileContainsDocker {
-		//	isSingleFilePreview := !isDirectory && (fileContainsLinks || fileContainsSQLPaths || fileContainsDocker)
-		//	_, err = previewFindOrCreateConfig(target, isSingleFilePreview, dockerPaths)
-		//	if err != nil {
-		//		previewCmdError(fmt.Sprintf("Failed to find or create a config file for: (%s).\nErr: %v", target, err))
-		//		return
-		//	}
-
-		//	configYamlPaths, err = parseConfigAndGatherLinkedPaths(target)
-		//	if err != nil {
-		//		previewCmdError(fmt.Sprintf("Failed to parse config/autoconfig yaml for: (%s).\nErr: %v", target, err))
-		//	}
-
-		//}
 
 		if previewer.containsAnyResources() || previewer.isDirectory() {
 			err = previewer.setConfigYaml()
@@ -353,23 +429,11 @@ preview and return/open the preview URL when it is complete.
 			}
 		}
 
-		// Compress directory, output -> tmpZipFile
-		//err = compressDirectory(target, tmpZipFile, configYamlPaths, append(dockerPaths, dataPaths...))
 		err = previewer.compressDirectory(tmpZipFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", previewer.target, err))
 			return
 		}
-
-		// Add benchmark in milliseconds for compressDirectory
-		//bench := &learn.CLIBenchmark{
-		//	Compression: time.Since(startOfCompression).Milliseconds(),
-		//	CmdName:     "preview",
-		//}
-
-		// Stop the processing spinner
-		//s.Stop()
-		//printlnGreen("√")
 
 		// Removes artifacts on user's machine
 		defer removeArtifacts()
@@ -379,81 +443,6 @@ preview and return/open the preview URL when it is complete.
 			previewCmdError(fmt.Sprintf("%v", err))
 			return
 		}
-
-		// BEGIN S3 UPLOAD
-		// Open file so we can get a checksum as well as send to s3
-		//f, err := os.Open(tmpZipFile)
-		//if err != nil {
-		//	previewCmdError(fmt.Sprintf("Failed opening file (%q). Err: %v", tmpZipFile, err))
-		//	return
-		//}
-		//defer f.Close()
-
-		//// Create checksum of files in directory
-		//checksum, err := createChecksumFromZip(f)
-		//if err != nil {
-		//	previewCmdError(fmt.Sprintf("Failed to create a checksum for compressed file. Err: %v", err))
-		//	return
-		//}
-
-		//// Start benchmark for uploadToS3
-		//startOfUploadToS3 := time.Now()
-
-		//// Send compressed zip file to s3
-		//bucketKey, err := uploadToS3(f, checksum, learn.API.Credentials)
-		//if err != nil {
-		//	previewCmdError(fmt.Sprintf("Failed to upload zip file to s3. Err: %v", err))
-		//	return
-		//}
-
-		//// Add benchmark in milliseconds for uploadToS3
-		//bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds() // END S3 UPLOAD
-
-		// BEGIN LEARN PREVIEW BUILD
-		//fmt.Println("\nBuilding preview...")
-
-		//// Start a processing spinner that runs until Learn is finished building the preview
-		//s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)
-		//s.Color("blue")
-		//s.Start()
-
-		//// Start benchmark for BuildReleaseFromS3 & PollForBuildResponse (Learn build stage)
-		//startBuildAndPollRelease := time.Now()
-
-		//// Let Learn know there is new preview content on s3, where it is, and to build it
-		//res, err := learn.API.BuildReleaseFromS3(bucketKey, (previewer.isDirectory() || previewer.fileContainsSQLPaths() || previewer.fileContainsDocker()))
-		//if err != nil {
-		//	previewCmdError(fmt.Sprintf("Failed to build new preview content in learn. Err: %v", err))
-		//	return
-		//}
-
-		//// If content is a directory, rewrite the res from polling for build response. Directories
-		//// can take much longer to build, however single files build instantly so we do not need to
-		//// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
-		//if p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker() {
-		//	var attempts uint8 = 30
-		//	res, err = learn.API.PollForBuildResponse(res.ReleaseID, previewer.fileInfo.IsDir(), previewer.fileInfo.Name(), &attempts)
-		//	if err != nil {
-		//		previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
-		//		return
-		//	}
-		//}
-
-		//// Add benchmark in milliseconds for the Learn build stage and total time in preview cmd
-		//bench.LearnBuild = time.Since(startBuildAndPollRelease).Milliseconds()
-		//bench.TotalCmdTime = time.Since(previewer.startOfCmd).Milliseconds()
-
-		//// Set final message for display
-		//s.FinalMSG = fmt.Sprintf("Successfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
-
-		//// Stop the processing spinner
-		//s.Stop()
-		//printlnGreen("√")
-
-		//if OpenPreview {
-		//	openURL(res.PreviewURL)
-		//}
-		//END LEARN PREVIEW BUILD
 
 		err = previewer.buildLearnPreview(bucketKey)
 		if err != nil {
@@ -925,142 +914,6 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 	}
 
 	return nil
-}
-
-// compressDirectory takes a source file path (where the content you want zipped lives)
-// and a target file path (where to put the zip file) and recursively compresses the source.
-// Source can either be a directory or a single file. When singleFile is true, all files in
-// the zip are added. resourcePaths specify non-config paths which should be included in the zip.
-func (p *previewBuilder) compressDirectory(zipTarget string) error {
-	// Start a processing spinner that runs until a user's content is compressed
-	fmt.Println("Compressing your content...")
-	zipSpinner := spinner.New(spinner.CharSets[26], 100*time.Millisecond)
-	zipSpinner.Color("blue")
-	zipSpinner.Start()
-
-	// Start benchmark for compressDirectory
-	startOfCompression := time.Now()
-
-	resourcePaths := append(p.dockerPaths, p.dataPaths...)
-	// Create file with zipTarget name and defer its closing
-	zipfile, err := os.Create(zipTarget)
-	if err != nil {
-		return err
-	}
-	defer zipfile.Close()
-
-	// Create a new zip writer and pass our zipfile in
-	archive := zip.NewWriter(zipfile)
-	defer archive.Close()
-
-	// Get os.FileInfo about our source
-	info, err := os.Stat(p.target)
-	if err != nil {
-		return nil
-	}
-
-	// Check to see if the provided source file is a directory and set baseDir if so
-	var baseDir string
-	if info.IsDir() {
-		baseDir = filepath.Base(p.target)
-	}
-
-	// Walk the whole filepath
-	filepath.Walk(p.target, func(path string, info os.FileInfo, err error) error {
-		path = filepath.ToSlash(path)
-
-		fileIsIncluded := false
-		for _, p := range p.configYamlPaths {
-			var configPathSplits = strings.Split(p, string(os.PathSeparator))
-			var fileName = configPathSplits[len(configPathSplits)-1]
-			if strings.Contains(path, fileName) {
-				fileIsIncluded = true
-			}
-		}
-		for _, d := range resourcePaths {
-			if strings.Contains(path, d) {
-				fileIsIncluded = true
-			}
-		}
-		if len(p.configYamlPaths) == 0 && !info.IsDir() {
-			// This accounts for the single file preview which won't have yaml files and won't be a directory
-			fileIsIncluded = true
-		}
-
-		var isConfigFile = strings.Contains(path, "config.yml") || strings.Contains(path, "config.yaml") || strings.Contains(path, "autoconfig.yaml")
-		ext := filepath.Ext(path)
-		// Ignoring all files over 1mb for preivew and warning users if the file is over 20mb that it will be ignored in publish action as well.
-		if !info.IsDir() && info.Size() > 1000000 && !strings.Contains(path, ".git/") {
-			if info.Size() > 20000000 {
-				fmt.Printf("\nWARNING: Ignoring File For Preview: File chosen/linked is too large to preview and too large to publish: %s\n", path)
-			} else {
-				fmt.Printf("\nWARNING: Ignoring File For Preview: File chosen/linked is too large to preview, but will successfully publish: %s\n", path)
-			}
-			return nil
-		}
-
-		if isConfigFile || fileIsIncluded || (info.IsDir() && !strings.Contains(path, ".git/") && (ext != ".git" && path != "node_modules")) {
-			if err != nil {
-				return err
-			}
-
-			// Creates a partially-populated FileHeader from an os.FileInfo
-			header, err := zip.FileInfoHeader(info)
-			if err != nil {
-				return err
-			}
-
-			// Check if baseDir has been set (from the IsDir check) and if it has not been
-			// set, update the header.Name to reflect the correct path
-			if baseDir != "" {
-				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, p.target))
-			}
-
-			// Check if the file we are iterating is a directory and update the header.Name
-			// or the header.Method appropriately
-			if info.IsDir() {
-				header.Name += string(os.PathSeparator)
-			} else {
-				header.Method = zip.Deflate
-			}
-
-			//  Add a file to the zip archive using the provided FileHeader for the file metadata
-			writer, err := archive.CreateHeader(header)
-			if err != nil {
-				return err
-			}
-
-			// Return nil if at this point if info is a directory
-			if info.IsDir() {
-				return nil
-			}
-
-			// If it was not a directory, we open the file and copy it into the archive writer
-			// ignore zip files
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			_, err = io.Copy(writer, file)
-			if err != nil {
-				return err
-			}
-		}
-
-		return err
-	})
-
-	p.bench = &learn.CLIBenchmark{
-		Compression: time.Since(startOfCompression).Milliseconds(),
-		CmdName:     "preview",
-	}
-
-	zipSpinner.Stop()
-	printlnGreen("√")
-
-	return err
 }
 
 func trimFirstRune(s string) string {
