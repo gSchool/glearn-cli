@@ -320,6 +320,13 @@ preview and return/open the preview URL when it is complete.
 		//  	return
 		//  }
 		// }
+		if previewer.containsAnyResources() {
+			err = previewer.buildAlternateTarget()
+			if err != nil {
+				previewCmdError(fmt.Sprintf("%v", err))
+				return
+			}
+		}
 
 		//var configYamlPaths []string
 		//// Detect config file and paths
