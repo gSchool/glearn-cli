@@ -72,7 +72,6 @@ func NewPreviewBuilder(args []string) (*previewBuilder, error) {
 		dockerPaths:         []string{},
 		configYamlPaths:     []string{},
 		startOfCmd:          time.Now(),
-		startOfCompression:  time.Time{},
 	}
 
 	if p.invalidPreviewTarget() {
@@ -120,7 +119,8 @@ func (p *previewBuilder) buildAlternateTarget() error {
 	return nil
 }
 
-func (p *previewBuilder) setConfigYamlPaths() error {
+// setConfigYaml finds or creates a config.yaml file for the preview environment. The paths on the file are read and set.
+func (p *previewBuilder) setConfigYaml() error {
 	_, err := previewFindOrCreateConfig(p.target, p.isSingleFilePreview(), p.dockerPaths)
 	if err != nil {
 		return fmt.Errorf("Failed to find or create a config file for: (%s).\nErr: %v", p.target, err)
@@ -162,6 +162,52 @@ func (p *previewBuilder) uploadZip(tmpZipFile string) (bucketKey string, err err
 	return bucketKey, nil
 }
 
+func (p *previewBuilder) buildLearnPreview(bucketKey string) error {
+	fmt.Println("\nBuilding preview...")
+
+	// Start a processing spinner that runs until Learn is finished building the preview
+	s := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
+	s.Color("blue")
+	s.Start()
+
+	// Start benchmark for BuildReleaseFromS3 & PollForBuildResponse (Learn build stage)
+	startBuildAndPollRelease := time.Now()
+
+	// Let Learn know there is new preview content on s3, where it is, and to build it
+	res, err := learn.API.BuildReleaseFromS3(bucketKey, (p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker()))
+	if err != nil {
+		return fmt.Errorf("Failed to build new preview content in learn. Err: %v", err)
+	}
+
+	// If content is a directory, rewrite the res from polling for build response. Directories
+	// can take much longer to build, however single files build instantly so we do not need to
+	// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
+	if p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker() {
+		var attempts uint8 = 30
+		res, err = learn.API.PollForBuildResponse(res.ReleaseID, p.fileInfo.IsDir(), p.fileInfo.Name(), &attempts)
+		if err != nil {
+			return fmt.Errorf("Failed to poll Learn for your new preview build. Err: %v", err)
+		}
+	}
+
+	// Add benchmark in milliseconds for the Learn build stage and total time in preview cmd
+	p.bench.LearnBuild = time.Since(startBuildAndPollRelease).Milliseconds()
+	p.bench.TotalCmdTime = time.Since(p.startOfCmd).Milliseconds()
+
+	// Set final message for display
+	s.FinalMSG = fmt.Sprintf("Successfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
+
+	// Stop the processing spinner
+	s.Stop()
+	printlnGreen("√")
+
+	if OpenPreview {
+		openURL(res.PreviewURL)
+	}
+
+	return nil
+}
+
 // invalidForPreview requires that non-dierctory targets be of markdown or ipynb type
 func (p *previewBuilder) invalidPreviewTarget() bool {
 	return !p.fileInfo.IsDir() && (!strings.HasSuffix(p.target, ".md") && !strings.HasSuffix(p.target, ".ipynb"))
@@ -194,7 +240,7 @@ func (p *previewBuilder) isSingleFilePreview() bool {
 
 // isDirectory reports if either the target is a directory, or if the target contains resources and a directory is required for content
 func (p *previewBuilder) isDirectory() bool {
-	p.fileInfo.IsDir() || (!p.fileInfo.IsDir() && (p.fileContainsLinks() || p.fileContainsDocker()))
+	return p.fileInfo.IsDir() || (!p.fileInfo.IsDir() && (p.fileContainsLinks() || p.fileContainsDocker()))
 }
 
 // previewCmd is executed when the `learn preview` command is used. Preview's concerns:
@@ -274,13 +320,6 @@ preview and return/open the preview URL when it is complete.
 		//  	return
 		//  }
 		// }
-		if previewer.containsAnyResources() {
-			err = previewer.buildAlternateTarget()
-			if err != nil {
-				previewCmdError(fmt.Sprintf("Failed build tmp files around single file preview for: (%s). Err: %v", previewer.target, err))
-				return
-			}
-		}
 
 		//var configYamlPaths []string
 		//// Detect config file and paths
@@ -300,7 +339,7 @@ preview and return/open the preview URL when it is complete.
 		//}
 
 		if previewer.containsAnyResources() || previewer.isDirectory() {
-			err = previewer.setConfigYamlPaths()
+			err = previewer.setConfigYaml()
 			if err != nil {
 				previewCmdError(fmt.Sprintf("%v", err))
 				return
@@ -328,7 +367,7 @@ preview and return/open the preview URL when it is complete.
 		// Removes artifacts on user's machine
 		defer removeArtifacts()
 
-		bucketKey, err = previewer.uploadZip(tmpZipFile)
+		bucketKey, err := previewer.uploadZip(tmpZipFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("%v", err))
 			return
@@ -361,56 +400,64 @@ preview and return/open the preview URL when it is complete.
 		//}
 
 		//// Add benchmark in milliseconds for uploadToS3
-		//bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
-		// END S3 UPLOAD
+		//bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds() // END S3 UPLOAD
 
-		fmt.Println("\nBuilding preview...")
+		// BEGIN LEARN PREVIEW BUILD
+		//fmt.Println("\nBuilding preview...")
 
-		// Start a processing spinner that runs until Learn is finished building the preview
-		s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)
-		s.Color("blue")
-		s.Start()
+		//// Start a processing spinner that runs until Learn is finished building the preview
+		//s = spinner.New(spinner.CharSets[32], 100*time.Millisecond)
+		//s.Color("blue")
+		//s.Start()
 
-		// Start benchmark for BuildReleaseFromS3 & PollForBuildResponse (Learn build stage)
-		startBuildAndPollRelease := time.Now()
+		//// Start benchmark for BuildReleaseFromS3 & PollForBuildResponse (Learn build stage)
+		//startBuildAndPollRelease := time.Now()
 
-		// Let Learn know there is new preview content on s3, where it is, and to build it
-		res, err := learn.API.BuildReleaseFromS3(bucketKey, (previewer.isDirectory() || previewer.fileContainsSQLPaths() || previewer.fileContainsDocker()))
+		//// Let Learn know there is new preview content on s3, where it is, and to build it
+		//res, err := learn.API.BuildReleaseFromS3(bucketKey, (previewer.isDirectory() || previewer.fileContainsSQLPaths() || previewer.fileContainsDocker()))
+		//if err != nil {
+		//	previewCmdError(fmt.Sprintf("Failed to build new preview content in learn. Err: %v", err))
+		//	return
+		//}
+
+		//// If content is a directory, rewrite the res from polling for build response. Directories
+		//// can take much longer to build, however single files build instantly so we do not need to
+		//// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
+		//if p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker() {
+		//	var attempts uint8 = 30
+		//	res, err = learn.API.PollForBuildResponse(res.ReleaseID, previewer.fileInfo.IsDir(), previewer.fileInfo.Name(), &attempts)
+		//	if err != nil {
+		//		previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
+		//		return
+		//	}
+		//}
+
+		//// Add benchmark in milliseconds for the Learn build stage and total time in preview cmd
+		//bench.LearnBuild = time.Since(startBuildAndPollRelease).Milliseconds()
+		//bench.TotalCmdTime = time.Since(previewer.startOfCmd).Milliseconds()
+
+		//// Set final message for display
+		//s.FinalMSG = fmt.Sprintf("Successfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
+
+		//// Stop the processing spinner
+		//s.Stop()
+		//printlnGreen("√")
+
+		//if OpenPreview {
+		//	openURL(res.PreviewURL)
+		//}
+		//END LEARN PREVIEW BUILD
+
+		err = previewer.buildLearnPreview(bucketKey)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to build new preview content in learn. Err: %v", err))
+			previewCmdError(fmt.Sprintf("%v", err))
 			return
 		}
 
-		// If content is a directory, rewrite the res from polling for build response. Directories
-		// can take much longer to build, however single files build instantly so we do not need to
-		// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
-		if p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker() {
-			var attempts uint8 = 30
-			res, err = learn.API.PollForBuildResponse(res.ReleaseID, previewer.fileInfo.IsDir(), previewer.fileInfo.Name(), &attempts)
-			if err != nil {
-				previewCmdError(fmt.Sprintf("Failed to poll Learn for your new preview build. Err: %v", err))
-				return
-			}
-		}
-
-		// Add benchmark in milliseconds for the Learn build stage and total time in preview cmd
-		bench.LearnBuild = time.Since(startBuildAndPollRelease).Milliseconds()
-		bench.TotalCmdTime = time.Since(previewer.startOfCmd).Milliseconds()
-
-		// Set final message for display
-		s.FinalMSG = fmt.Sprintf("Successfully uploaded your preview! You can find your content at: %s\n", res.PreviewURL)
-
-		// Stop the processing spinner
-		s.Stop()
-		printlnGreen("√")
-
-		if OpenPreview {
-			openURL(res.PreviewURL)
-		}
-
 		err = learn.API.SendMetadataToLearn(&learn.CLIBenchmarkPayload{
-			CLIBenchmark: bench,
+			CLIBenchmark: previewer.bench,
 		})
+
 		if err != nil {
 			removeArtifacts()
 			learn.API.NotifySlack(err)
@@ -959,7 +1006,7 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 			// Check if baseDir has been set (from the IsDir check) and if it has not been
 			// set, update the header.Name to reflect the correct path
 			if baseDir != "" {
-				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
+				header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, p.target))
 			}
 
 			// Check if the file we are iterating is a directory and update the header.Name
