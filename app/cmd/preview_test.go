@@ -48,21 +48,26 @@ func Test_compressDirectory(t *testing.T) {
 		t.Errorf("There should be paths parsed from the target")
 	}
 
-	var paths = make(map[string]bool)
-
 	tmpZipFile := "../../fixtures/test-block-auto-config/preview-curriculum.zip"
 
-	var resourcePaths []string
-	resourcePaths = append(resourcePaths, "test-block-auto-config/docker/text.text")
-	resourcePaths = append(resourcePaths, "test-block-auto-config/sql/database.sql")
+	var dataPaths []string
+	dataPaths = append(dataPaths, "test-block-auto-config/docker/text.text")
+	dataPaths = append(dataPaths, "test-block-auto-config/sql/database.sql")
 
-	err = compressDirectory(source, tmpZipFile, configYamlPaths, resourcePaths)
+	previewer := previewBuilder{
+		target:          source,
+		dataPaths:       dataPaths,
+		configYamlPaths: configYamlPaths,
+	}
+	err = previewer.compressDirectory(tmpZipFile)
 	if err != nil {
 		t.Errorf("compressDirectory failed to do its job: %s\n", err)
 	}
 
 	read, _ := zip.OpenReader(tmpZipFile)
 	defer read.Close()
+
+	var paths = make(map[string]bool)
 	for _, file := range read.File {
 		if strings.HasSuffix(file.Name, "/") == false {
 			paths[file.Name] = false
@@ -75,7 +80,7 @@ func Test_compressDirectory(t *testing.T) {
 				paths[path] = true
 			}
 		}
-		for _, includedPath := range resourcePaths {
+		for _, includedPath := range dataPaths {
 			if strings.Contains(includedPath, path) {
 				paths[path] = true
 			}
