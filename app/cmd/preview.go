@@ -52,11 +52,6 @@ func NewPreviewBuilder(args []string) (*previewBuilder, error) {
 		return &previewBuilder{}, fmt.Errorf(setAPITokenMessage)
 	}
 
-	// Takes one argument which is the filepath to the directory/file you want zipped and previewed
-	if len(args) != 1 {
-		return &previewBuilder{}, fmt.Errorf("Usage: `learn preview` takes just one argument")
-	}
-
 	fileInfo, err := os.Stat(args[0])
 	if err != nil {
 		return &previewBuilder{}, fmt.Errorf("Failed to get stats on file. Err: %v", err)
@@ -396,7 +391,7 @@ The preview command takes a path to either a directory or a single file and
 uploads the content to Learn through the Learn API. Learn will build the
 preview and return/open the preview URL when it is complete.
 	`,
-	Args: cobra.MinimumNArgs(1),
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		tmpZipFile := "preview-curriculum.zip"
 		previewer, err := NewPreviewBuilder(args)
