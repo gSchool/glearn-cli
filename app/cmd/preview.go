@@ -30,9 +30,6 @@ import (
 	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )
 
-// tmpZipFile is used throughout as the temporary zip file target location.
-const tmpZipFile string = "preview-curriculum.zip"
-
 // tmpSingleFileDir is used throughout as the temporary single file directory location. This
 // is the name of the tmp dir we build when needing to attach relative links.
 const tmpSingleFileDir string = "single-file-upload"
@@ -292,7 +289,7 @@ func (p *previewBuilder) uploadZip(tmpZipFile string) (bucketKey string, err err
 	startOfUploadToS3 := time.Now()
 
 	// Send compressed zip file to s3
-	bucketKey, err = uploadToS3(f, checksum, learn.API.Credentials)
+	bucketKey, err = uploadToS3(tmpZipFile, f, checksum, learn.API.Credentials)
 	if err != nil {
 		return bucketKey, fmt.Errorf("Failed to upload zip file to s3. Err: %v", err)
 	}
@@ -401,22 +398,23 @@ preview and return/open the preview URL when it is complete.
 	`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		tmpZipFile := "preview-curriculum.zip"
 		previewer, err := NewPreviewBuilder(args)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("%v", err))
+			previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 			return
 		}
 
 		err = previewer.collectPaths()
 		if err != nil {
-			previewCmdError(fmt.Sprintf("%v", err))
+			previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 			return
 		}
 
 		if previewer.containsAnyResources() {
 			err = previewer.buildAlternateTarget()
 			if err != nil {
-				previewCmdError(fmt.Sprintf("%v", err))
+				previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 				return
 			}
 		}
@@ -424,29 +422,29 @@ preview and return/open the preview URL when it is complete.
 		if previewer.containsAnyResources() || previewer.isDirectory() {
 			err = previewer.setConfigYaml()
 			if err != nil {
-				previewCmdError(fmt.Sprintf("%v", err))
+				previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 				return
 			}
 		}
 
 		err = previewer.compressDirectory(tmpZipFile)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", previewer.target, err))
+			previewCmdError(fmt.Sprintf("Failed to compress provided directory (%s). Err: %v", previewer.target, err), tmpZipFile)
 			return
 		}
 
 		// Removes artifacts on user's machine
-		defer removeArtifacts()
+		defer removeArtifacts(tmpZipFile)
 
 		bucketKey, err := previewer.uploadZip(tmpZipFile)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("%v", err))
+			previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 			return
 		}
 
 		err = previewer.buildLearnPreview(bucketKey)
 		if err != nil {
-			previewCmdError(fmt.Sprintf("%v", err))
+			previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 			return
 		}
 
@@ -455,7 +453,7 @@ preview and return/open the preview URL when it is complete.
 		})
 
 		if err != nil {
-			removeArtifacts()
+			removeArtifacts(tmpZipFile)
 			learn.API.NotifySlack(err)
 			os.Exit(1)
 		}
@@ -643,9 +641,9 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 
 // previewCmdError is a small wrapper for all errors within the preview command. It ensures
 // artifacts are cleaned up with a call to removeArtifacts
-func previewCmdError(msg string) {
+func previewCmdError(msg, tmpZipFile string) {
 	fmt.Println(msg)
-	removeArtifacts()
+	removeArtifacts(tmpZipFile)
 	learn.API.NotifySlack(errors.New(msg))
 	os.Exit(1)
 }
@@ -713,7 +711,7 @@ func collectDataPaths(target string) ([]string, error) {
 }
 
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
-func uploadToS3(file *os.File, checksum string, creds *learn.Credentials) (string, error) {
+func uploadToS3(tmpZipFile string, file *os.File, checksum string, creds *learn.Credentials) (string, error) {
 	// Set up an AWS session with the user's credentials
 	region := "us-west-2"
 	alternateRegion := os.Getenv("S3_REGION")
@@ -799,7 +797,7 @@ func createChecksumFromZip(file *os.File) (string, error) {
 // removeArtifacts removes the tmp zipfile and the tmp single file preview directory (if there
 // was one) that were created for uploading to s3 and including local images. We wouldn't
 // want to leave artifacts on user's machines
-func removeArtifacts() {
+func removeArtifacts(tmpZipFile string) {
 	err := os.Remove(tmpZipFile)
 	if err != nil {
 		fmt.Println("Sorry, we had trouble cleaning up the zip file created for curriculum preview")
