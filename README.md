@@ -1,5 +1,7 @@
 # Learn CLI
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/gSchool/glearn-cli)](https://goreportcard.com/report/github.com/gSchool/glearn-cli)
+
 The Learn CLI is the command line interface for developing, previewing, and publishing curriculum on Learn.
 
 ## Requirements
