@@ -22,7 +22,7 @@ brew install learn
 Use the command line utility `curl` to download and install the latest version. The learn command will be placed in the `/usr/local/bin` directory.
 
 ```
-curl -sSL $(curl -sSL https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*$(uname -sm | sed 's/ /_/').tar.gz") | tar -C /usr/local/bin -xzf - learn
+curl -sSL $(curl -sSL https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*$(uname -sm | sed 's/ /_/').tar.gz") | sudo tar -C /usr/local/bin -xzf - learn
 ```
 
 ### Option 3: Install binaries directly from GitHub
