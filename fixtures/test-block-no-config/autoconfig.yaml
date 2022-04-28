@@ -59,5 +59,6 @@ Standards:
     UID: abc123
     DefaultVisibility: hidden
     MaxCheckpointSubmissions: 1
+    EmailOnCompletion: true
     TimeLimit: 45
     Autoscore: true

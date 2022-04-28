@@ -7,6 +7,7 @@ MaxCheckpointSubmissions: 1
 TimeLimit: 45
 Autoscore: true
 DefaultVisibility: hidden
+EmailOnCompletion: true
 ---
 
 
