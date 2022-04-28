@@ -27,7 +27,7 @@ const autoComment = `# This file is auto-generated and orders your content based
 
 `
 
-var validContentFileAttrs = []string{"Type", "UID", "DefaultVisibility", "MaxCheckpointSubmissions", "TimeLimit", "Autoscore"}
+var validContentFileAttrs = []string{"Type", "UID", "DefaultVisibility", "MaxCheckpointSubmissions", "EmailOnCompletion", "TimeLimit", "Autoscore"}
 
 type ConfigBuilder struct {
 	ConfigYaml          ConfigYaml
@@ -61,6 +61,7 @@ type ContentFileAttrs struct {
 	UID                      string `yaml:"UID"`
 	DefaultVisibility        string `yaml:"DefaultVisibility,omitempty"`
 	MaxCheckpointSubmissions int    `yaml:"MaxCheckpointSubmissions,omitempty"`
+	EmailOnCompletion        bool   `yaml:"EmailOnCompletion,omitempty"`
 	TimeLimit                int    `yaml:"TimeLimit,omitempty"`
 	Autoscore                bool   `yaml:"Autoscore,omitempty"`
 	fromHeader               bool   // fromHeader is set true when the attrs were parsed from the header
