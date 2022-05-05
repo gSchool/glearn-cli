@@ -153,6 +153,9 @@ func Test_PublishBuildsAutoConfig(t *testing.T) {
 	if standardFour.ContentFiles[4].MaxCheckpointSubmissions != 1 {
 		t.Errorf("test-block-with-config fixture fourth standard fifth content file MaxCheckpointSubmissions should be 1 but was %d", standardFour.ContentFiles[4].MaxCheckpointSubmissions)
 	}
+	if !standardFour.ContentFiles[4].EmailOnCompletion {
+		t.Errorf("test-block-with-config fixture fourth standard fifth content file EmailOnCompletion should be true but was false")
+	}
 	if standardFour.ContentFiles[4].TimeLimit != 45 {
 		t.Errorf("test-block-with-config fixture fourth standard fifth content file TimeLimit should be 45 but was %d", standardFour.ContentFiles[4].TimeLimit)
 	}

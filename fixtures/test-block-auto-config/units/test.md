@@ -4,6 +4,7 @@
 Type: Checkpoint
 UID: abc123
 MaxCheckpointSubmissions: 1
+EmailOnCompletion: true
 TimeLimit: 45
 Autoscore: true
 DefaultVisibility: hidden
