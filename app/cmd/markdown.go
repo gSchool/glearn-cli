@@ -230,6 +230,7 @@ Type: Lesson # Options: Lesson, Checkpoint, Survey, Instructor, Resource
 UID: %s
 # DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
 # MaxCheckpointSubmissions: 1 # Checkpoints only. Uncomment this line to limit the number of submissions
+# EmailOnCompletion: true # Checkpoints only. Uncomment this line to send instructors an email once a student has completed a checkpoint
 # TimeLimit: 60 # Checkpoints only. Uncomment this line to set a time limit in minutes
 # Autoscore: true # Checkpoints only. Uncomment this line to finalize checkpoint scores without instructor review
 # END FILE CONFIGURATION YML HEADER <<<<<
@@ -240,6 +241,7 @@ Type: Lesson
 UID: %s
 # DefaultVisibility: hidden
 # MaxCheckpointSubmissions: 1
+# EmailOnCompletion: true
 # TimeLimit: 60
 # Autoscore: true
 ---`
@@ -341,6 +343,7 @@ Type: Checkpoint
 UID: %s
 # DefaultVisibility: hidden # Uncomment this line to default Checkpoint to hidden
 # MaxCheckpointSubmissions: 1 # Uncomment this line to limit the number of submissions
+# EmailOnCompletion: true #  Uncomment this line to send instructors an email once a student has completed a checkpoint
 # TimeLimit: 60 # Uncomment this line to set a time limit in minutes
 # Autoscore: true # Uncomment this line to finalize checkpoint scores without instructor review
 # END FILE CONFIGURATION YML HEADER <<<<<
@@ -357,6 +360,7 @@ Type: Checkpoint
 UID: %s
 # DefaultVisibility: hidden
 # MaxCheckpointSubmissions: 1
+# EmailOnCompletion: true
 # TimeLimit: 60
 # Autoscore: true
 ---
@@ -1372,6 +1376,7 @@ const configyamlTemplate = `# Config.yaml specifies the content and ordering wit
 # Standard.ContentFiles.DefaultVisibility -- (optional) Set to 'hidden' to hide when a course first starts.
 # Standard.ContentFiles.Autoscore -- (optional, for Checkpoints only) submit checkpoint scores without review
 # Standard.ContentFiles.MaxCheckpointSubmissions -- (optional, for Checkpoints only) limit the number of submissions
+# Standard.ContentFiles.EmailOnCompletion -- (optional, for Checkpoints only) Set to 'true' or 'false'. Sends instructors an email once student has completed a checkpoint
 # Standard.ContentFiles.TimeLimit -- (optional, for Checkpoints only) the time limit in minutes
 #
 # Instructions
