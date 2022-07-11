@@ -395,7 +395,7 @@ c| [Option 3, etc]
 
 ##### !answer
 
-b| [Option 2]
+b|
 
 ##### !end-answer
 
@@ -467,8 +467,8 @@ c| [Option 3]
 
 ##### !answer
 
-b| [Option 2]
-c| [Option 3]
+b|
+c|
 
 ##### !end-answer
 
