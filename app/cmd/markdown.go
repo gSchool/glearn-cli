@@ -237,7 +237,7 @@ UID: %s
 ---`
 
 const fileHeaderTemplateMin = `---
-Type: Lesson
+Type: Checkpoint
 UID: %s
 # DefaultVisibility: hidden
 # MaxCheckpointSubmissions: 1
@@ -377,7 +377,7 @@ const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only. optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -387,15 +387,15 @@ const multiplechoiceTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>
 
 ##### !options
 
-* [Option 1]
-* [Option 2]
-* [Option 3, etc]
+a| [Option 1]
+b| [Option 2]
+c| [Option 3, etc]
 
 ##### !end-options
 
 ##### !answer
 
-* [Option 2 (the correct answer)]
+b|
 
 ##### !end-answer
 
@@ -424,15 +424,15 @@ const multiplechoiceTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >
 
 ##### !options
 
-*
-*
-*
+a|
+b|
+c|
 
 ##### !end-options
 
 ##### !answer
 
-*
+a|
 
 ##### !end-answer
 
@@ -449,7 +449,7 @@ const checkboxTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -459,16 +459,16 @@ const checkboxTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 
 ##### !options
 
-* [Option 1]
-* [Option 2]
-* [Option 3, etc]
+a| [Option 1]
+b| [Option 2]
+c| [Option 3]
 
 ##### !end-options
 
 ##### !answer
 
-* [Option 2]
-* [Option 3 (the correct answer set)]
+b|
+c|
 
 ##### !end-answer
 
@@ -497,16 +497,16 @@ const checkboxTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>
 
 ##### !options
 
-*
-*
-*
+a|
+b|
+c|
 
 ##### !end-options
 
 ##### !answer
 
-*
-*
+b|
+c|
 
 ##### !end-answer
 
@@ -523,7 +523,7 @@ const tasklistTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -583,7 +583,7 @@ const shortanswerTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -646,7 +646,7 @@ const numberTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 * title: [text, a short question title]
 * decimal: [optional number, decimal points to user for answer evaluation]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -709,7 +709,7 @@ const paragraphTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -760,7 +760,7 @@ const orderingTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -821,7 +821,7 @@ const javascriptTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -907,7 +907,7 @@ const javaTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -1019,7 +1019,7 @@ const pythonTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -1108,7 +1108,7 @@ const sqlTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>
 * title: [text, a short question title]
 * data_path: /[text, the path to the folder with the .sql file]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -1191,7 +1191,7 @@ const customsnippetTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>
 * title: [text, a short question title]
 * docker_directory_path: /[text, the path to the folder with the Docker setup]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -1253,7 +1253,7 @@ const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -1311,7 +1311,7 @@ const testableProjectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>
 * upstream: [URL, the upstream repo URL like https://github.com/gSchool/simple-compose-upstream]
 * validate_fork: false
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 
@@ -1489,7 +1489,7 @@ const uploadTemplate = `### !challenge
 * id: %s
 * title:
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
-<!-- * topics: [python, pandas] (optional the topics for analyzing points) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
 ##### !question
 [markdown, your question]
