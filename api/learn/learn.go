@@ -16,7 +16,7 @@ import (
 var API *APIClient
 
 // Learn data used for reporting
-var LearnUserId string
+var LearnUserId int
 var LearnUserEmail string
 
 // APIClient makes network API calls to Learn
@@ -188,7 +188,7 @@ func (api *APIClient) NotifySlack(err error) {
 	msg := struct {
 		Text string `json:"text"`
 	}{
-		Text: fmt.Sprintf("UserId: %s\nUserEmail: %s\n%s", LearnUserId, LearnUserEmail, err),
+		Text: fmt.Sprintf("UserId: %d\nUserEmail: %s\n%s", LearnUserId, LearnUserEmail, err),
 	}
 
 	bytePostData, _ := json.Marshal(msg)
