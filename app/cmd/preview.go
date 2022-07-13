@@ -46,7 +46,7 @@ type previewBuilder struct {
 }
 
 func NewPreviewBuilder(args []string) (*previewBuilder, error) {
-	setupLearnAPI()
+	setupLearnAPI(true)
 
 	if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
 		return &previewBuilder{}, fmt.Errorf(setAPITokenMessage)
