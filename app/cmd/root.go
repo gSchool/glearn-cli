@@ -131,7 +131,7 @@ func Execute() {
 	}
 }
 
-func setupLearnAPI() {
+func setupLearnAPI(getPresignedPostUrl bool) {
 	client := http.Client{Timeout: 15 * time.Second}
 	baseURL := "https://learn-2.galvanize.com"
 	alternateURL := os.Getenv("LEARN_BASE_URL")
@@ -139,7 +139,7 @@ func setupLearnAPI() {
 		baseURL = alternateURL
 	}
 
-	api, err := learn.NewAPI(baseURL, &client)
+	api, err := learn.NewAPI(baseURL, &client, getPresignedPostUrl)
 	if err != nil {
 		fmt.Printf("Error creating API client. Err: %v", err)
 		os.Exit(1)

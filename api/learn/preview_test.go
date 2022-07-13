@@ -10,7 +10,7 @@ import (
 
 const validPreviewResponse = `{"status":"success","release_id":1,"preview_url":"http://example.com"}`
 const pendingPreviewResponse = `{"status":"pending","release_id":1,"preview_url":"http://example.com"}`
-const credentialsResponse = `{"s3":{"access_key_id":"access_keyin","secret_access_key":"secret_keyin","key_prefix":"keykey's delivery service","bucket_name":"buqet"}, "slack":{"dev_notify_url": "development"}, "latest_cli_version": "v0.9"}`
+const credentialsResponse = `{"presigned_url":"https://aws-presigned-url.com", "dev_notify_url": "development","user_id":5,"user_email":"abc@example.com"}`
 
 func Test_PollForBuildResponse(t *testing.T) {
 	viper.Set("api_token", "apiToken")
