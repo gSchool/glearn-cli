@@ -32,6 +32,7 @@ type Credentials struct {
 	*APIToken    `json:"api_token"`
 	DevNotifyURL string `json:"dev_notify_url"`
 	PresignedUrl string `json:"presigned_url"`
+	UserId int `json:"user_id"`
 }
 
 // APIToken is a simple wrapper around an API token
@@ -104,7 +105,7 @@ func (api *APIClient) RetrieveCredentials(getPresignedPostUrl bool) (*Credential
 	if getPresignedPostUrl {
 		presignedParam = "?presigned_url=true"
 	}
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/users/learn_cli_credentials%s", api.baseURL, presignedParam), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/users/cli_access%s", api.baseURL, presignedParam), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -126,18 +127,18 @@ func (api *APIClient) RetrieveCredentials(getPresignedPostUrl bool) (*Credential
 	var c CredentialsResponse
 
 	err = json.NewDecoder(res.Body).Decode(&c)
-
-	LearnUserId = c.UserId
-	LearnUserEmail = c.Email
-
 	if err != nil {
 		return nil, err
 	}
+
+	LearnUserId = c.UserId
+	LearnUserEmail = c.Email
 
 	return &Credentials{
 		DevNotifyURL: c.DevNotifyUrl,
 		PresignedUrl: c.PresignedUrl,
 		APIToken:     &APIToken{apiToken},
+		UserId: c.UserId,
 	}, nil
 }
 

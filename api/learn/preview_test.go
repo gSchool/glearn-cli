@@ -15,7 +15,7 @@ const credentialsResponse = `{"presigned_url":"https://aws-presigned-url.com", "
 func Test_PollForBuildResponse(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validPreviewResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, true)
 
 	attempts := uint8(1)
 	previewResponse, err := API.PollForBuildResponse(1, false, "foo.md", &attempts)
@@ -57,7 +57,7 @@ func Test_PollForBuildResponse(t *testing.T) {
 func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(pendingPreviewResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, true)
 
 	attempts := uint8(1)
 	_, err := API.PollForBuildResponse(1, true, "", &attempts)
@@ -99,7 +99,7 @@ func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
 func Test_BuildReleaseFromS3_Directory(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validPreviewResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, true)
 
 	previewResponse, err := API.BuildReleaseFromS3("buket", true)
 	if err != nil {
@@ -141,7 +141,7 @@ func Test_BuildReleaseFromS3_Directory(t *testing.T) {
 func Test_BuildReleaseFromS3_notDirectory(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponses(credentialsResponse, validPreviewResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, true)
 
 	previewResponse, err := API.BuildReleaseFromS3("buket", false)
 	if err != nil {
@@ -182,7 +182,7 @@ func Test_BuildReleaseFromS3_notDirectory(t *testing.T) {
 func Test_RetrieveCredentials(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(credentialsResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, true)
 
 	if API.Credentials.S3Credentials.AccessKeyID != "access_keyin" {
 		t.Errorf("Error unmarshaling S3 Credentials, access_key_id ")

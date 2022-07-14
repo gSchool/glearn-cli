@@ -3,6 +3,7 @@ package cmd
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
@@ -10,24 +11,26 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	// "github.com/aws/aws-sdk-go/aws"
+	// "github.com/aws/aws-sdk-go/aws/session"
+	// "github.com/aws/aws-sdk-go/service/s3"
+	// "github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/briandowns/spinner"
-	pb "github.com/cheggaaa/pb/v3"
+	// pb "github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
 	di "github.com/gSchool/glearn-cli/ignorematcher"
 	"github.com/gSchool/glearn-cli/mdresourceparser"
-	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
+	// proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )
 
 // tmpSingleFileDir is used throughout as the temporary single file directory location. This
@@ -157,6 +160,7 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 	info, err := os.Stat(p.target)
 	if err != nil {
 		return nil
+		// why return nil and not err here?
 	}
 
 	// Check to see if the provided source file is a directory and set baseDir if so
@@ -275,16 +279,20 @@ func (p *previewBuilder) uploadZip(tmpZipFile string) (bucketKey string, err err
 	defer f.Close()
 
 	// Create checksum of files in directory
-	checksum, err := createChecksumFromZip(f)
-	if err != nil {
-		return bucketKey, fmt.Errorf("Failed to create a checksum for compressed file. Err: %v", err)
-	}
+	// checksum, err := createChecksumFromZip(f)
+	// if err != nil {
+	// 	return bucketKey, fmt.Errorf("Failed to create a checksum for compressed file. Err: %v", err)
+	// }
 
 	// Start benchmark for uploadToS3
 	startOfUploadToS3 := time.Now()
 
 	// Send compressed zip file to s3
-	bucketKey, err = uploadToS3(tmpZipFile, f, checksum, learn.API.Credentials)
+	// bucketKey, err = uploadToS3(tmpZipFile, f, checksum, learn.API.Credentials)
+	// if err != nil {
+	// 	return bucketKey, fmt.Errorf("Failed to upload zip file to s3. Err: %v", err)
+	// }
+	uploadToS3(f, learn.API.Credentials.PresignedUrl)
 	if err != nil {
 		return bucketKey, fmt.Errorf("Failed to upload zip file to s3. Err: %v", err)
 	}
@@ -436,7 +444,7 @@ preview and return/open the preview URL when it is complete.
 			previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 			return
 		}
-
+		return
 		err = previewer.buildLearnPreview(bucketKey)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
@@ -705,61 +713,70 @@ func collectDataPaths(target string) ([]string, error) {
 	return []string{}, nil
 }
 
-// uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
-func uploadToS3(tmpZipFile string, file *os.File, checksum string, creds *learn.Credentials) (string, error) {
-	// Set up an AWS session with the user's credentials
-	region := "us-west-2"
-	alternateRegion := os.Getenv("S3_REGION")
-	if alternateRegion != "" {
-		region = alternateRegion
-	}
-	sess, _ := session.NewSession(&aws.Config{
-		Region: aws.String(region),
-		Credentials: credentials.NewStaticCredentials(
-			creds.AccessKeyID,
-			creds.SecretAccessKey,
-			"",
-		),
-	})
+func newfileUploadRequest(uri string, file *os.File) (*http.Request, error) {
 
-	// Create new uploader and specify buffer size (in bytes) to use when buffering
-	// data into chunks and sending them as parts to S3 and clean up on error
-	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
-		u.PartSize = 5 * 1024 * 1024 // 5,242,880 bytes or 5.24288 Mb which is the default minimum here
-		u.LeavePartsOnError = false  // If an error occurs during upload to s3, clean up & don't leave partial upload there
-	})
-
-	// Generate the bucket key using the key prefix, checksum, and tmpZipFile name
-	bucketKey := fmt.Sprintf("%s/%s-%s", creds.KeyPrefix, checksum, tmpZipFile)
-
-	// Obtain FileInfo so we can look at length in bytes
-	fileStats, err := file.Stat()
+	fileContents, err := ioutil.ReadAll(file)
 	if err != nil {
-		return "", fmt.Errorf("Could not obtain file stats for %s", file.Name())
+		return nil, err
 	}
+	fi, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	file.Close()
+
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", fi.Name())
+	if err != nil {
+		return nil, err
+	}
+	part.Write(fileContents)
+
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return http.NewRequest("POST", uri, body)
+}
+
+// uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
+func uploadToS3(file *os.File, presignedUrl string) (string, error) {
+	// Obtain FileInfo so we can look at length in bytes
+	// fileStats, err := file.Stat()
+	// if err != nil {
+	// 	return "", fmt.Errorf("Could not obtain file stats for %s", file.Name())
+	// }
 
 	// Create and start a new progress bar with a fixed width
-	bar := pb.Full.Start64(fileStats.Size()).SetWidth(100)
+	// bar := pb.Full.Start64(fileStats.Size()).SetWidth(100)
 
 	// Create a ProxyReader and attach the file and progress bar
-	pr := proxyReader.New(file, bar)
+	// pr := proxyReader.New(file, bar)
 
 	fmt.Println("Uploading assets to Learn...")
 
-	// Upload compressed zip file to s3
-	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(creds.BucketName),
-		Key:    aws.String(bucketKey),
-		Body:   pr, // As our file is read and uploaded, our proxy reader will update/render the progress bar
-	})
+	// Parse multipart upload for bucket and presigned URL
+	request, err := newfileUploadRequest(presignedUrl, file)
 	if err != nil {
-		return "", fmt.Errorf("Error uploading assets to s3: %v", err)
+		return "", err
 	}
-
-	bar.Finish()
+	client := &http.Client{Timeout: time.Second * 30}
+	resp, err := client.Do(request)
+	if err != nil {
+		return "", err
+	} else {
+		var bodyContent []byte
+		fmt.Println(resp.StatusCode)
+		fmt.Println(resp.Header)
+		resp.Body.Read(bodyContent)
+		resp.Body.Close()
+		fmt.Println(bodyContent)
+	}
 	printlnGreen("√")
 
-	return bucketKey, nil
+	return "", nil
 }
 
 // createChecksumFromZip takes a pointer to a file and creates a sha256 checksum
