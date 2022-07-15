@@ -11,7 +11,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -271,10 +270,10 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 }
 
 // uploadZip is responsible for taking a compressed preview directory and uploading it to be built by Learn.
-func (p *previewBuilder) uploadZip(tmpZipFile string) (bucketKey string, err error) {
+func (p *previewBuilder) uploadZip(tmpZipFile string) (err error) {
 	f, err := os.Open(tmpZipFile)
 	if err != nil {
-		return bucketKey, fmt.Errorf("Failed opening file (%q). Err: %v", tmpZipFile, err)
+		return fmt.Errorf("Failed opening file (%q). Err: %v", tmpZipFile, err)
 	}
 	defer f.Close()
 
@@ -288,22 +287,18 @@ func (p *previewBuilder) uploadZip(tmpZipFile string) (bucketKey string, err err
 	startOfUploadToS3 := time.Now()
 
 	// Send compressed zip file to s3
-	// bucketKey, err = uploadToS3(tmpZipFile, f, checksum, learn.API.Credentials)
-	// if err != nil {
-	// 	return bucketKey, fmt.Errorf("Failed to upload zip file to s3. Err: %v", err)
-	// }
-	uploadToS3(f, learn.API.Credentials.PresignedUrl)
+	err = uploadToS3(f)
 	if err != nil {
-		return bucketKey, fmt.Errorf("Failed to upload zip file to s3. Err: %v", err)
+		return fmt.Errorf("Failed to upload zip file to s3. Err: %v", err)
 	}
 
 	// Add benchmark in milliseconds for uploadToS3
 	p.bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
-	return bucketKey, nil
+	return nil
 }
 
 // buildLearnPreview triggers the Learn preview building process and montiors its completion via polling
-func (p *previewBuilder) buildLearnPreview(bucketKey string) error {
+func (p *previewBuilder) buildLearnPreview() error {
 	fmt.Println("\nBuilding preview...")
 
 	// Start a processing spinner that runs until Learn is finished building the preview
@@ -315,7 +310,8 @@ func (p *previewBuilder) buildLearnPreview(bucketKey string) error {
 	startBuildAndPollRelease := time.Now()
 
 	// Let Learn know there is new preview content on s3, where it is, and to build it
-	res, err := learn.API.BuildReleaseFromS3(bucketKey, (p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker()))
+	fmt.Println("Object Key: ", learn.API.Credentials.S3Key)
+	res, err := learn.API.BuildReleaseFromS3(learn.API.Credentials.S3Key, (p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker()))
 	if err != nil {
 		return fmt.Errorf("Failed to build new preview content in learn. Err: %v", err)
 	}
@@ -439,13 +435,12 @@ preview and return/open the preview URL when it is complete.
 		// Removes artifacts on user's machine
 		defer removeArtifacts(tmpZipFile)
 
-		bucketKey, err := previewer.uploadZip(tmpZipFile)
+		err = previewer.uploadZip(tmpZipFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 			return
 		}
-		return
-		err = previewer.buildLearnPreview(bucketKey)
+		err = previewer.buildLearnPreview()
 		if err != nil {
 			previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 			return
@@ -714,69 +709,39 @@ func collectDataPaths(target string) ([]string, error) {
 }
 
 func newfileUploadRequest(uri string, file *os.File) (*http.Request, error) {
-
 	fileContents, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
-	fi, err := file.Stat()
-	if err != nil {
-		return nil, err
-	}
-	file.Close()
 
 	body := new(bytes.Buffer)
-	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", fi.Name())
-	if err != nil {
-		return nil, err
-	}
-	part.Write(fileContents)
-
-	err = writer.Close()
+	_, err = body.Write(fileContents)
 	if err != nil {
 		return nil, err
 	}
 
-	return http.NewRequest("POST", uri, body)
+	return http.NewRequest("PUT", uri, body)
 }
 
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
-func uploadToS3(file *os.File, presignedUrl string) (string, error) {
-	// Obtain FileInfo so we can look at length in bytes
-	// fileStats, err := file.Stat()
-	// if err != nil {
-	// 	return "", fmt.Errorf("Could not obtain file stats for %s", file.Name())
-	// }
-
-	// Create and start a new progress bar with a fixed width
-	// bar := pb.Full.Start64(fileStats.Size()).SetWidth(100)
-
-	// Create a ProxyReader and attach the file and progress bar
-	// pr := proxyReader.New(file, bar)
-
+func uploadToS3(file *os.File) error {
 	fmt.Println("Uploading assets to Learn...")
 
 	// Parse multipart upload for bucket and presigned URL
-	request, err := newfileUploadRequest(presignedUrl, file)
+	request, err := newfileUploadRequest(learn.API.Credentials.PresignedUrl, file)
 	if err != nil {
-		return "", err
+		return err
 	}
 	client := &http.Client{Timeout: time.Second * 30}
 	resp, err := client.Do(request)
 	if err != nil {
-		return "", err
-	} else {
-		var bodyContent []byte
-		fmt.Println(resp.StatusCode)
-		fmt.Println(resp.Header)
-		resp.Body.Read(bodyContent)
-		resp.Body.Close()
-		fmt.Println(bodyContent)
+		return err
+	} else if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Uploading asset produced non-200 status code: %d\n", resp.StatusCode)
 	}
 	printlnGreen("√")
 
-	return "", nil
+	return nil
 }
 
 // createChecksumFromZip takes a pointer to a file and creates a sha256 checksum

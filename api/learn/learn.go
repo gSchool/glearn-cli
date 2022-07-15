@@ -32,7 +32,8 @@ type Credentials struct {
 	*APIToken    `json:"api_token"`
 	DevNotifyURL string `json:"dev_notify_url"`
 	PresignedUrl string `json:"presigned_url"`
-	UserId int `json:"user_id"`
+	S3Key        string `json:"s3_key"`
+	UserId       int    `json:"user_id"`
 }
 
 // APIToken is a simple wrapper around an API token
@@ -46,6 +47,7 @@ type CredentialsResponse struct {
 	UserId       int    `json:"user_id"`
 	Email        string `json:"user_email"`
 	PresignedUrl string `json:"presigned_url"`
+	S3Key        string `json:"s3_key"`
 	DevNotifyUrl string `json:"dev_notify_url"`
 }
 
@@ -137,8 +139,9 @@ func (api *APIClient) RetrieveCredentials(getPresignedPostUrl bool) (*Credential
 	return &Credentials{
 		DevNotifyURL: c.DevNotifyUrl,
 		PresignedUrl: c.PresignedUrl,
+		S3Key:        c.S3Key,
 		APIToken:     &APIToken{apiToken},
-		UserId: c.UserId,
+		UserId:       c.UserId,
 	}, nil
 }
 
