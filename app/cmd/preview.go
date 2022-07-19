@@ -310,7 +310,6 @@ func (p *previewBuilder) buildLearnPreview() error {
 	startBuildAndPollRelease := time.Now()
 
 	// Let Learn know there is new preview content on s3, where it is, and to build it
-	fmt.Println("Object Key: ", learn.API.Credentials.S3Key)
 	res, err := learn.API.BuildReleaseFromS3(learn.API.Credentials.S3Key, (p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker()))
 	if err != nil {
 		return fmt.Errorf("Failed to build new preview content in learn. Err: %v", err)
