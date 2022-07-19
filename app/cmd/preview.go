@@ -725,6 +725,9 @@ func newfileUploadRequest(uri string, file *os.File) (*http.Request, error) {
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
 func uploadToS3(file *os.File) error {
 	fmt.Println("Uploading assets to Learn...")
+	uploadSpinner := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
+	uploadSpinner.Color("green")
+	uploadSpinner.Start()
 
 	// Parse multipart upload for bucket and presigned URL
 	request, err := newfileUploadRequest(learn.API.Credentials.PresignedUrl, file)
@@ -738,6 +741,7 @@ func uploadToS3(file *os.File) error {
 	} else if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Uploading asset produced non-200 status code: %d\n", resp.StatusCode)
 	}
+	uploadSpinner.Stop()
 	printlnGreen("√")
 
 	return nil
