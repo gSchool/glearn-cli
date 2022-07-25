@@ -12,7 +12,7 @@ brew upgrade learn
 ## Curl
 
 ```
-curl -sSL $(curl -sSL https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*$(uname -sm | sed 's/ /_/').tar.gz") | tar -C /usr/local/bin -xzf - learn
+curl -sSL $(curl -sSL https://api.github.com/repos/gSchool/glearn-cli/releases/latest | grep -o "http.*$(uname -sm | sed 's/ /_/').tar.gz") | sudo tar -C /usr/local/bin -xzf - learn
 ```
 
 ## Binary download
