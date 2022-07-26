@@ -21,7 +21,7 @@ You can get your api token at https://learn-2.galvanize.com/api_token
 `
 
 // currentReleaseVersion is used to print the version the user currently has downloaded
-const currentReleaseVersion = "v0.10.2"
+const currentReleaseVersion = "v0.10.3"
 
 // rootCmd is the base for all our commands. It currently just checks for all the
 // necessary credentials and prompts the user to set them if they are not there.
@@ -131,7 +131,7 @@ func Execute() {
 	}
 }
 
-func setupLearnAPI() {
+func setupLearnAPI(getPresignedPostUrl bool) {
 	client := http.Client{Timeout: 15 * time.Second}
 	baseURL := "https://learn-2.galvanize.com"
 	alternateURL := os.Getenv("LEARN_BASE_URL")
@@ -139,7 +139,7 @@ func setupLearnAPI() {
 		baseURL = alternateURL
 	}
 
-	api, err := learn.NewAPI(baseURL, &client)
+	api, err := learn.NewAPI(baseURL, &client, getPresignedPostUrl)
 	if err != nil {
 		fmt.Printf("Error creating API client. Err: %v", err)
 		os.Exit(1)

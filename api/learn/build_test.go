@@ -12,7 +12,7 @@ const validBlockResponse = `{"blocks":[{"id":1,"repo_name":"blocks-test","sync_e
 func Test_Getters(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validBlockResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, false)
 
 	if API.BaseURL() != "https://example.com" {
 		t.Errorf("BaseURL() should return 'https://example.com', but returned '%s'", API.BaseURL())
@@ -22,7 +22,7 @@ func Test_Getters(t *testing.T) {
 func Test_GetBlockByRepoName(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validBlockResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, false)
 
 	repo := RepoPieces{}
 	repo.RepoName = "blocks-test"
@@ -64,7 +64,7 @@ func Test_GetBlockByRepoName(t *testing.T) {
 func Test_CreateBlockByRepoName(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validBlockResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, false)
 
 	repo := RepoPieces{}
 	repo.RepoName = "blocks-test"
@@ -108,7 +108,7 @@ const validMasterReleaseResponse = `{"release_id":9}`
 func Test_CreateBranchRelease(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validMasterReleaseResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, false)
 
 	id, err := API.CreateBranchRelease(1, "testbranch")
 	if err != nil {

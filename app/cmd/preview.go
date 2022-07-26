@@ -3,6 +3,7 @@ package cmd
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
@@ -10,24 +11,25 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	// "github.com/aws/aws-sdk-go/aws"
+	// "github.com/aws/aws-sdk-go/aws/session"
+	// "github.com/aws/aws-sdk-go/service/s3"
+	// "github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/briandowns/spinner"
-	pb "github.com/cheggaaa/pb/v3"
+	// pb "github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
 	di "github.com/gSchool/glearn-cli/ignorematcher"
 	"github.com/gSchool/glearn-cli/mdresourceparser"
-	proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
+	// proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )
 
 // tmpSingleFileDir is used throughout as the temporary single file directory location. This
@@ -46,7 +48,7 @@ type previewBuilder struct {
 }
 
 func NewPreviewBuilder(args []string) (*previewBuilder, error) {
-	setupLearnAPI()
+	setupLearnAPI(true)
 
 	if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
 		return &previewBuilder{}, fmt.Errorf(setAPITokenMessage)
@@ -157,6 +159,7 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 	info, err := os.Stat(p.target)
 	if err != nil {
 		return nil
+		// why return nil and not err here?
 	}
 
 	// Check to see if the provided source file is a directory and set baseDir if so
@@ -267,35 +270,35 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 }
 
 // uploadZip is responsible for taking a compressed preview directory and uploading it to be built by Learn.
-func (p *previewBuilder) uploadZip(tmpZipFile string) (bucketKey string, err error) {
+func (p *previewBuilder) uploadZip(tmpZipFile string) (err error) {
 	f, err := os.Open(tmpZipFile)
 	if err != nil {
-		return bucketKey, fmt.Errorf("Failed opening file (%q). Err: %v", tmpZipFile, err)
+		return fmt.Errorf("Failed opening file (%q). Err: %v", tmpZipFile, err)
 	}
 	defer f.Close()
 
 	// Create checksum of files in directory
-	checksum, err := createChecksumFromZip(f)
-	if err != nil {
-		return bucketKey, fmt.Errorf("Failed to create a checksum for compressed file. Err: %v", err)
-	}
+	// checksum, err := createChecksumFromZip(f)
+	// if err != nil {
+	// 	return bucketKey, fmt.Errorf("Failed to create a checksum for compressed file. Err: %v", err)
+	// }
 
 	// Start benchmark for uploadToS3
 	startOfUploadToS3 := time.Now()
 
 	// Send compressed zip file to s3
-	bucketKey, err = uploadToS3(tmpZipFile, f, checksum, learn.API.Credentials)
+	err = uploadToS3(f)
 	if err != nil {
-		return bucketKey, fmt.Errorf("Failed to upload zip file to s3. Err: %v", err)
+		return fmt.Errorf("Failed to upload zip file to s3. Err: %v", err)
 	}
 
 	// Add benchmark in milliseconds for uploadToS3
 	p.bench.UploadToS3 = time.Since(startOfUploadToS3).Milliseconds()
-	return bucketKey, nil
+	return nil
 }
 
 // buildLearnPreview triggers the Learn preview building process and montiors its completion via polling
-func (p *previewBuilder) buildLearnPreview(bucketKey string) error {
+func (p *previewBuilder) buildLearnPreview() error {
 	fmt.Println("\nBuilding preview...")
 
 	// Start a processing spinner that runs until Learn is finished building the preview
@@ -307,7 +310,7 @@ func (p *previewBuilder) buildLearnPreview(bucketKey string) error {
 	startBuildAndPollRelease := time.Now()
 
 	// Let Learn know there is new preview content on s3, where it is, and to build it
-	res, err := learn.API.BuildReleaseFromS3(bucketKey, (p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker()))
+	res, err := learn.API.BuildReleaseFromS3(learn.API.Credentials.S3Key, (p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker()))
 	if err != nil {
 		return fmt.Errorf("Failed to build new preview content in learn. Err: %v", err)
 	}
@@ -431,13 +434,12 @@ preview and return/open the preview URL when it is complete.
 		// Removes artifacts on user's machine
 		defer removeArtifacts(tmpZipFile)
 
-		bucketKey, err := previewer.uploadZip(tmpZipFile)
+		err = previewer.uploadZip(tmpZipFile)
 		if err != nil {
 			previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 			return
 		}
-
-		err = previewer.buildLearnPreview(bucketKey)
+		err = previewer.buildLearnPreview()
 		if err != nil {
 			previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 			return
@@ -705,61 +707,44 @@ func collectDataPaths(target string) ([]string, error) {
 	return []string{}, nil
 }
 
+func newfileUploadRequest(uri string, file *os.File) (*http.Request, error) {
+	fileContents, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	body := new(bytes.Buffer)
+	_, err = body.Write(fileContents)
+	if err != nil {
+		return nil, err
+	}
+
+	return http.NewRequest("PUT", uri, body)
+}
+
 // uploadToS3 takes a file and it's checksum and uploads it to s3 in the appropriate bucket/key
-func uploadToS3(tmpZipFile string, file *os.File, checksum string, creds *learn.Credentials) (string, error) {
-	// Set up an AWS session with the user's credentials
-	region := "us-west-2"
-	alternateRegion := os.Getenv("S3_REGION")
-	if alternateRegion != "" {
-		region = alternateRegion
-	}
-	sess, _ := session.NewSession(&aws.Config{
-		Region: aws.String(region),
-		Credentials: credentials.NewStaticCredentials(
-			creds.AccessKeyID,
-			creds.SecretAccessKey,
-			"",
-		),
-	})
-
-	// Create new uploader and specify buffer size (in bytes) to use when buffering
-	// data into chunks and sending them as parts to S3 and clean up on error
-	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
-		u.PartSize = 5 * 1024 * 1024 // 5,242,880 bytes or 5.24288 Mb which is the default minimum here
-		u.LeavePartsOnError = false  // If an error occurs during upload to s3, clean up & don't leave partial upload there
-	})
-
-	// Generate the bucket key using the key prefix, checksum, and tmpZipFile name
-	bucketKey := fmt.Sprintf("%s/%s-%s", creds.KeyPrefix, checksum, tmpZipFile)
-
-	// Obtain FileInfo so we can look at length in bytes
-	fileStats, err := file.Stat()
-	if err != nil {
-		return "", fmt.Errorf("Could not obtain file stats for %s", file.Name())
-	}
-
-	// Create and start a new progress bar with a fixed width
-	bar := pb.Full.Start64(fileStats.Size()).SetWidth(100)
-
-	// Create a ProxyReader and attach the file and progress bar
-	pr := proxyReader.New(file, bar)
-
+func uploadToS3(file *os.File) error {
 	fmt.Println("Uploading assets to Learn...")
+	uploadSpinner := spinner.New(spinner.CharSets[32], 100*time.Millisecond)
+	uploadSpinner.Color("green")
+	uploadSpinner.Start()
 
-	// Upload compressed zip file to s3
-	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(creds.BucketName),
-		Key:    aws.String(bucketKey),
-		Body:   pr, // As our file is read and uploaded, our proxy reader will update/render the progress bar
-	})
+	// Parse multipart upload for bucket and presigned URL
+	request, err := newfileUploadRequest(learn.API.Credentials.PresignedUrl, file)
 	if err != nil {
-		return "", fmt.Errorf("Error uploading assets to s3: %v", err)
+		return err
 	}
-
-	bar.Finish()
+	client := &http.Client{Timeout: time.Second * 30}
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	} else if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Uploading asset produced non-200 status code: %d\n", resp.StatusCode)
+	}
+	uploadSpinner.Stop()
 	printlnGreen("√")
 
-	return bucketKey, nil
+	return nil
 }
 
 // createChecksumFromZip takes a pointer to a file and creates a sha256 checksum

@@ -16,7 +16,7 @@ import (
 var API *APIClient
 
 // Learn data used for reporting
-var LearnUserId string
+var LearnUserId int
 var LearnUserEmail string
 
 // APIClient makes network API calls to Learn
@@ -29,24 +29,11 @@ type APIClient struct {
 // Credentials represents the shape of data that the initial call to Learn
 // for s3 and slack credentials will hydrate
 type Credentials struct {
-	*APIToken         `json:"api_token"`
-	*S3Credentials    `json:"s3_credentials"`
-	*SlackCredentials `json:"slack_credentials"`
-}
-
-// S3Credentials represents the important AWS credentials we retrieve from Learn
-// with an api_token
-type S3Credentials struct {
-	AccessKeyID     string `json:"access_key_id"`
-	SecretAccessKey string `json:"secret_access_key"`
-	KeyPrefix       string `json:"key_prefix"`
-	BucketName      string `json:"bucket_name"`
-}
-
-// SlackCredentials represents the credentials we retrieve from Learn for the CLI
-// to operate correctly
-type SlackCredentials struct {
+	*APIToken    `json:"api_token"`
 	DevNotifyURL string `json:"dev_notify_url"`
+	PresignedUrl string `json:"presigned_url"`
+	S3Key        string `json:"s3_key"`
+	UserId       int    `json:"user_id"`
 }
 
 // APIToken is a simple wrapper around an API token
@@ -57,10 +44,11 @@ type APIToken struct {
 // CredentialsResponse describes the shape of the return data from the call
 // to RetrieveCredentials
 type CredentialsResponse struct {
-	UserId string           `json:"user_id"`
-	Email  string           `json:"user_email"`
-	S3     S3Credentials    `json:"s3"`
-	Slack  SlackCredentials `json:"slack"`
+	UserId       int    `json:"user_id"`
+	Email        string `json:"user_email"`
+	PresignedUrl string `json:"presigned_url"`
+	S3Key        string `json:"s3_key"`
+	DevNotifyUrl string `json:"dev_notify_url"`
 }
 
 // CLIBenchmarkPayload is the shape of the payload to send to Learn's learn_cli_metadata
@@ -81,14 +69,14 @@ type CLIBenchmark struct {
 }
 
 // NewAPI is a constructor for the ApiClient
-func NewAPI(baseURL string, client api.Client) (*APIClient, error) {
+func NewAPI(baseURL string, client api.Client, getPresignedPostUrl bool) (*APIClient, error) {
 	apiClient := &APIClient{
 		client:  client,
 		baseURL: baseURL,
 	}
 
 	// Retrieve the application credentials for the CLI using a user's API token
-	creds, err := apiClient.RetrieveCredentials()
+	creds, err := apiClient.RetrieveCredentials(getPresignedPostUrl)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"Could not retrieve credentials from Learn. Please reset your API token with this command: learn set --api_token=your-token-from-%s/api_token", baseURL,
@@ -107,14 +95,19 @@ func (api *APIClient) BaseURL() string {
 
 // RetrieveCredentials uses a user's api_token to request AWS credentials
 // from Learn. It returns a populated *S3Credentials struct or an error
-func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
+func (api *APIClient) RetrieveCredentials(getPresignedPostUrl bool) (*Credentials, error) {
 	// Early return if user's api_token is not set
 	apiToken, ok := viper.Get("api_token").(string)
 	if !ok {
 		return nil, errors.New("Please set your API token with this command: learn set --api_token=your-token-from-https://learn-2.galvanize.com/api_token")
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/users/learn_cli_credentials", api.baseURL), nil)
+	// add presignedParam to request one in the response
+	presignedParam := ""
+	if getPresignedPostUrl {
+		presignedParam = "?presigned_url=true"
+	}
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/users/cli_access%s", api.baseURL, presignedParam), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -136,25 +129,19 @@ func (api *APIClient) RetrieveCredentials() (*Credentials, error) {
 	var c CredentialsResponse
 
 	err = json.NewDecoder(res.Body).Decode(&c)
-
-	LearnUserId = c.UserId
-	LearnUserEmail = c.Email
-
 	if err != nil {
 		return nil, err
 	}
 
+	LearnUserId = c.UserId
+	LearnUserEmail = c.Email
+
 	return &Credentials{
-		S3Credentials: &S3Credentials{
-			AccessKeyID:     c.S3.AccessKeyID,
-			SecretAccessKey: c.S3.SecretAccessKey,
-			KeyPrefix:       c.S3.KeyPrefix,
-			BucketName:      c.S3.BucketName,
-		},
-		SlackCredentials: &SlackCredentials{
-			DevNotifyURL: c.Slack.DevNotifyURL,
-		},
-		APIToken: &APIToken{apiToken},
+		DevNotifyURL: c.DevNotifyUrl,
+		PresignedUrl: c.PresignedUrl,
+		S3Key:        c.S3Key,
+		APIToken:     &APIToken{apiToken},
+		UserId:       c.UserId,
 	}, nil
 }
 
@@ -205,7 +192,7 @@ func (api *APIClient) NotifySlack(err error) {
 	msg := struct {
 		Text string `json:"text"`
 	}{
-		Text: fmt.Sprintf("UserId: %s\nUserEmail: %s\n%s", LearnUserId, LearnUserEmail, err),
+		Text: fmt.Sprintf("UserId: %d\nUserEmail: %s\n%s", LearnUserId, LearnUserEmail, err),
 	}
 
 	bytePostData, _ := json.Marshal(msg)

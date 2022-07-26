@@ -10,12 +10,12 @@ import (
 
 const validPreviewResponse = `{"status":"success","release_id":1,"preview_url":"http://example.com"}`
 const pendingPreviewResponse = `{"status":"pending","release_id":1,"preview_url":"http://example.com"}`
-const credentialsResponse = `{"s3":{"access_key_id":"access_keyin","secret_access_key":"secret_keyin","key_prefix":"keykey's delivery service","bucket_name":"buqet"}, "slack":{"dev_notify_url": "development"}, "latest_cli_version": "v0.9"}`
+const credentialsResponse = `{"presigned_url":"https://aws-presigned-url.com", "dev_notify_url": "development","user_id":5,"user_email":"abc@example.com"}`
 
 func Test_PollForBuildResponse(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validPreviewResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, true)
 
 	attempts := uint8(1)
 	previewResponse, err := API.PollForBuildResponse(1, false, "foo.md", &attempts)
@@ -57,7 +57,7 @@ func Test_PollForBuildResponse(t *testing.T) {
 func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(pendingPreviewResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, true)
 
 	attempts := uint8(1)
 	_, err := API.PollForBuildResponse(1, true, "", &attempts)
@@ -99,7 +99,7 @@ func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
 func Test_BuildReleaseFromS3_Directory(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validPreviewResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, true)
 
 	previewResponse, err := API.BuildReleaseFromS3("buket", true)
 	if err != nil {
@@ -141,7 +141,7 @@ func Test_BuildReleaseFromS3_Directory(t *testing.T) {
 func Test_BuildReleaseFromS3_notDirectory(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponses(credentialsResponse, validPreviewResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, true)
 
 	previewResponse, err := API.BuildReleaseFromS3("buket", false)
 	if err != nil {
@@ -182,19 +182,16 @@ func Test_BuildReleaseFromS3_notDirectory(t *testing.T) {
 func Test_RetrieveCredentials(t *testing.T) {
 	viper.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(credentialsResponse)
-	API, _ := NewAPI("https://example.com", mockClient)
+	API, _ := NewAPI("https://example.com", mockClient, true)
 
-	if API.Credentials.S3Credentials.AccessKeyID != "access_keyin" {
-		t.Errorf("Error unmarshaling S3 Credentials, access_key_id ")
+	if API.Credentials.DevNotifyURL != "development" {
+		t.Errorf("Error unmarshaling S3 Credentials, no dev_alert_url ")
 	}
-	if API.Credentials.SecretAccessKey != "secret_keyin" {
-		t.Errorf("Error unmarshaling S3 Credentials, bad secret_access_key")
+	if API.Credentials.PresignedUrl != "https://aws-presigned-url.com" {
+		t.Errorf("Error unmarshaling S3 Credentials, bad presigned url")
 	}
-	if API.Credentials.KeyPrefix != "keykey's delivery service" {
-		t.Errorf("Error unmarshaling S3 Credentials, bad key_prefix")
-	}
-	if API.Credentials.BucketName != "buqet" {
-		t.Errorf("Error unmarshaling S3 Credentials, bad bucket_name")
+	if API.Credentials.UserId != 5 {
+		t.Errorf("Error unmarshaling S3 Credentials, no user id")
 	}
 
 	// verify that requests were made properly
@@ -206,7 +203,7 @@ func Test_RetrieveCredentials(t *testing.T) {
 	if req.Method != "GET" {
 		t.Errorf("Request made to Learn should be a GET, was %s", req.Method)
 	}
-	urlTarget := "https://example.com/api/v1/users/learn_cli_credentials"
+	urlTarget := "https://example.com/api/v1/users/cli_access?presigned_url=true"
 	if req.URL.String() != urlTarget {
 		t.Errorf("Request made to Learn should be to url '%s' but was '%s'\n", urlTarget, req.URL.String())
 	}
