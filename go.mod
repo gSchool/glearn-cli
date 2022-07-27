@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.5.0
-	golang.org/x/sys v0.0.0-20200917073148-efd3b9a0ff20 // indirect
+	golang.org/x/sys v0.0.0-20220727055044-e65921a090b8 // indirect
 	golang.org/x/text v0.3.3 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 )
