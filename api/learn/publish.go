@@ -43,6 +43,18 @@ type ReleaseResponse struct {
 	ReleaseID int `json:"release_id"`
 }
 
+// Error for bad responses in the api
+type Error struct {
+	Status int    `json:"status"`
+	Title  string `json:"title"`
+}
+
+// ErrorResponse is the body payload of an api error, example:
+// {"errors":{"status":400,"title":"errors: \n\nUrl not found; you might also want to check that galvanize-learn-production is a member of this project"}}
+type ErrorResponse struct {
+	Errors Error `json:"errors"`
+}
+
 // Exists reports if a Block struct has a nonzero id value
 func (b Block) Exists() bool {
 	return b.ID != 0
@@ -117,7 +129,12 @@ func (api *APIClient) CreateBlockByRepoName(repoPieces RepoPieces) (Block, error
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return Block{}, fmt.Errorf("Error: response status: %d", res.StatusCode)
+		var e ErrorResponse
+		err = json.NewDecoder(res.Body).Decode(&e)
+		if err != nil {
+			return Block{}, fmt.Errorf("response status: %d", res.StatusCode)
+		}
+		return Block{}, fmt.Errorf("response status: %d\n %s", res.StatusCode, e.Errors.Title)
 	}
 
 	var blockResp blockResponse
