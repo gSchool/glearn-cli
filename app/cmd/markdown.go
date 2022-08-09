@@ -644,7 +644,7 @@ const numberTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 * type: number
 * id: %s
 * title: [text, a short question title]
-* decimal: [optional number, decimal points to user for answer evaluation]
+<!-- * decimal: [optional number, decimal points to user for answer evaluation] -->
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
 <!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
 
