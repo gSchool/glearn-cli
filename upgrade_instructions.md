@@ -6,6 +6,7 @@ Depending on how you installed your cli tool, please use the appropriate method 
 
 ```
 brew tap gSchool/learn
+brew update
 brew upgrade learn
 ```
 
