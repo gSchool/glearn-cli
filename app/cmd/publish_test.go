@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func Test_parseHostedGitRegex_many(t *testing.T) {
+func Test_parseHostedGit_many(t *testing.T) {
 	type urlToRepo struct {
 		url    string
 		result learn.RepoPieces
@@ -17,15 +17,15 @@ func Test_parseHostedGitRegex_many(t *testing.T) {
 		},
 		{
 			url:    "https://gitlab.com/gsei19/week-05.git",
-			result: learn.RepoPieces{Origin: "gitlab.com", Org: "gsei19", RepoName: "nineteen-week/week-02-full-stack-by-feature"},
+			result: learn.RepoPieces{Origin: "gitlab.com", Org: "gsei19", RepoName: "week-05"},
 		},
 		{
 			url:    "https://gitlab.com/gsei19/week-05.git",
-			result: learn.RepoPieces{Origin: "gitlab.com", Org: "gsei19", RepoName: "week-05.git"},
+			result: learn.RepoPieces{Origin: "gitlab.com", Org: "gsei19", RepoName: "week-05"},
 		},
 		{
 			url:    "git@github.com:golang/from/go.git",
-			result: learn.RepoPieces{Origin: "github.com", Org: "golang", RepoName: "from/go.git"},
+			result: learn.RepoPieces{Origin: "github.com", Org: "golang", RepoName: "from/go"},
 		},
 		{
 			url:    "ssh://user@host.xz/path/to/repo.git/",
@@ -37,7 +37,7 @@ func Test_parseHostedGitRegex_many(t *testing.T) {
 		},
 		{
 			url:    "ssh://host.xz:7634/path/to/repo-name-nam.git/",
-			result: learn.RepoPieces{Origin: "host.xz", Org: "path", RepoName: "to/repo-name-nam.git"},
+			result: learn.RepoPieces{Origin: "host.xz", Org: "path", RepoName: "to/repo-name-nam"},
 		},
 		{
 			url:    "ssh://host.xz/path/to/repo-name.git/",
@@ -98,68 +98,22 @@ func Test_parseHostedGitRegex_many(t *testing.T) {
 	}
 
 	for _, expected := range origins {
-		var test, _ = parseHostedGitRegex(expected.url)
+		var test, err = parseHostedGit(expected.url)
+		if err != nil {
+			t.Errorf("given %s returned error: %s\n", expected.url, err)
+			return
+		}
 		if test.Org != expected.result.Org {
-			t.Errorf("Org parse failed, given:  %s\n expect: %s\n result: %s\n", expected.url, expected.result.Org, test.Org)
+			t.Errorf("Org parse failed!\ngiven:  %s\n expect: %s\n result: %s\n", expected.url, expected.result.Org, test.Org)
 			return
 		}
 		if test.Origin != expected.result.Origin {
-			t.Errorf("Origin parse failed, given:  %s\n expect: %s\n result: %s\n", expected.url, expected.result.Origin, test.Origin)
+			t.Errorf("Origin parse failed!\n given:  %s\n expect: %s\n result: %s\n", expected.url, expected.result.Origin, test.Origin)
 			return
 		}
 		if test.RepoName != expected.result.RepoName {
-			t.Errorf("RepoName parse failed, given:  %s\n expect: %s\n result: %s\n", expected.url, expected.result.RepoName, test.RepoName)
+			t.Errorf("RepoName parse failed!\n given:  %s\n expect: %s\n result: %s\n", expected.url, expected.result.RepoName, test.RepoName)
 			return
 		}
-	}
-}
-
-func Test_parseRepoPieces_TopLevelOrg(t *testing.T) {
-	repoPieces, err := parseHostedGitRegex("https://gitlab.com/gsei19/week-05.git")
-
-	if err != nil {
-		t.Errorf("Threw an error")
-	}
-
-	// https://gitlab.com/gsei19/nineteen-week/week-05.git
-
-	if repoPieces.Org != "gsei19" {
-		t.Errorf("Incorrect org parse")
-	}
-}
-
-func Test_parseRepoPieces_TopLevelOrg_Ssh(t *testing.T) {
-	repoPieces, err := parseHostedGitRegex("git@github.com:golang/go.git")
-
-	if err != nil {
-		t.Errorf("Threw an error")
-	}
-
-	// https://gitlab.com/gsei19/nineteen-week/week-05.git
-
-	if repoPieces.Origin != "github.com" {
-		t.Errorf("Incorrect Origin parse")
-	}
-
-	if repoPieces.RepoName != "go" {
-		t.Errorf("Incorrect RepoName parse")
-	}
-
-	if repoPieces.Org != "golang" {
-		t.Errorf("Incorrect org parse")
-	}
-}
-
-func Test_parseRepoPieces_NestedOrg(t *testing.T) {
-	repoPieces, err := parseHostedGitRegex("https://gitlab.com/gsei19/nineteen-week/week-05.git")
-
-	if err != nil {
-		t.Errorf("Threw an error")
-	}
-
-	// https://gitlab.com/gsei19/nineteen-week/week-05.git
-
-	if repoPieces.Org != "gsei19/nineteen-week" {
-		t.Errorf("Incorrect org parse")
 	}
 }
