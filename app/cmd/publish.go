@@ -203,16 +203,52 @@ func currentBranch() (string, error) {
 
 var hostedGitRe = regexp.MustCompile(`^(:?(\w+):\/\/\/?)?(?:(~?\w+)@)?([\w\d\.\-_]+)(:?:([\d]+))?(?::)?\/*(.*)\/([\w\d\.\-_]+)(?:\.git)\/?$`)
 
-func parseHostedGitRegex(originUrl string) (repoParts learn.RepoPieces, err error) {
-	var repoPieces learn.RepoPieces
-	if m := hostedGitRe.FindStringSubmatch(originUrl); m != nil {
-		repoPieces, err = learn.RepoPieces{
-			Origin: m[4],
-			Org: m[7],
-			RepoName: m[8],
-		}, nil
+func parseHostedGit(remoteUrl string) (learn.RepoPieces, error) {
+	var origin, org, repoName string
+	if strings.HasPrefix(remoteUrl, "https") {
+		// assume acceptable url to parse when remote matches https protocol
+		parsed, err := url.Parse(remoteUrl)
+		if err != nil {
+			return learn.RepoPieces{}, err
+		}
+
+		org, repoName = orgAndRepoFromPath(parsed.Path)
+		origin = parsed.Host
+	} else if m := hostedGitRe.FindStringSubmatch(remoteUrl); m != nil {
+		// use regexp for URL matching in non-https contexts like ssh, git, etc
+		org, repoName = orgAndRepoFromRegex(m[7], m[8])
+		origin = m[4]
 	}
-	return repoPieces, err
+
+	return learn.RepoPieces{
+		Origin:   origin,
+		Org:      org,
+		RepoName: repoName,
+	}, nil
+}
+
+// orgAndRepoFromPath plucks the first portion of the path for the org, while
+// cleaning the remaining portion of the path of .git extensions for the repo name
+func orgAndRepoFromPath(path string) (string, string) {
+	path = strings.TrimPrefix(path, "/")
+	parts := strings.Split(path, "/")
+	repoParts := strings.Join(parts[1:len(parts)], "/")
+
+	gitTrimmed := strings.TrimSuffix(repoParts, ".git") // path can contain either .git or .git/
+	return parts[0], strings.TrimSuffix(gitTrimmed, ".git/")
+}
+
+// orgAndRepoFromRegex corrects the expected format for org and repoName from the hosted git regex matcher
+// org is the top level group for the remote, while the repoName is the rest of the path with namespace.
+// e.g. a path for a git host /org/repo/name is received as 'org/repo' for the long beginning and 'name' for the short end.
+// The block api expects the opposite, and needs 'org' for the org and 'repo/name' for the repo name.
+func orgAndRepoFromRegex(long, shortEnd string) (string, string) {
+	if !strings.Contains(long, "/") {
+		return long, shortEnd
+	}
+
+	repoParts := append(strings.Split(long, "/"), shortEnd)
+	return repoParts[0], strings.Join(repoParts[1:len(repoParts)], "/")
 }
 
 func remotePieces() (learn.RepoPieces, error) {
@@ -221,7 +257,8 @@ func remotePieces() (learn.RepoPieces, error) {
 	if err != nil {
 		return repoPieces, err
 	}
-	return parseHostedGitRegex(s)
+
+	return parseHostedGit(s)
 }
 
 func pushToRemote(branch string) error {
