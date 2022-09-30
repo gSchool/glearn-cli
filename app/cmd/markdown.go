@@ -1520,8 +1520,8 @@ const uploadTemplateMin = `### !challenge
 const distributeCodeTemplate = `<!-- Replace everything in square brackets [] and remove brackets  -->
 ### !distribute-code
 
-* student_folder_path: [text, gitlab folder path that code will be distributed to in student's cohort repo url (can be blank)]
-* repository_url: [text, gitlab url that code will be distributed from]
+* student_folder_path: [text, GitLab folder path that code will be distributed to in student's cohort repo URL (can be blank)]
+* repository_url: [text, GitLab URL that code will be distributed from]
 
 ### !end-distribute-code`
 
