@@ -185,6 +185,8 @@ var templates = map[string]temp{
 	"descyaml":        {"description.yaml syntax", descYamlTemplate, descYamlTemplateMin, true},
 	"callout":         {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
 	"co":              {"Callout markdown", calloutTemplate, calloutTemplateMin, false},
+	"distributecode":  {"Distribute code repository markdown", distributeCodeTemplate, distributeCodeTemplateMin, false},
+	"dc":              {"Distribute code repository markdown", distributeCodeTemplate, distributeCodeTemplateMin, false},
 	"upload":          {"Upload markdown", uploadTemplate, uploadTemplateMin, true},
 	"up":              {"Upload markdown", uploadTemplate, uploadTemplateMin, true},
 }
@@ -218,6 +220,7 @@ Questions:
   testableproject (tpr)
 Other Markdown:
   callout (co)
+  distributecode (dc)
 Yaml Configuration:
   configyaml (cfy)
   courseyaml (cry)
@@ -1513,3 +1516,18 @@ const uploadTemplateMin = `### !challenge
 ##### !end-question
 
 ### !end-challenge`
+
+const distributeCodeTemplate = `<!-- Replace everything in square brackets [] and remove brackets  -->
+### !distribute-code
+
+* student_folder_path: [text, gitlab folder path that code will be distributed to in student's cohort repo url (can be blank)]
+* repository_url: [text, gitlab url that code will be distributed from]
+
+### !end-distribute-code`
+
+const distributeCodeTemplateMin = `### !distribute-code
+
+* student_folder_path:
+* repository_url: 
+
+### !end-distribute-code`
