@@ -1518,6 +1518,7 @@ const uploadTemplateMin = `### !challenge
 ### !end-challenge`
 
 const distributeCodeTemplate = `<!-- Replace everything in square brackets [] and remove brackets  -->
+<!-- This button can be added anywhere except inside of a challenge -->
 ### !distribute-code
 
 * student_folder_path: [text, GitLab folder path that code will be distributed to in student's cohort repo URL (can be blank)]
