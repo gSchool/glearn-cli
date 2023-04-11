@@ -820,7 +820,7 @@ const javascriptTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>
 ### !challenge
 
 * type: code-snippet
-* language: javascript
+* language: javascript18
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
@@ -872,7 +872,7 @@ const javascriptTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>
 ### !challenge
 
 * type: code-snippet
-* language: javascript
+* language: javascript18
 * id: %s
 * title:
 
@@ -1018,7 +1018,7 @@ const pythonTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 ### !challenge
 
 * type: code-snippet
-* language: python3.6
+* language: python3.9
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
@@ -1074,7 +1074,7 @@ const pythonTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 ### !challenge
 
 * type: code-snippet
-* language: python3.6
+* language: python3.9
 * id: %s
 * title:
 
