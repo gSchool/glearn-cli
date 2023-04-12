@@ -734,7 +734,7 @@ func uploadToS3(file *os.File) error {
 	if err != nil {
 		return err
 	}
-	client := &http.Client{Timeout: time.Second * 30}
+	client := &http.Client{Timeout: time.Second * 60}
 	resp, err := client.Do(request)
 	if err != nil {
 		return err
