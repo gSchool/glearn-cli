@@ -167,6 +167,8 @@ var templates = map[string]temp{
 	"javascript":      {"Javascript markdown", javascriptTemplate, javascriptTemplateMin, true},
 	"ja":              {"Java markdown", javaTemplate, javaTemplateMin, true},
 	"java":            {"Java markdown", javaTemplate, javaTemplateMin, true},
+	"rb":              {"Ruby markdown", rubyTemplate, rubyTemplateMin, true},
+	"ruby":            {"Ruby markdown", rubyTemplate, rubyTemplateMin, true},
 	"py":              {"Python markdown", pythonTemplate, pythonTemplateMin, true},
 	"python":          {"Python markdown", pythonTemplate, pythonTemplateMin, true},
 	"sq":              {"Sql markdown", sqlTemplate, sqlTemplateMin, true},
@@ -981,6 +983,95 @@ const javaTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>
 
 * type: code-snippet
 * language: java
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !setup
+
+
+
+##### !end-setup
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+##### !tests
+
+
+
+##### !end-tests
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const rubyTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+<!-- Replace everything in square brackets [] and remove brackets  -->
+
+### !challenge
+
+* type: code-snippet
+* language: ruby3
+* id: %s
+* title: [text, a short question title]
+<!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
+<!-- * topics: [block, proc, lambda] (Checkpoints only, optional the topics for analyzing points) -->
+
+##### !question
+
+[markdown, your question]
+
+##### !end-question
+
+##### !placeholder
+
+~~~ruby
+[the code below is the starting code in the web editor]
+# write code that declares the class Foo and initializes
+# class Foo
+#   def initialize
+#   end
+# end
+~~~
+
+##### !end-placeholder
+
+##### !tests
+
+[the test code below will be added to the end of the student submission]
+~~~ruby
+describe Foo do
+	it "does something" do
+	end
+end
+~~~
+
+##### !end-tests
+
+<!-- other optional sections -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
+<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
+<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const rubyTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: code-snippet
+* language: ruby3
 * id: %s
 * title:
 
