@@ -1035,23 +1035,26 @@ const rubyTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>
 ##### !placeholder
 
 ~~~ruby
-[the code below is the starting code in the web editor]
-# write code that declares the class Foo and initializes
-# class Foo
-#   def initialize
-#   end
-# end
+class Foo
+  def initialize
+  end
+
+  def truthy
+    return true
+  end
+end
 ~~~
 
 ##### !end-placeholder
 
 ##### !tests
 
-[the test code below will be added to the end of the student submission]
 ~~~ruby
 describe Foo do
-	it "does something" do
-	end
+  it "does something" do
+    f = Foo.new
+    expect(f.truthy).to eq true
+  end
 end
 ~~~
 
