@@ -60,16 +60,16 @@ func Test_ParseSeveralChallengeContents(t *testing.T) {
 		TestFilePaths:        []string{"/tests/title.js"},
 		SetupFilePaths:       []string{"/setup/title.js"},
 	}
-	result := New([]rune(multipleChallengeContent))
+	result := New([]rune(minimalBullets))
 	result.ParseResources()
 	if len(result.DockerDirectoryPaths) != 1 {
-		t.Errorf("length DockerDirectoryPaths expected 1,  got %d", len(result.DockerDirectoryPaths))
+		t.Fatalf("length DockerDirectoryPaths expected 1,  got %d", len(result.DockerDirectoryPaths))
 	}
 	if len(result.TestFilePaths) != 1 {
-		t.Errorf("length TestFilePaths expected 1, got %d", len(result.TestFilePaths))
+		t.Fatalf("length TestFilePaths expected 1, got %d", len(result.TestFilePaths))
 	}
 	if len(result.SetupFilePaths) != 1 {
-		t.Errorf("length SetupFilePaths expected 1, got %d", len(result.SetupFilePaths))
+		t.Fatalf("length SetupFilePaths expected 1, got %d", len(result.SetupFilePaths))
 	}
 
 	if expected.DockerDirectoryPaths[0] != result.DockerDirectoryPaths[0] {
@@ -82,6 +82,11 @@ func Test_ParseSeveralChallengeContents(t *testing.T) {
 		t.Errorf("Expected SetupFilePaths '%s', got '%s'", expected.SetupFilePaths[0], result.SetupFilePaths[0])
 	}
 }
+
+const minimalBullets = `
+* docker_directory_path: /path/to/dir
+
+`
 
 const multipleChallengeContent = `### !challenge
 

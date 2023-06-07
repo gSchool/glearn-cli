@@ -90,10 +90,10 @@ func (p *MDResourceParser) peek() rune {
 // hasPathBullet reports if the next two characters are '* ', and advances the readPosition past them
 // otherwise it reports false and does not advance the read position
 func (p *MDResourceParser) hasPathBullet() bool {
-	if p.readPosition >= len(p.input) || p.readPosition+1 >= len(p.input) {
+	if p.position >= len(p.input) || p.position+1 >= len(p.input) {
 		return false
 	}
-	if p.input[p.readPosition] == '*' && p.input[p.readPosition+1] == ' ' {
+	if p.input[p.position] == '*' && p.input[p.position+1] == ' ' {
 		p.readChar()
 		p.readChar()
 		return true
@@ -112,9 +112,10 @@ func (p *MDResourceParser) extractPath() error {
 		return fmt.Errorf("no match")
 	}
 
-	switch p.peek() {
+	switch p.char {
 	case 'd':
 		// if the startMatch matches, continue readChar while it matches and increase the startChar
+
 		for _, matchChar := range p.dockerDirMatch.match {
 			if matchChar != p.char {
 				return fmt.Errorf("no match")
@@ -274,7 +275,6 @@ func (p *MDResourceParser) next() {
 			return
 		}
 
-		return
 	case '[':
 		linkPath, err := p.extractLink()
 		if err != nil {
