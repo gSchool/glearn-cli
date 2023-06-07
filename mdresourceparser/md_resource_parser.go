@@ -18,6 +18,10 @@ type MDResourceParser struct {
 	Links                []string    // collection of links paths
 	DockerDirectoryPaths []string    // collection of docker_directory_paths
 	dockerDirMatch       *startMatch // keeps track of parsing a newline matcher for docker directories
+	TestFilePaths        []string    // collection of test file paths
+	testFileMatch        *startMatch // keeps track of parsing a newline matcher for test file matches
+	SetupFilePaths       []string    // collection of setup file paths
+	setupFileMatch       *startMatch // keeps track of parsing a newline matcher for setup file matches
 }
 
 // startMatch keeps track of a new line to detect if it starts with the given match string
@@ -31,7 +35,9 @@ type startMatch struct {
 func New(input []rune) *MDResourceParser {
 	p := &MDResourceParser{
 		input:          input,
-		dockerDirMatch: &startMatch{match: "* docker_directory_path:"},
+		dockerDirMatch: &startMatch{match: "docker_directory_path:"},
+		setupFileMatch: &startMatch{match: "setup_file:"},
+		testFileMatch:  &startMatch{match: "test_file:"},
 	}
 	p.readChar()
 	return p
@@ -81,29 +87,121 @@ func (p *MDResourceParser) peek() rune {
 	return p.input[p.readPosition]
 }
 
-func (p *MDResourceParser) extractPath() (string, error) {
-	if p.readPosition >= len(p.input) {
-		return "", io.EOF
+// hasPathBullet reports if the next two characters are '* ', and advances the readPosition past them
+// otherwise it reports false and does not advance the read position
+func (p *MDResourceParser) hasPathBullet() bool {
+	if p.readPosition >= len(p.input) || p.readPosition+1 >= len(p.input) {
+		return false
 	}
-
-	// if the startMatch matches, continue readChar while it matches and increase the startChar
-	for _, matchChar := range p.dockerDirMatch.match {
-		if matchChar != p.char {
-			return "", fmt.Errorf("no match")
-		}
-
-		if p.readPosition >= len(p.input) {
-			return "", io.EOF
-		}
+	if p.input[p.readPosition] == '*' && p.input[p.readPosition+1] == ' ' {
 		p.readChar()
+		p.readChar()
+		return true
 	}
+	return false
+}
+
+func (p *MDResourceParser) extractPath() error {
+	if p.readPosition >= len(p.input) {
+		return io.EOF
+	}
+
+	// any desired path ispresent if the line starts with '* '
+	// if it has this prefix, check if one of the three desired matches are present
+	if !p.hasPathBullet() {
+		return fmt.Errorf("no match")
+	}
+
+	switch p.peek() {
+	case 'd':
+		// if the startMatch matches, continue readChar while it matches and increase the startChar
+		for _, matchChar := range p.dockerDirMatch.match {
+			if matchChar != p.char {
+				return fmt.Errorf("no match")
+			}
+
+			if p.readPosition >= len(p.input) {
+				return io.EOF
+			}
+			p.readChar()
+		}
+
+		path, err := p.readUntilChar('\n')
+		if err != nil {
+			return nil
+		}
+
+		p.DockerDirectoryPaths = append(p.DockerDirectoryPaths, strings.TrimSpace(path))
+	case 't':
+		// if the startMatch matches, continue readChar while it matches and increase the startChar
+		for _, matchChar := range p.testFileMatch.match {
+			if matchChar != p.char {
+				return fmt.Errorf("no match")
+			}
+
+			if p.readPosition >= len(p.input) {
+				return io.EOF
+			}
+			p.readChar()
+		}
+
+		path, err := p.readUntilChar('\n')
+		if err != nil {
+			return err
+		}
+		p.TestFilePaths = append(p.TestFilePaths, strings.TrimSpace(path))
+	case 's':
+		for _, matchChar := range p.setupFileMatch.match {
+			if matchChar != p.char {
+				return fmt.Errorf("no match")
+			}
+
+			if p.readPosition >= len(p.input) {
+				return io.EOF
+			}
+			p.readChar()
+		}
+
+		path, err := p.readUntilChar('\n')
+		if err != nil {
+			return nil
+		}
+		p.SetupFilePaths = append(p.SetupFilePaths, strings.TrimSpace(path))
+	default:
+		return fmt.Errorf("no match")
+	}
+
+	//// if the startMatch matches, continue readChar while it matches and increase the startChar
+	//for _, matchChar := range p.dockerDirMatch.match {
+	//	if matchChar != p.char {
+	//		return "", fmt.Errorf("no match")
+	//	}
+
+	//	if p.readPosition >= len(p.input) {
+	//		return "", io.EOF
+	//	}
+	//	p.readChar()
+	//}
 
 	// if a full match is found, extract the remaining characters until a newline. If the p.char doesn't match, error
-	path, err := p.readUntilChar('\n')
-	if err != nil {
-		return "", nil
+	//path, err := p.readUntilChar('\n')
+	//if err != nil {
+	//	return "", nil
+	//}
+	//return path, nil
+	return nil
+}
+
+func (p *MDResourceParser) matchError(matchChar rune) error {
+	if matchChar != p.char {
+		return fmt.Errorf("no match")
 	}
-	return path, nil
+
+	if p.readPosition >= len(p.input) {
+		return io.EOF
+	}
+	p.readChar()
+	return nil
 }
 
 func (p *MDResourceParser) extractLink() (string, error) {
@@ -171,12 +269,11 @@ func (p *MDResourceParser) next() {
 		// readChar to move to the beginning of the new line
 		p.readChar()
 
-		addPath, err := p.extractPath()
+		err := p.extractPath()
 		if err != nil {
 			return
 		}
 
-		p.DockerDirectoryPaths = append(p.DockerDirectoryPaths, strings.TrimSpace(addPath))
 		return
 	case '[':
 		linkPath, err := p.extractLink()

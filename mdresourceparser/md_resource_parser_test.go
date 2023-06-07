@@ -54,6 +54,78 @@ func Test_ParseDockerDirectoryPaths(t *testing.T) {
 	}
 }
 
+func Test_ParseSeveralChallengeContents(t *testing.T) {
+	expected := MDResourceParser{
+		DockerDirectoryPaths: []string{"/path/to/dir"},
+		TestFilePaths:        []string{"/tests/title.js"},
+		SetupFilePaths:       []string{"/setup/title.js"},
+	}
+	result := New([]rune(multipleChallengeContent))
+	result.ParseResources()
+	if len(result.DockerDirectoryPaths) != 1 {
+		t.Errorf("length DockerDirectoryPaths expected 1,  got %d", len(result.DockerDirectoryPaths))
+	}
+	if len(result.TestFilePaths) != 1 {
+		t.Errorf("length TestFilePaths expected 1, got %d", len(result.TestFilePaths))
+	}
+	if len(result.SetupFilePaths) != 1 {
+		t.Errorf("length SetupFilePaths expected 1, got %d", len(result.SetupFilePaths))
+	}
+
+	if expected.DockerDirectoryPaths[0] != result.DockerDirectoryPaths[0] {
+		t.Errorf("Expected DockerDirectoryPaths '%s', got '%s'", expected.DockerDirectoryPaths[0], result.DockerDirectoryPaths[0])
+	}
+	if expected.TestFilePaths[0] != result.TestFilePaths[0] {
+		t.Errorf("Expected TestFilePaths '%s', got '%s'", expected.TestFilePaths[0], result.TestFilePaths[0])
+	}
+	if expected.SetupFilePaths[0] != result.SetupFilePaths[0] {
+		t.Errorf("Expected SetupFilePaths '%s', got '%s'", expected.SetupFilePaths[0], result.SetupFilePaths[0])
+	}
+}
+
+const multipleChallengeContent = `### !challenge
+
+- type: custom-snippet
+- language: text
+- id: 8c406f4f-6428-498b-be24-6bd0a6c9096b
+- title: Title
+- docker_directory_path: /path/to/dir
+
+##### !question
+
+Question
+
+##### !end-question
+
+##### !placeholder
+
+##### !end-placeholder
+
+### !end-challenge
+
+### !challenge
+
+* type: code-snippet
+* language: javascript18
+* id: 8c406f4f-6428-498b-be24-6bd0a6c9096b
+* title: title
+* test_file: /tests/title.js
+* setup_file: /setups/title.js
+
+##### !question
+
+Question
+
+##### !end-question
+
+##### !placeholder
+
+##### !end-placeholder
+
+### !end-challenge
+
+`
+
 const challengeContent = `### !challenge
 
 * type: custom-snippet

@@ -36,15 +36,24 @@ import (
 // is the name of the tmp dir we build when needing to attach relative links.
 const tmpSingleFileDir string = "single-file-upload"
 
+// previewBuilder collects information about the curriculum to be previewed
 type previewBuilder struct {
-	target              string
-	fileInfo            os.FileInfo
+	// target is the initial argument, which should be a file or directory
+	target string
+	// fileinfo is extracted from the initial target
+	fileInfo os.FileInfo
+	// singleFileLinkPaths collets links from the preview of an individual file
 	singleFileLinkPaths []string
-	dataPaths           []string
-	dockerPaths         []string
-	configYamlPaths     []string
-	startOfCmd          time.Time
-	bench               *learn.CLIBenchmark
+	// dataPaths are defined in SQL snippet challenges and stored here after previewing
+	dataPaths []string
+	// dockerPaths are defined in custom snippet challenges and stored here after previewing
+	dockerPaths []string
+	// configYamlPaths
+	configYamlPaths []string
+	// startOfCmd is set at the beginning of the preview action
+	startOfCmd time.Time
+	// bench is the benchmark metadat collected to send to Learn
+	bench *learn.CLIBenchmark
 }
 
 func NewPreviewBuilder(args []string) (*previewBuilder, error) {

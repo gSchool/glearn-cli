@@ -75,6 +75,9 @@ func publishFindOrCreateConfig(target string) (bool, error) {
 	return cb.findOrCreateConfig()
 }
 
+// previewFindOrCreateConfig ensures a config for the previewed curriculum exists to be read by Learn. Because
+// docker directory paths can contain content that looks like lesson curriculum, they are passed as arguments to
+// prevent those directories from being included as lesson content in a generated config file.
 func previewFindOrCreateConfig(target string, isSingleFilePreview bool, excludePaths []string) (bool, error) {
 	cb := NewConfigBuilder(target, isSingleFilePreview, false, excludePaths)
 	return cb.findOrCreateConfig()
@@ -609,7 +612,7 @@ func GitTopLevelDir() (string, error) {
 // newStandard returns a standard from tne unitDir and unit name combination
 // unitDir is the location of the individual unit, with unit the directory beneath it
 // Either a description yaml file is read from, or the unit name is used to build a standard
-//func standardAttributes(unitDir, unit string) (title, UID, description string, successCriteria []string) {
+// func standardAttributes(unitDir, unit string) (title, UID, description string, successCriteria []string) {
 func newStandard(unitDir, unit string) Standard {
 	yamlLocation := fmt.Sprintf("%s/%s/%s", unitDir, unit, "description.yaml")
 	yamlBytes, err := os.ReadFile(yamlLocation)
