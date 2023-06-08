@@ -58,9 +58,9 @@ func Test_ParseSeveralChallengeContents(t *testing.T) {
 	expected := MDResourceParser{
 		DockerDirectoryPaths: []string{"/path/to/dir"},
 		TestFilePaths:        []string{"/tests/title.js"},
-		SetupFilePaths:       []string{"/setup/title.js"},
+		SetupFilePaths:       []string{"/setups/title.js"},
 	}
-	result := New([]rune(minimalBullets))
+	result := New([]rune(multipleChallengeContent))
 	result.ParseResources()
 	if len(result.DockerDirectoryPaths) != 1 {
 		t.Fatalf("length DockerDirectoryPaths expected 1,  got %d", len(result.DockerDirectoryPaths))
@@ -83,9 +83,25 @@ func Test_ParseSeveralChallengeContents(t *testing.T) {
 	}
 }
 
+func Test_hasPathBullet(t *testing.T) {
+	tableTest := map[string]bool{
+		"* content_after": true,
+		"- content_after": true,
+		"_ not_valid":     false,
+	}
+
+	for k, b := range tableTest {
+		parser := New([]rune(k))
+		if parser.hasPathBullet() != b {
+			t.Errorf("Expected %s hasPathBullet to be %v, was not", k, b)
+		}
+	}
+}
+
 const minimalBullets = `
 * docker_directory_path: /path/to/dir
-
+* test_file: /tests/title.js
+* setup_file: /setup/title.js
 `
 
 const multipleChallengeContent = `### !challenge
@@ -94,7 +110,7 @@ const multipleChallengeContent = `### !challenge
 - language: text
 - id: 8c406f4f-6428-498b-be24-6bd0a6c9096b
 - title: Title
-- docker_directory_path: /path/to/dir
+* docker_directory_path: /path/to/dir
 
 ##### !question
 

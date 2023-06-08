@@ -93,7 +93,7 @@ func (p *MDResourceParser) hasPathBullet() bool {
 	if p.position >= len(p.input) || p.position+1 >= len(p.input) {
 		return false
 	}
-	if p.input[p.position] == '*' && p.input[p.position+1] == ' ' {
+	if (p.char == '*' || p.char == '-') && p.peek() == ' ' {
 		p.readChar()
 		p.readChar()
 		return true
@@ -267,14 +267,11 @@ func (p *MDResourceParser) next() {
 
 	switch p.char {
 	case '\n':
-		// readChar to move to the beginning of the new line
+		// move to the newline
 		p.readChar()
-
-		err := p.extractPath()
-		if err != nil {
-			return
-		}
-
+		// attempt to extract path
+		p.extractPath()
+		return
 	case '[':
 		linkPath, err := p.extractLink()
 		if err != nil {
