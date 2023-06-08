@@ -46,8 +46,7 @@ func Test_ParseDockerDirectoryPaths(t *testing.T) {
 	}
 	for k, v := range tableTest {
 		parser := New([]rune(k))
-		parser.ParseResources()
-		result := parser.DockerDirectoryPaths
+		result, _, _ := parser.ParseResources()
 		if strings.Join(result, "") != strings.Join(v, "") {
 			t.Errorf("DockerDirectoryPaths %s expected %s but got %v", k, v, result)
 		}
@@ -55,31 +54,30 @@ func Test_ParseDockerDirectoryPaths(t *testing.T) {
 }
 
 func Test_ParseSeveralChallengeContents(t *testing.T) {
-	expected := MDResourceParser{
-		DockerDirectoryPaths: []string{"/path/to/dir"},
-		TestFilePaths:        []string{"/tests/title.js"},
-		SetupFilePaths:       []string{"/setups/title.js"},
-	}
 	result := New([]rune(multipleChallengeContent))
-	result.ParseResources()
-	if len(result.DockerDirectoryPaths) != 1 {
-		t.Fatalf("length DockerDirectoryPaths expected 1,  got %d", len(result.DockerDirectoryPaths))
+	dockerDirectoryPaths, testFilePaths, setupFilePaths := result.ParseResources()
+	if len(dockerDirectoryPaths) != 1 {
+		t.Fatalf("length DockerDirectoryPaths expected 1,  got %d", len(dockerDirectoryPaths))
 	}
-	if len(result.TestFilePaths) != 1 {
-		t.Fatalf("length TestFilePaths expected 1, got %d", len(result.TestFilePaths))
+	if len(testFilePaths) != 1 {
+		t.Fatalf("length TestFilePaths expected 1, got %d", len(testFilePaths))
 	}
-	if len(result.SetupFilePaths) != 1 {
-		t.Fatalf("length SetupFilePaths expected 1, got %d", len(result.SetupFilePaths))
+	if len(setupFilePaths) != 1 {
+		t.Fatalf("length SetupFilePaths expected 1, got %d", len(setupFilePaths))
 	}
 
-	if expected.DockerDirectoryPaths[0] != result.DockerDirectoryPaths[0] {
-		t.Errorf("Expected DockerDirectoryPaths '%s', got '%s'", expected.DockerDirectoryPaths[0], result.DockerDirectoryPaths[0])
+	expectedDockerDirectoryPaths := "/path/to/dir"
+	expectedTestFilePaths := "/tests/title.js"
+	expectedSetupFilePaths := "/setups/title.js"
+
+	if expectedDockerDirectoryPaths != dockerDirectoryPaths[0] {
+		t.Errorf("Expected DockerDirectoryPaths '%s', got '%s'", expectedDockerDirectoryPaths, dockerDirectoryPaths[0])
 	}
-	if expected.TestFilePaths[0] != result.TestFilePaths[0] {
-		t.Errorf("Expected TestFilePaths '%s', got '%s'", expected.TestFilePaths[0], result.TestFilePaths[0])
+	if expectedTestFilePaths != testFilePaths[0] {
+		t.Errorf("Expected TestFilePaths '%s', got '%s'", expectedTestFilePaths, testFilePaths[0])
 	}
-	if expected.SetupFilePaths[0] != result.SetupFilePaths[0] {
-		t.Errorf("Expected SetupFilePaths '%s', got '%s'", expected.SetupFilePaths[0], result.SetupFilePaths[0])
+	if expectedSetupFilePaths != setupFilePaths[0] {
+		t.Errorf("Expected SetupFilePaths '%s', got '%s'", expectedSetupFilePaths, setupFilePaths[0])
 	}
 }
 

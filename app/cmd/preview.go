@@ -48,7 +48,7 @@ type previewBuilder struct {
 	dataPaths []string
 	// dockerPaths are defined in custom snippet challenges and stored here after previewing
 	dockerPaths []string
-	// configYamlPaths
+	// configYamlPaths stores the configYaml
 	configYamlPaths []string
 	// startOfCmd is set at the beginning of the preview action
 	startOfCmd time.Time
@@ -669,10 +669,10 @@ func collectResourcePaths(target string) ([]string, []string, error) {
 	}
 
 	m := mdresourceparser.New([]rune(string(contents)))
-	m.ParseResources()
+	dockerDirectoryPaths, _, _ := m.ParseResources()
 
 	uniqueMap := make(map[string]struct{})
-	for _, v := range m.DockerDirectoryPaths {
+	for _, v := range dockerDirectoryPaths {
 		uniqueMap[v] = struct{}{}
 	}
 	var uniqueDockerPaths []string
