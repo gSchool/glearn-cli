@@ -101,58 +101,25 @@ func (p *MDResourceParser) hasPathBullet() bool {
 	return false
 }
 
+// extractPath finds paths defined on challenges to other files and directories
+// it appends the found paths to the parser
 func (p *MDResourceParser) extractPath() error {
 	if p.readPosition >= len(p.input) {
 		return io.EOF
 	}
 
-	// any desired path ispresent if the line starts with '* '
-	// if it has this prefix, check if one of the three desired matches are present
+	// any desired path is present if the line starts with '* '
 	if !p.hasPathBullet() {
 		return fmt.Errorf("no match")
 	}
 
 	switch p.char {
 	case 'd':
-		for _, matchChar := range p.dockerDirMatch.match {
-			err := p.matchError(matchChar)
-			if err != nil {
-				return err
-			}
-		}
-
-		path, err := p.readUntilChar('\n')
-		if err != nil {
-			return nil
-		}
-
-		p.DockerDirectoryPaths = append(p.DockerDirectoryPaths, strings.TrimSpace(path))
+		return p.readDockerDirectoryPaths()
 	case 't':
-		for _, matchChar := range p.testFileMatch.match {
-			err := p.matchError(matchChar)
-			if err != nil {
-				return err
-			}
-		}
-
-		path, err := p.readUntilChar('\n')
-		if err != nil {
-			return err
-		}
-		p.TestFilePaths = append(p.TestFilePaths, strings.TrimSpace(path))
+		return p.readTestFilePaths()
 	case 's':
-		for _, matchChar := range p.setupFileMatch.match {
-			err := p.matchError(matchChar)
-			if err != nil {
-				return err
-			}
-		}
-
-		path, err := p.readUntilChar('\n')
-		if err != nil {
-			return nil
-		}
-		p.SetupFilePaths = append(p.SetupFilePaths, strings.TrimSpace(path))
+		return p.readSetupFilePaths()
 	default:
 		return fmt.Errorf("no match")
 	}
@@ -227,6 +194,55 @@ func (p *MDResourceParser) readUntilChar(c rune) (string, error) {
 	return string(path), nil
 }
 
+func (p *MDResourceParser) readDockerDirectoryPaths() error {
+	for _, matchChar := range p.dockerDirMatch.match {
+		err := p.matchError(matchChar)
+		if err != nil {
+			return err
+		}
+	}
+
+	path, err := p.readUntilChar('\n')
+	if err != nil {
+		return err
+	}
+
+	p.DockerDirectoryPaths = append(p.DockerDirectoryPaths, strings.TrimSpace(path))
+	return nil
+}
+
+func (p *MDResourceParser) readTestFilePaths() error {
+	for _, matchChar := range p.testFileMatch.match {
+		err := p.matchError(matchChar)
+		if err != nil {
+			return err
+		}
+	}
+
+	path, err := p.readUntilChar('\n')
+	if err != nil {
+		return err
+	}
+	p.TestFilePaths = append(p.TestFilePaths, strings.TrimSpace(path))
+	return nil
+}
+
+func (p *MDResourceParser) readSetupFilePaths() error {
+	for _, matchChar := range p.setupFileMatch.match {
+		err := p.matchError(matchChar)
+		if err != nil {
+			return err
+		}
+	}
+
+	path, err := p.readUntilChar('\n')
+	if err != nil {
+		return err
+	}
+	p.SetupFilePaths = append(p.SetupFilePaths, strings.TrimSpace(path))
+	return nil
+}
+
 // next switches through the lexer's current char and creates a new token.
 // It then it calls readChar() to advance the lexer and it returns the token
 func (p *MDResourceParser) next() {
@@ -236,7 +252,6 @@ func (p *MDResourceParser) next() {
 	case '\n':
 		// move to the newline
 		p.readChar()
-		// attempt to extract path
 		p.extractPath()
 		return
 	case '[':
