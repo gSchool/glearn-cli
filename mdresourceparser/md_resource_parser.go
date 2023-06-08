@@ -114,17 +114,11 @@ func (p *MDResourceParser) extractPath() error {
 
 	switch p.char {
 	case 'd':
-		// if the startMatch matches, continue readChar while it matches and increase the startChar
-
 		for _, matchChar := range p.dockerDirMatch.match {
-			if matchChar != p.char {
-				return fmt.Errorf("no match")
+			err := p.matchError(matchChar)
+			if err != nil {
+				return err
 			}
-
-			if p.readPosition >= len(p.input) {
-				return io.EOF
-			}
-			p.readChar()
 		}
 
 		path, err := p.readUntilChar('\n')
@@ -134,16 +128,11 @@ func (p *MDResourceParser) extractPath() error {
 
 		p.DockerDirectoryPaths = append(p.DockerDirectoryPaths, strings.TrimSpace(path))
 	case 't':
-		// if the startMatch matches, continue readChar while it matches and increase the startChar
 		for _, matchChar := range p.testFileMatch.match {
-			if matchChar != p.char {
-				return fmt.Errorf("no match")
+			err := p.matchError(matchChar)
+			if err != nil {
+				return err
 			}
-
-			if p.readPosition >= len(p.input) {
-				return io.EOF
-			}
-			p.readChar()
 		}
 
 		path, err := p.readUntilChar('\n')
@@ -153,14 +142,10 @@ func (p *MDResourceParser) extractPath() error {
 		p.TestFilePaths = append(p.TestFilePaths, strings.TrimSpace(path))
 	case 's':
 		for _, matchChar := range p.setupFileMatch.match {
-			if matchChar != p.char {
-				return fmt.Errorf("no match")
+			err := p.matchError(matchChar)
+			if err != nil {
+				return err
 			}
-
-			if p.readPosition >= len(p.input) {
-				return io.EOF
-			}
-			p.readChar()
 		}
 
 		path, err := p.readUntilChar('\n')
@@ -172,24 +157,6 @@ func (p *MDResourceParser) extractPath() error {
 		return fmt.Errorf("no match")
 	}
 
-	//// if the startMatch matches, continue readChar while it matches and increase the startChar
-	//for _, matchChar := range p.dockerDirMatch.match {
-	//	if matchChar != p.char {
-	//		return "", fmt.Errorf("no match")
-	//	}
-
-	//	if p.readPosition >= len(p.input) {
-	//		return "", io.EOF
-	//	}
-	//	p.readChar()
-	//}
-
-	// if a full match is found, extract the remaining characters until a newline. If the p.char doesn't match, error
-	//path, err := p.readUntilChar('\n')
-	//if err != nil {
-	//	return "", nil
-	//}
-	//return path, nil
 	return nil
 }
 
