@@ -28,6 +28,23 @@ type pathMatch struct {
 	paths []string // stored paths
 }
 
+func (pm *pathMatch) appendPath(parser *MDResourceParser) error {
+	for _, matchChar := range pm.match {
+		err := parser.matchError(matchChar)
+		if err != nil {
+			return err
+		}
+	}
+
+	path, err := parser.readUntilChar('\n')
+	if err != nil {
+		return err
+	}
+
+	pm.paths = append(pm.paths, strings.TrimSpace(path))
+	return nil
+}
+
 // New creates and returns a pointer to the MDResourceParser with it's input attached
 func New(input []rune) *MDResourceParser {
 	p := &MDResourceParser{
@@ -43,11 +60,14 @@ func New(input []rune) *MDResourceParser {
 
 // ParseResources takes the input contents and parses it for our links and other
 // curriculum content that represents files in the repository. It returns the resources read
-func (p *MDResourceParser) ParseResources() (dockerDirPaths, testFilePaths, setupFilePaths []string) {
+func (p *MDResourceParser) ParseResources() (dataPaths, dockerDirPaths, testFilePaths, setupFilePaths []string) {
 	for p.readPosition < len(p.input) {
 		p.next()
 	}
-	return p.dockerDirMatch.paths, p.testFileMatch.paths, p.setupFileMatch.paths
+	return p.dataPathMatch.paths,
+		p.dockerDirMatch.paths,
+		p.testFileMatch.paths,
+		p.setupFileMatch.paths
 }
 
 // readChar checks if were at EOF and if we are not, it sets the parser's char to
@@ -115,11 +135,16 @@ func (p *MDResourceParser) extractPath() error {
 
 	switch p.char {
 	case 'd':
-		return p.readDockerDirectoryPaths()
+		// 'd' can be 'data_path' or 'docker_directory_path'
+		if p.peek() == 'a' {
+			return p.dataPathMatch.appendPath(p)
+		} else {
+			return p.dockerDirMatch.appendPath(p)
+		}
 	case 't':
-		return p.readTestFilePaths()
+		return p.testFileMatch.appendPath(p)
 	case 's':
-		return p.readSetupFilePaths()
+		return p.setupFileMatch.appendPath(p)
 	default:
 		return fmt.Errorf("no match")
 	}
@@ -127,6 +152,7 @@ func (p *MDResourceParser) extractPath() error {
 	return nil
 }
 
+// matchError is used by the parser to determine if a rune equas the current character, and protects against EOF
 func (p *MDResourceParser) matchError(matchChar rune) error {
 	if matchChar != p.char {
 		return fmt.Errorf("no match")
@@ -192,72 +218,6 @@ func (p *MDResourceParser) readUntilChar(c rune) (string, error) {
 	}
 
 	return string(path), nil
-}
-
-func (p *MDResourceParser) readDataPaths() error {
-	for _, matchChar := range p.dataPathMatch.match {
-		err := p.matchError(matchChar)
-		if err != nil {
-			return err
-		}
-	}
-
-	path, err := p.readUntilChar('\n')
-	if err != nil {
-		return err
-	}
-
-	p.dataPathMatch.paths = append(p.dataPathMatch.paths, strings.TrimSpace(path))
-	return nil
-}
-
-func (p *MDResourceParser) readDockerDirectoryPaths() error {
-	for _, matchChar := range p.dockerDirMatch.match {
-		err := p.matchError(matchChar)
-		if err != nil {
-			return err
-		}
-	}
-
-	path, err := p.readUntilChar('\n')
-	if err != nil {
-		return err
-	}
-
-	p.dockerDirMatch.paths = append(p.dockerDirMatch.paths, strings.TrimSpace(path))
-	return nil
-}
-
-func (p *MDResourceParser) readTestFilePaths() error {
-	for _, matchChar := range p.testFileMatch.match {
-		err := p.matchError(matchChar)
-		if err != nil {
-			return err
-		}
-	}
-
-	path, err := p.readUntilChar('\n')
-	if err != nil {
-		return err
-	}
-	p.testFileMatch.paths = append(p.testFileMatch.paths, strings.TrimSpace(path))
-	return nil
-}
-
-func (p *MDResourceParser) readSetupFilePaths() error {
-	for _, matchChar := range p.setupFileMatch.match {
-		err := p.matchError(matchChar)
-		if err != nil {
-			return err
-		}
-	}
-
-	path, err := p.readUntilChar('\n')
-	if err != nil {
-		return err
-	}
-	p.setupFileMatch.paths = append(p.setupFileMatch.paths, strings.TrimSpace(path))
-	return nil
 }
 
 // next switches through the lexer's current char and creates a new token.

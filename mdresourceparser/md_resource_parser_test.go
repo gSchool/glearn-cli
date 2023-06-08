@@ -46,7 +46,7 @@ func Test_ParseDockerDirectoryPaths(t *testing.T) {
 	}
 	for k, v := range tableTest {
 		parser := New([]rune(k))
-		result, _, _ := parser.ParseResources()
+		_, result, _, _ := parser.ParseResources()
 		if strings.Join(result, "") != strings.Join(v, "") {
 			t.Errorf("DockerDirectoryPaths %s expected %s but got %v", k, v, result)
 		}
@@ -55,29 +55,41 @@ func Test_ParseDockerDirectoryPaths(t *testing.T) {
 
 func Test_ParseSeveralChallengeContents(t *testing.T) {
 	result := New([]rune(multipleChallengeContent))
-	dockerDirectoryPaths, testFilePaths, setupFilePaths := result.ParseResources()
+	// note that testFilePaths refer to challenge tests returned, not a variable to test against
+	dataPaths, dockerDirectoryPaths, testFilePaths, setupFilePaths := result.ParseResources()
 	if len(dockerDirectoryPaths) != 1 {
 		t.Fatalf("length DockerDirectoryPaths expected 1,  got %d", len(dockerDirectoryPaths))
 	}
-	if len(testFilePaths) != 1 {
+	if len(testFilePaths) != 2 {
 		t.Fatalf("length TestFilePaths expected 1, got %d", len(testFilePaths))
 	}
 	if len(setupFilePaths) != 1 {
 		t.Fatalf("length SetupFilePaths expected 1, got %d", len(setupFilePaths))
 	}
-
-	expectedDockerDirectoryPaths := "/path/to/dir"
-	expectedTestFilePaths := "/tests/title.js"
-	expectedSetupFilePaths := "/setups/title.js"
-
-	if expectedDockerDirectoryPaths != dockerDirectoryPaths[0] {
-		t.Errorf("Expected DockerDirectoryPaths '%s', got '%s'", expectedDockerDirectoryPaths, dockerDirectoryPaths[0])
+	if len(dataPaths) != 1 {
+		t.Fatalf("length dataPaths expected 1, got %d", len(dataPaths))
 	}
-	if expectedTestFilePaths != testFilePaths[0] {
-		t.Errorf("Expected TestFilePaths '%s', got '%s'", expectedTestFilePaths, testFilePaths[0])
+
+	expectedDockerDirectoryPath := "/path/to/dir"
+	expectedFirstTestFilePath := "/tests/title.js"
+	expectedSecondTestFilePath := "/tests/sql.sql"
+	expectedSetupFilePath := "/setups/title.js"
+	expectedDataPath := "/data/sql.dump"
+
+	if expectedDockerDirectoryPath != dockerDirectoryPaths[0] {
+		t.Errorf("Expected DockerDirectoryPaths '%s', got '%s'", expectedDockerDirectoryPath, dockerDirectoryPaths[0])
 	}
-	if expectedSetupFilePaths != setupFilePaths[0] {
-		t.Errorf("Expected SetupFilePaths '%s', got '%s'", expectedSetupFilePaths, setupFilePaths[0])
+	if expectedFirstTestFilePath != testFilePaths[0] {
+		t.Errorf("Expected first TestFilePaths '%s', got '%s'", expectedFirstTestFilePath, testFilePaths[0])
+	}
+	if expectedSecondTestFilePath != testFilePaths[1] {
+		t.Errorf("Expected second TestFilePaths '%s', got '%s'", expectedSecondTestFilePath, testFilePaths[0])
+	}
+	if expectedSetupFilePath != setupFilePaths[0] {
+		t.Errorf("Expected SetupFilePaths '%s', got '%s'", expectedSetupFilePath, setupFilePaths[0])
+	}
+	if expectedDataPath != dataPaths[0] {
+		t.Errorf("Expected SetupFilePaths '%s', got '%s'", expectedSetupFilePath, dataPaths[0])
 	}
 }
 
@@ -106,9 +118,9 @@ const multipleChallengeContent = `### !challenge
 
 - type: custom-snippet
 - language: text
-- id: 8c406f4f-6428-498b-be24-6bd0a6c9096b
+- id: 8c406f4f-6428-498b-be24-6bd0a6c9096a
 - title: Title
-* docker_directory_path: /path/to/dir
+- docker_directory_path: /path/to/dir
 
 ##### !question
 
@@ -130,6 +142,27 @@ Question
 * title: title
 * test_file: /tests/title.js
 * setup_file: /setups/title.js
+
+##### !question
+
+Question
+
+##### !end-question
+
+##### !placeholder
+
+##### !end-placeholder
+
+### !end-challenge
+
+### !challenge
+
+* type: code-snippet
+* language: sql
+* id: 8c406f4f-6428-498b-be24-6bd0a6c9096c
+* title: sql
+* test_file: /tests/sql.sql
+* data_path: /data/sql.dump
 
 ##### !question
 

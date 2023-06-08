@@ -669,7 +669,7 @@ func collectResourcePaths(target string) ([]string, []string, error) {
 	}
 
 	m := mdresourceparser.New([]rune(string(contents)))
-	dockerDirectoryPaths, _, _ := m.ParseResources()
+	_, dockerDirectoryPaths, _, _ := m.ParseResources()
 
 	uniqueMap := make(map[string]struct{})
 	for _, v := range dockerDirectoryPaths {
