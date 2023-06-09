@@ -348,7 +348,6 @@ func (p *previewBuilder) includesLinks() bool {
 	return !p.fileInfo.IsDir() && !FileOnly
 }
 
-// TODO change to ContainsResourcePaths
 func (p *previewBuilder) fileContainsResourcePaths() bool {
 	return len(p.resourcePaths) > 0
 }

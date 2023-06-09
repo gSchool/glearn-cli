@@ -108,12 +108,6 @@ func Test_hasPathBullet(t *testing.T) {
 	}
 }
 
-const minimalBullets = `
-* docker_directory_path: /path/to/dir
-* test_file: /tests/title.js
-* setup_file: /setup/title.js
-`
-
 const multipleChallengeContent = `### !challenge
 
 - type: custom-snippet

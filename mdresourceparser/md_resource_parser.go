@@ -19,7 +19,7 @@ type MDResourceParser struct {
 	dockerDirMatch *pathMatch // keeps track of parsing a newline matcher for docker directories
 	testFileMatch  *pathMatch // keeps track of parsing a newline matcher for test file matches
 	setupFileMatch *pathMatch // keeps track of parsing a newline matcher for setup file matches
-	dataPathMatch  *pathMatch // keeps track of parsing a newline matcher for setup file matches
+	dataPathMatch  *pathMatch // keeps track of parsing a newline matcher for data path file matches
 }
 
 // pathMatch keeps track of a new line to detect if it starts with the given match string
@@ -28,6 +28,9 @@ type pathMatch struct {
 	paths []string // stored paths
 }
 
+// appendPath takes a given parser and reads from it to determine a match with the pathMatch.
+// If one is found it appends the path to the pathMatch. The parser advances position either until
+// a mismatched character is found, or in the case of a match the parser advances until the end of the found path.
 func (pm *pathMatch) appendPath(parser *MDResourceParser) error {
 	for _, matchChar := range pm.match {
 		err := parser.matchError(matchChar)
@@ -45,7 +48,7 @@ func (pm *pathMatch) appendPath(parser *MDResourceParser) error {
 	return nil
 }
 
-// New creates and returns a pointer to the MDResourceParser with it's input attached
+// New creates and returns a pointer to the MDResourceParser with its input attached
 func New(input []rune) *MDResourceParser {
 	p := &MDResourceParser{
 		input:          input,
@@ -59,7 +62,7 @@ func New(input []rune) *MDResourceParser {
 }
 
 // ParseResources takes the input contents and parses it for our links and other
-// curriculum content that represents files in the repository. It returns the resources read
+// curriculum content that represents files in the repository. It returns the resources found
 func (p *MDResourceParser) ParseResources() (dataPaths, dockerDirPaths, testFilePaths, setupFilePaths []string) {
 	for p.readPosition < len(p.input) {
 		p.next()
@@ -107,8 +110,8 @@ func (p *MDResourceParser) peek() rune {
 	return p.input[p.readPosition]
 }
 
-// hasPathBullet reports if the next two characters are '* ', and advances the readPosition past them
-// otherwise it reports false and does not advance the read position
+// hasPathBullet reports if the two characters at current position and read position are '* ' or '- ',
+// and advances the readPosition past them. otherwise it reports false and does not advance the read position
 func (p *MDResourceParser) hasPathBullet() bool {
 	if p.position >= len(p.input) || p.position+1 >= len(p.input) {
 		return false
