@@ -308,7 +308,7 @@ func (p *previewBuilder) buildLearnPreview() error {
 	startBuildAndPollRelease := time.Now()
 
 	// Let Learn know there is new preview content on s3, where it is, and to build it
-	res, err := learn.API.BuildReleaseFromS3(learn.API.Credentials.S3Key, (p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker()))
+	res, err := learn.API.BuildReleaseFromS3(learn.API.Credentials.S3Key, (p.isDirectory() || p.fileContainsResourcePaths() || p.fileContainsDocker()))
 	if err != nil {
 		return fmt.Errorf("Failed to build new preview content in learn. Err: %v", err)
 	}
@@ -316,7 +316,7 @@ func (p *previewBuilder) buildLearnPreview() error {
 	// If content is a directory, rewrite the res from polling for build response. Directories
 	// can take much longer to build, however single files build instantly so we do not need to
 	// poll for them because the call to BuildReleaseFromS3 will get a preview_url right away
-	if p.isDirectory() || p.fileContainsSQLPaths() || p.fileContainsDocker() {
+	if p.isDirectory() || p.fileContainsResourcePaths() || p.fileContainsDocker() {
 		var attempts uint8 = 30
 		res, err = learn.API.PollForBuildResponse(res.ReleaseID, p.fileInfo.IsDir(), p.fileInfo.Name(), &attempts)
 		if err != nil {
@@ -357,7 +357,7 @@ func (p *previewBuilder) fileContainsLinks() bool {
 }
 
 // TODO change to ContainsResourcePaths
-func (p *previewBuilder) fileContainsSQLPaths() bool {
+func (p *previewBuilder) fileContainsResourcePaths() bool {
 	return len(p.resourcePaths) > 0
 }
 
@@ -366,7 +366,7 @@ func (p *previewBuilder) fileContainsDocker() bool {
 }
 
 func (p *previewBuilder) containsAnyResources() bool {
-	return p.fileContainsLinks() || p.fileContainsSQLPaths() || p.fileContainsDocker()
+	return p.fileContainsLinks() || p.fileContainsResourcePaths() || p.fileContainsDocker()
 }
 
 func (p *previewBuilder) isSingleFilePreview() bool {
