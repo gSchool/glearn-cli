@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"archive/zip"
-	"bufio"
 	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
@@ -44,9 +43,10 @@ type previewBuilder struct {
 	fileInfo os.FileInfo
 	// singleFileLinkPaths collets links from the preview of an individual file
 	singleFileLinkPaths []string
-	// dataPaths are defined in SQL snippet challenges and stored here after previewing
-	dataPaths []string
-	// dockerPaths are defined in custom snippet challenges and stored here after previewing
+	// resourcePaths are collected from challenges which reference external single files
+	resourcePaths []string
+	// dockerPaths are defined in custom snippet challenges as directories which contain a Dockerfile, test.sh, and other files
+	// the contents of the directories must be included in the preview archive
 	dockerPaths []string
 	// configYamlPaths stores the configYaml
 	configYamlPaths []string
@@ -71,7 +71,7 @@ func NewPreviewBuilder(args []string) (*previewBuilder, error) {
 		target:              args[0],
 		fileInfo:            fileInfo,
 		singleFileLinkPaths: []string{},
-		dataPaths:           []string{},
+		resourcePaths:       []string{},
 		dockerPaths:         []string{},
 		configYamlPaths:     []string{},
 		startOfCmd:          time.Now(),
@@ -91,17 +91,12 @@ func (p *previewBuilder) collectPaths() error {
 		return nil
 	}
 
-	// TODO collectDataPaths and collectResourcePaths parse the file twice, should be able to do this in one pass
-	dataPaths, err := collectDataPaths(p.target)
-	if err != nil {
-		return fmt.Errorf("Failed to attach local images for single file preview for: (%s). Err: %v", p.target, err)
-	}
-	singleFileLinkPaths, dockerPaths, err := collectResourcePaths(p.target)
+	singleFileLinkPaths, dockerPaths, resourcePaths, err := collectResourcePaths(p.target)
 	if err != nil {
 		return fmt.Errorf("Failed to attach local images for single file preview for: (%s). Err: %v", p.target, err)
 	}
 
-	p.dataPaths = dataPaths
+	p.resourcePaths = resourcePaths
 	p.singleFileLinkPaths = singleFileLinkPaths
 	p.dockerPaths = dockerPaths
 
@@ -109,7 +104,7 @@ func (p *previewBuilder) collectPaths() error {
 }
 
 func (p *previewBuilder) buildAlternateTarget() error {
-	paths := append(p.singleFileLinkPaths, p.dataPaths...)
+	paths := append(p.singleFileLinkPaths, p.resourcePaths...)
 	alternateTarget, err := createNewTarget(p.target, paths, p.dockerPaths)
 	if err != nil {
 		return err
@@ -152,7 +147,7 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 	// Start benchmark for compressDirectory
 	startOfCompression := time.Now()
 
-	resourcePaths := append(p.dockerPaths, p.dataPaths...)
+	resourcePaths := append(p.dockerPaths, p.resourcePaths...)
 	// Create file with zipTarget name and defer its closing
 	zipfile, err := os.Create(zipTarget)
 	if err != nil {
@@ -367,8 +362,9 @@ func (p *previewBuilder) fileContainsLinks() bool {
 	return len(p.singleFileLinkPaths) > 0
 }
 
+// TODO change to ContainsResourcePaths
 func (p *previewBuilder) fileContainsSQLPaths() bool {
-	return len(p.dataPaths) > 0
+	return len(p.resourcePaths) > 0
 }
 
 func (p *previewBuilder) fileContainsDocker() bool {
@@ -662,58 +658,21 @@ func printlnGreen(text string) {
 // collectResourcePaths takes a target, reads it, and passes it's contents (slice of bytes)
 // to our MDResourceParser as a string. All relative/local markdown flavored images are parsed
 // into an array of strings and returned
-func collectResourcePaths(target string) ([]string, []string, error) {
+func collectResourcePaths(target string) (links, uniqueDockerPaths, uniqueResourcePaths []string, err error) {
 	contents, err := ioutil.ReadFile(target)
 	if err != nil {
-		return []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+		return []string{}, []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
 	}
 
 	m := mdresourceparser.New([]rune(string(contents)))
-	_, dockerDirectoryPaths, _, _ := m.ParseResources()
+	dataPaths, dockerDirectoryPaths, testFilePaths, setupFilePaths := m.ParseResources()
 
-	uniqueMap := make(map[string]struct{})
-	for _, v := range dockerDirectoryPaths {
-		uniqueMap[v] = struct{}{}
-	}
-	var uniqueDockerPaths []string
-	for v := range uniqueMap {
-		uniqueDockerPaths = append(uniqueDockerPaths, v)
-	}
+	uniqueDockerPaths = uniq(dockerDirectoryPaths)
 
-	return m.Links, uniqueDockerPaths, nil
-}
+	dataPaths = append(append(dataPaths, testFilePaths...), setupFilePaths...)
+	uniqueResourcePaths = uniq(dataPaths)
 
-// collectDataPaths takes a target, reads it, and scans the file for data paths and collects them
-func collectDataPaths(target string) ([]string, error) {
-	contents, err := ioutil.ReadFile(target)
-	if err != nil {
-		return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
-	}
-
-	if strings.Contains(string(contents), "* data_path: ") {
-		file, err := os.Open(target)
-		if err != nil {
-			return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
-		}
-		defer file.Close()
-
-		dataPathsMap := map[string]string{}
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			if strings.Contains(scanner.Text(), "* data_path: ") {
-				s := strings.Replace(scanner.Text(), "* data_path: ", "", 1)
-				dataPathsMap[s] = s
-			}
-		}
-		ret := []string{}
-		for k := range dataPathsMap {
-			ret = append(ret, k)
-		}
-
-		return ret, nil
-	}
-
-	return []string{}, nil
+	return m.Links, uniqueDockerPaths, uniqueResourcePaths, nil
 }
 
 func newfileUploadRequest(uri string, file *os.File) (*http.Request, error) {
@@ -913,4 +872,15 @@ func trimFirstRune(s string) string {
 	}
 	// There are 0 or 1 runes in the string.
 	return ""
+}
+
+func uniq(strs []string) (uniqStrs []string) {
+	uniqueMap := make(map[string]struct{})
+	for _, v := range strs {
+		uniqueMap[v] = struct{}{}
+	}
+	for v := range uniqueMap {
+		uniqStrs = append(uniqStrs, v)
+	}
+	return
 }
