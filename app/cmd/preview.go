@@ -35,9 +35,7 @@ type previewBuilder struct {
 	target string
 	// fileinfo is extracted from the initial target
 	fileInfo os.FileInfo
-	// singleFileLinkPaths collets links from the preview of an individual file
-	singleFileLinkPaths []string
-	// resourcePaths are collected from challenges which reference external single files
+	// resourcePaths collect single files which are references somewhere in the curriculum, either on challenge attributes or linked content
 	resourcePaths []string
 	// dockerPaths are defined in custom snippet challenges as directories which contain a Dockerfile, test.sh, and other files
 	// the contents of the directories must be included in the preview archive
@@ -62,13 +60,12 @@ func NewPreviewBuilder(args []string) (*previewBuilder, error) {
 		return &previewBuilder{}, fmt.Errorf("Failed to get stats on file. Err: %v", err)
 	}
 	p := &previewBuilder{
-		target:              args[0],
-		fileInfo:            fileInfo,
-		singleFileLinkPaths: []string{},
-		resourcePaths:       []string{},
-		dockerPaths:         []string{},
-		configYamlPaths:     []string{},
-		startOfCmd:          time.Now(),
+		target:          args[0],
+		fileInfo:        fileInfo,
+		resourcePaths:   []string{},
+		dockerPaths:     []string{},
+		configYamlPaths: []string{},
+		startOfCmd:      time.Now(),
 	}
 
 	if p.invalidPreviewTarget() {
@@ -85,20 +82,19 @@ func (p *previewBuilder) collectPaths() error {
 		return nil
 	}
 
-	singleFileLinkPaths, dockerPaths, resourcePaths, err := resourcesFromTarget(p.target)
+	dockerPaths, resourcePaths, err := resourcesFromTarget(p.target)
 	if err != nil {
 		return fmt.Errorf("Failed to attach local images for single file preview for: (%s). Err: %v", p.target, err)
 	}
 
 	p.resourcePaths = resourcePaths
-	p.singleFileLinkPaths = singleFileLinkPaths
 	p.dockerPaths = dockerPaths
 
 	return nil
 }
 
 func (p *previewBuilder) buildAlternateTarget() error {
-	paths := append(p.singleFileLinkPaths, p.resourcePaths...)
+	paths := p.resourcePaths
 	alternateTarget, err := createNewTarget(p.target, paths, p.dockerPaths)
 	if err != nil {
 		return err
@@ -352,10 +348,6 @@ func (p *previewBuilder) includesLinks() bool {
 	return !p.fileInfo.IsDir() && !FileOnly
 }
 
-func (p *previewBuilder) fileContainsLinks() bool {
-	return len(p.singleFileLinkPaths) > 0
-}
-
 // TODO change to ContainsResourcePaths
 func (p *previewBuilder) fileContainsResourcePaths() bool {
 	return len(p.resourcePaths) > 0
@@ -366,7 +358,7 @@ func (p *previewBuilder) fileContainsDocker() bool {
 }
 
 func (p *previewBuilder) containsAnyResources() bool {
-	return p.fileContainsLinks() || p.fileContainsResourcePaths() || p.fileContainsDocker()
+	return p.fileContainsResourcePaths() || p.fileContainsDocker()
 }
 
 func (p *previewBuilder) isSingleFilePreview() bool {
@@ -375,7 +367,7 @@ func (p *previewBuilder) isSingleFilePreview() bool {
 
 // isDirectory reports if either the target is a directory, or if the target contains resources and a directory is required for content
 func (p *previewBuilder) isDirectory() bool {
-	return p.fileInfo.IsDir() || (!p.fileInfo.IsDir() && (p.fileContainsLinks() || p.fileContainsDocker()))
+	return p.fileInfo.IsDir() || (!p.fileInfo.IsDir() && (p.fileContainsResourcePaths() || p.fileContainsDocker()))
 }
 
 // previewCmd is executed when the `learn preview` command is used. Preview's concerns:
@@ -652,10 +644,10 @@ func printlnGreen(text string) {
 // resourcesFromTarget takes a target, reads it, and passes it's contents (slice of bytes)
 // to our MDResourceParser as a string. All relative/local markdown flavored images are parsed
 // into an array of strings and returned
-func resourcesFromTarget(target string) (links, uniqueDockerPaths, uniqueResourcePaths []string, err error) {
+func resourcesFromTarget(target string) (uniqueDockerPaths, uniqueResourcePaths []string, err error) {
 	contents, err := ioutil.ReadFile(target)
 	if err != nil {
-		return []string{}, []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+		return []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
 	}
 
 	m := mdresourceparser.New([]rune(string(contents)))
@@ -663,10 +655,11 @@ func resourcesFromTarget(target string) (links, uniqueDockerPaths, uniqueResourc
 
 	uniqueDockerPaths = uniq(dockerDirectoryPaths)
 
-	dataPaths = append(append(dataPaths, testFilePaths...), setupFilePaths...)
+	// append dataPaths, testFilePaths, setupFilePaths, and Links together as resources
+	dataPaths = append(append(append(dataPaths, testFilePaths...), setupFilePaths...), m.Links...)
 	uniqueResourcePaths = uniq(dataPaths)
 
-	return m.Links, uniqueDockerPaths, uniqueResourcePaths, nil
+	return uniqueDockerPaths, uniqueResourcePaths, nil
 }
 
 func newfileUploadRequest(uri string, file *os.File) (*http.Request, error) {
