@@ -16,19 +16,13 @@ import (
 	"strings"
 	"time"
 
-	// "github.com/aws/aws-sdk-go/aws"
-	// "github.com/aws/aws-sdk-go/aws/session"
-	// "github.com/aws/aws-sdk-go/service/s3"
-	// "github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/briandowns/spinner"
-	// pb "github.com/cheggaaa/pb/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/gSchool/glearn-cli/api/learn"
 	di "github.com/gSchool/glearn-cli/ignorematcher"
 	"github.com/gSchool/glearn-cli/mdresourceparser"
-	// proxyReader "github.com/gSchool/glearn-cli/proxy_reader"
 )
 
 // tmpSingleFileDir is used throughout as the temporary single file directory location. This
@@ -91,7 +85,7 @@ func (p *previewBuilder) collectPaths() error {
 		return nil
 	}
 
-	singleFileLinkPaths, dockerPaths, resourcePaths, err := collectResourcePaths(p.target)
+	singleFileLinkPaths, dockerPaths, resourcePaths, err := resourcesFromTarget(p.target)
 	if err != nil {
 		return fmt.Errorf("Failed to attach local images for single file preview for: (%s). Err: %v", p.target, err)
 	}
@@ -655,10 +649,10 @@ func printlnGreen(text string) {
 	fmt.Printf("\033[32m%s\033[0m\n", text)
 }
 
-// collectResourcePaths takes a target, reads it, and passes it's contents (slice of bytes)
+// resourcesFromTarget takes a target, reads it, and passes it's contents (slice of bytes)
 // to our MDResourceParser as a string. All relative/local markdown flavored images are parsed
 // into an array of strings and returned
-func collectResourcePaths(target string) (links, uniqueDockerPaths, uniqueResourcePaths []string, err error) {
+func resourcesFromTarget(target string) (links, uniqueDockerPaths, uniqueResourcePaths []string, err error) {
 	contents, err := ioutil.ReadFile(target)
 	if err != nil {
 		return []string{}, []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
