@@ -50,13 +50,13 @@ func Test_compressDirectory(t *testing.T) {
 
 	tmpZipFile := "../../fixtures/test-block-auto-config/preview-curriculum.zip"
 
-	var dataPaths []string
-	dataPaths = append(dataPaths, "test-block-auto-config/docker/text.text")
-	dataPaths = append(dataPaths, "test-block-auto-config/sql/database.sql")
+	var resourcePaths []string
+	resourcePaths = append(resourcePaths, "test-block-auto-config/docker/text.text")
+	resourcePaths = append(resourcePaths, "test-block-auto-config/sql/database.sql")
 
 	previewer := previewBuilder{
 		target:          source,
-		dataPaths:       dataPaths,
+		resourcePaths:   resourcePaths,
 		configYamlPaths: configYamlPaths,
 	}
 	err = previewer.compressDirectory(tmpZipFile)
@@ -80,7 +80,7 @@ func Test_compressDirectory(t *testing.T) {
 				paths[path] = true
 			}
 		}
-		for _, includedPath := range dataPaths {
+		for _, includedPath := range resourcePaths {
 			if strings.Contains(includedPath, path) {
 				paths[path] = true
 			}

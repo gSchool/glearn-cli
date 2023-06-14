@@ -17,8 +17,7 @@ import (
 
 const setAPITokenMessage = `
 Please set your API token with this command: learn set --api_token=<your_api_token>
-You can get your api token at https://learn-2.galvanize.com/api_token
-`
+You can get your api token at https://learn-2.galvanize.com/api_token`
 
 // currentReleaseVersion is used to print the version the user currently has downloaded
 const currentReleaseVersion = "v0.10.10"
