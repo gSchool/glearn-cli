@@ -421,6 +421,7 @@ preview and return/open the preview URL when it is complete.
 			return
 		}
 
+		return
 		// Removes artifacts on user's machine
 		defer removeArtifacts(tmpZipFile)
 
@@ -507,13 +508,13 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		// to be nested in the .md file itself
 		targetArray := strings.Split(target, "/")
 		sourceLinkPath := trimFirstRune(filePath)
-		if len(targetArray[:len(targetArray)-1]) != 0 && !strings.HasSuffix(sourceLinkPath, ".sql") {
+		if len(targetArray[:len(targetArray)-1]) != 0 {
 			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
 			sourceLinkPath = oneDirBackFromTarget + filePath
 		}
 
 		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
-			if strings.HasSuffix(sourceLinkPath, ".sql") {
+			if true {
 				useThisPath := ""
 				parent := "../" + sourceLinkPath
 				for i := 1; i <= 5; i++ {
@@ -651,6 +652,7 @@ func resourcesFromTarget(target string) (uniqueDockerPaths, uniqueResourcePaths 
 
 	m := mdresourceparser.New([]rune(string(contents)))
 	dataPaths, dockerDirectoryPaths, testFilePaths, setupFilePaths := m.ParseResources()
+	fmt.Println("testFilePaths: %+v\n", testFilePaths)
 
 	uniqueDockerPaths = uniq(dockerDirectoryPaths)
 
