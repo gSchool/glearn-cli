@@ -462,107 +462,11 @@ func createNewTarget(target string, challengePaths, linkPaths, dockerPaths []str
 	// Get the name of the single target file
 	srcArray := strings.Split(target, "/")
 	srcMDFile := srcArray[len(srcArray)-1]
-	substringPaths := []string{}
 
-	// TODO change from singleFilePaths are the parser's resource paths put together
-	for _, filePath := range linkPaths {
-		if !strings.HasPrefix(filePath, "/") {
-			filePath = fmt.Sprintf("/%s", filePath)
-		}
-
-		// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
-		pathArray := []string{}
-		var containsPeriodPeriod bool
-		for _, dir := range strings.Split(filePath, "/") {
-			if dir != ".." { // sanitize any .. so we don't have to worry about nested things
-				containsPeriodPeriod = true
-				pathArray = append(pathArray, dir)
-			}
-		}
-		// We need to modify the actual markdown file so it no longer has `..` in links, since we're putting
-		// everything in the newSrcPath
-		if containsPeriodPeriod {
-			substringPaths = append(substringPaths, filePath)
-		}
-
-		imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
-
-		// create an linkDirs var and depending on how long the image file path is, update it to include
-		// everything up to the image itself
-		var linkDirs string
-
-		if len(pathArray) == 1 {
-			linkDirs = ""
-		} else if len(pathArray) == 2 {
-			linkDirs = pathArray[0]
-		} else {
-			// Collect everything up until the image name (last item) and join it back together
-			// This gives us the name of the directory(ies) to make to put the image in
-			linkDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
-		}
-
-		// Create appropriate directory for each link using the linkDirs
-		err := os.MkdirAll(newSrcPath+linkDirs, os.FileMode(0777))
-		if err != nil {
-			return "", err
-		}
-
-		// Get "oneDirBackFromTarget" because target will be an .md file with relative
-		// links so we need to go one back from "target" so things aren't trying
-		// to be nested in the .md file itself
-
-		// if target is units/second-topic/lesson.md
-		// targetArray becomes ["units", "second-topic", "lesson.md"]
-		targetArray := strings.Split(target, "/")
-		// if filePath is /tests/test.js sourceLinkPath removes the first slash
-		sourceLinkPath := trimFirstRune(filePath)
-		fmt.Println("filePath", filePath)
-		fmt.Println("sourceLinkPath before", sourceLinkPath)
-
-		// TODO this step should only be for links, this is a bad way to determine a 'data_path' link
-		if len(targetArray[:len(targetArray)-1]) != 0 && !strings.HasSuffix(sourceLinkPath, ".sql") {
-			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
-			sourceLinkPath = oneDirBackFromTarget + filePath
-		}
-		fmt.Println("sourceLinkPath  after", sourceLinkPath)
-		fmt.Println()
-
-		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
-			// TODO this action should only be performed for data paths,
-			if strings.HasSuffix(sourceLinkPath, ".sql") {
-				useThisPath := ""
-				parent := "../" + sourceLinkPath
-				// here we go back a directory at least 5 times trying to find the root of the project repo
-				// resource paths like 'data_path' are always from the root of the project, never relative
-				for i := 1; i <= 5; i++ {
-					_, parentExists := os.Stat(parent)
-					if parentExists == nil {
-						useThisPath = parent
-						fmt.Println("useThisPath:", useThisPath)
-						break
-					} else {
-						parent = "../" + parent
-						//fmt.Printf("parent %d: %+v\n", i, parent)
-					}
-				}
-
-				if useThisPath != "" {
-					err = Copy(useThisPath, newSrcPath+linkDirs+"/"+imageName)
-					if err != nil {
-						return "", err
-					}
-				}
-			} else {
-				log.Printf("Link not found with path '%s'\n", sourceLinkPath)
-			}
-		} else {
-			// Copy the actual image into our new temp directory in it's appropriate spot
-			err = Copy(sourceLinkPath, newSrcPath+linkDirs+"/"+imageName)
-			if err != nil {
-				return "", err
-			}
-		}
-	} // End of loop over files
+	substringPaths, err := copyLinks(target, linkPaths)
+	if err != nil {
+		return "", err
+	}
 
 	// iterate over docker directories as their contents must be recursively copied
 	for _, dirPath := range dockerPaths {
@@ -616,7 +520,7 @@ func createNewTarget(target string, challengePaths, linkPaths, dockerPaths []str
 
 	// Copy original single markdown file into the base of our new tmp dir
 	newTarget := newSrcPath + "/" + srcMDFile
-	err := Copy(target, newTarget)
+	err = Copy(target, newTarget)
 	if err != nil {
 		return "", err
 	}
@@ -644,6 +548,110 @@ func createNewTarget(target string, challengePaths, linkPaths, dockerPaths []str
 	}
 
 	return target, nil
+}
+
+// copyLinks is used when creating a new target. It iterates over given links, creates necessary
+// directories for the link, then copies the link into the new target directory. Links which
+// must be rewritten in the original target are returned if they contain '..'
+func copyLinks(target string, linkPaths []string) (substringPaths []string, err error) {
+	for _, filePath := range linkPaths {
+		if !strings.HasPrefix(filePath, "/") {
+			filePath = fmt.Sprintf("/%s", filePath)
+		}
+
+		// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
+		pathArray := []string{}
+		var containsPeriodPeriod bool
+		for _, dir := range strings.Split(filePath, "/") {
+			if dir != ".." { // sanitize any .. so we don't have to worry about nested things
+				containsPeriodPeriod = true
+				pathArray = append(pathArray, dir)
+			}
+		}
+		// We need to modify the actual markdown file so it no longer has `..` in links, since we're putting
+		// everything in the tmpSingleFileDir
+		if containsPeriodPeriod {
+			substringPaths = append(substringPaths, filePath)
+		}
+
+		imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
+
+		// create an linkDirs var and depending on how long the image file path is, update it to include
+		// everything up to the image itself
+		var linkDirs string
+
+		if len(pathArray) == 1 {
+			linkDirs = ""
+		} else if len(pathArray) == 2 {
+			linkDirs = pathArray[0]
+		} else {
+			// Collect everything up until the image name (last item) and join it back together
+			// This gives us the name of the directory(ies) to make to put the image in
+			linkDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
+		}
+
+		// Create appropriate directory for each link using the linkDirs
+		err = os.MkdirAll(tmpSingleFileDir+linkDirs, os.FileMode(0777))
+		if err != nil {
+			return []string{}, err
+		}
+
+		// Get "oneDirBackFromTarget" because target will be an .md file with relative
+		// links so we need to go one back from "target" so things aren't trying
+		// to be nested in the .md file itself
+
+		// if target is units/second-topic/lesson.md
+		// targetArray becomes ["units", "second-topic", "lesson.md"]
+		targetArray := strings.Split(target, "/")
+		// if filePath is /tests/test.js sourceLinkPath removes the first slash
+		sourceLinkPath := trimFirstRune(filePath)
+
+		// TODO this step should only be for links, this is a bad way to determine a 'data_path' link
+		if len(targetArray[:len(targetArray)-1]) != 0 && !strings.HasSuffix(sourceLinkPath, ".sql") {
+			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
+			sourceLinkPath = oneDirBackFromTarget + filePath
+		}
+		fmt.Println("sourceLinkPath  after", sourceLinkPath)
+		fmt.Println()
+
+		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
+			// TODO this action should only be performed for data paths,
+			if strings.HasSuffix(sourceLinkPath, ".sql") {
+				useThisPath := ""
+				parent := "../" + sourceLinkPath
+				// here we go back a directory at least 5 times trying to find the root of the project repo
+				// resource paths like 'data_path' are always from the root of the project, never relative
+				for i := 1; i <= 5; i++ {
+					_, parentExists := os.Stat(parent)
+					if parentExists == nil {
+						useThisPath = parent
+						fmt.Println("useThisPath:", useThisPath)
+						break
+					} else {
+						parent = "../" + parent
+						//fmt.Printf("parent %d: %+v\n", i, parent)
+					}
+				}
+
+				if useThisPath != "" {
+					err = Copy(useThisPath, tmpSingleFileDir+linkDirs+"/"+imageName)
+					if err != nil {
+						return []string{}, err
+					}
+				}
+			} else {
+				log.Printf("Link not found with path '%s'\n", sourceLinkPath)
+			}
+		} else {
+			// Copy the actual image into our new temp directory in it's appropriate spot
+			err = Copy(sourceLinkPath, tmpSingleFileDir+linkDirs+"/"+imageName)
+			if err != nil {
+				return []string{}, err
+			}
+		}
+	}
+
+	return
 }
 
 // previewCmdError is a small wrapper for all errors within the preview command. It ensures
