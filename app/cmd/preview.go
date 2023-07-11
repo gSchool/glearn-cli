@@ -455,71 +455,27 @@ preview and return/open the preview URL when it is complete.
 // Returns a string representing the source name which if not single file tmp dir is needed, will return the
 // original
 func createNewTarget(target string, challengePaths, linkPaths, dockerPaths []string) (string, error) {
-	// Tmp dir so we can build out a new dir with the correct links in their correct
-	// paths based on relative link paths supplied in the single markdown file
-	newSrcPath := tmpSingleFileDir
-
-	// Get the name of the single target file
-	srcArray := strings.Split(target, "/")
-	srcMDFile := srcArray[len(srcArray)-1]
-
 	substringPaths, err := copyLinks(target, linkPaths)
 	if err != nil {
 		return "", err
 	}
 
-	// iterate over docker directories as their contents must be recursively copied
-	for _, dirPath := range dockerPaths {
-		fmt.Printf("Including docker_directory_path: %s\n", dirPath)
-		dirPath = trimFirstRune(dirPath)
-		fileDir, err := os.Stat(dirPath)
+	err = copyDockerPaths(target, dockerPaths)
+	if err != nil {
+		return "", err
+	}
 
-		// when the directory does not exist, keep moving back in the directory structure until it is found
-		if os.IsNotExist(err) {
-			newDirPath := ""
-			parent := "../" + dirPath
-			for i := 1; i <= 5; i++ {
-				f, parentExists := os.Stat(parent)
-				if parentExists == nil && f.IsDir() {
-					newDirPath = parent
-					break
-				} else if parentExists == nil && !f.IsDir() {
-					return "", fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
-				} else {
-					parent = "../" + parent
-				}
-			}
+	err = copyChallengePaths(target, challengePaths)
+	if err != nil {
+		return "", err
+	}
 
-			if newDirPath != "" {
-				// the directory was found after checkpoint parents, copy contents
-				ignorePatterns, err := DockerIgnorePatterns(newDirPath)
-				if err != nil {
-					fmt.Print(err.Error())
-				}
-
-				err = CopyDirectoryContents(newDirPath, newSrcPath+"/"+dirPath, ignorePatterns)
-				if err != nil {
-					return "", err
-				}
-			}
-
-		} else if !fileDir.IsDir() {
-			return "", fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
-		} else {
-			ignorePatterns, err := DockerIgnorePatterns(dirPath)
-			if err != nil {
-				fmt.Print(err.Error())
-			}
-
-			err = CopyDirectoryContents(dirPath, newSrcPath+"/"+dirPath, ignorePatterns)
-			if err != nil {
-				return "", err
-			}
-		}
-	} // End docker path loop
+	// Get the name of the single target file
+	srcArray := strings.Split(target, "/")
+	srcMDFile := srcArray[len(srcArray)-1]
 
 	// Copy original single markdown file into the base of our new tmp dir
-	newTarget := newSrcPath + "/" + srcMDFile
+	newTarget := tmpSingleFileDir + "/" + srcMDFile
 	err = Copy(target, newTarget)
 	if err != nil {
 		return "", err
@@ -544,14 +500,14 @@ func createNewTarget(target string, challengePaths, linkPaths, dockerPaths []str
 				return "", fmt.Errorf("Could not write copied target file with cleaned up links: %s", err)
 			}
 		}
-		return newSrcPath, nil
+		return tmpSingleFileDir, nil
 	}
 
 	return target, nil
 }
 
 // copyLinks is used when creating a new target. It iterates over given links, creates necessary
-// directories for the link, then copies the link into the new target directory. Links which
+// directories for the link, then copies the link into the new temproary target directory. Links which
 // must be rewritten in the original target are returned if they contain '..'
 func copyLinks(target string, linkPaths []string) (substringPaths []string, err error) {
 	for _, filePath := range linkPaths {
@@ -574,31 +530,11 @@ func copyLinks(target string, linkPaths []string) (substringPaths []string, err 
 			substringPaths = append(substringPaths, filePath)
 		}
 
-		imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
-
-		// create an linkDirs var and depending on how long the image file path is, update it to include
-		// everything up to the image itself
-		var linkDirs string
-
-		if len(pathArray) == 1 {
-			linkDirs = ""
-		} else if len(pathArray) == 2 {
-			linkDirs = pathArray[0]
-		} else {
-			// Collect everything up until the image name (last item) and join it back together
-			// This gives us the name of the directory(ies) to make to put the image in
-			linkDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
-		}
-
-		// Create appropriate directory for each link using the linkDirs
-		err = os.MkdirAll(tmpSingleFileDir+linkDirs, os.FileMode(0777))
+		linkDirs, err := createLinkDirectories(pathArray)
 		if err != nil {
 			return []string{}, err
 		}
-
-		// Get "oneDirBackFromTarget" because target will be an .md file with relative
-		// links so we need to go one back from "target" so things aren't trying
-		// to be nested in the .md file itself
+		linkName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
 
 		// if target is units/second-topic/lesson.md
 		// targetArray becomes ["units", "second-topic", "lesson.md"]
@@ -606,49 +542,155 @@ func copyLinks(target string, linkPaths []string) (substringPaths []string, err 
 		// if filePath is /tests/test.js sourceLinkPath removes the first slash
 		sourceLinkPath := trimFirstRune(filePath)
 
-		// TODO this step should only be for links, this is a bad way to determine a 'data_path' link
-		if len(targetArray[:len(targetArray)-1]) != 0 && !strings.HasSuffix(sourceLinkPath, ".sql") {
+		if len(targetArray[:len(targetArray)-1]) != 0 {
+			// Get "oneDirBackFromTarget" because target will be an .md file with relative
+			// links so we need to go one segment back from "target" so things aren't trying
+			// to be nested in the .md file itself
 			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
 			sourceLinkPath = oneDirBackFromTarget + filePath
 		}
-		fmt.Println("sourceLinkPath  after", sourceLinkPath)
-		fmt.Println()
 
 		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
-			// TODO this action should only be performed for data paths,
-			if strings.HasSuffix(sourceLinkPath, ".sql") {
-				useThisPath := ""
-				parent := "../" + sourceLinkPath
-				// here we go back a directory at least 5 times trying to find the root of the project repo
-				// resource paths like 'data_path' are always from the root of the project, never relative
-				for i := 1; i <= 5; i++ {
-					_, parentExists := os.Stat(parent)
-					if parentExists == nil {
-						useThisPath = parent
-						fmt.Println("useThisPath:", useThisPath)
-						break
-					} else {
-						parent = "../" + parent
-						//fmt.Printf("parent %d: %+v\n", i, parent)
-					}
-				}
-
-				if useThisPath != "" {
-					err = Copy(useThisPath, tmpSingleFileDir+linkDirs+"/"+imageName)
-					if err != nil {
-						return []string{}, err
-					}
-				}
-			} else {
-				log.Printf("Link not found with path '%s'\n", sourceLinkPath)
-			}
+			log.Printf("Link not found with path '%s'\n", sourceLinkPath)
 		} else {
 			// Copy the actual image into our new temp directory in it's appropriate spot
-			err = Copy(sourceLinkPath, tmpSingleFileDir+linkDirs+"/"+imageName)
+			err = Copy(sourceLinkPath, tmpSingleFileDir+linkDirs+"/"+linkName)
 			if err != nil {
 				return []string{}, err
 			}
 		}
+	}
+
+	return
+}
+
+// copyDockerPaths copies the contents of docker directory paths into the temporary directory
+func copyDockerPaths(target string, dockerPaths []string) (err error) {
+	// iterate over docker directories as their contents must be recursively copied
+	for _, dirPath := range dockerPaths {
+		fmt.Printf("Including docker_directory_path: %s\n", dirPath)
+		dirPath = trimFirstRune(dirPath)
+		fileDir, err := os.Stat(dirPath)
+
+		// when the directory does not exist, keep moving back in the directory structure until it is found
+		if os.IsNotExist(err) {
+			newDirPath := ""
+			parent := "../" + dirPath
+			for i := 1; i <= 5; i++ {
+				f, parentExists := os.Stat(parent)
+				if parentExists == nil && f.IsDir() {
+					newDirPath = parent
+					break
+				} else if parentExists == nil && !f.IsDir() {
+					return fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
+				} else {
+					parent = "../" + parent
+				}
+			}
+
+			if newDirPath != "" {
+				// the directory was found after checking parents, copy contents
+				ignorePatterns, err := DockerIgnorePatterns(newDirPath)
+				if err != nil {
+					fmt.Print(err.Error())
+				}
+
+				err = CopyDirectoryContents(newDirPath, tmpSingleFileDir+"/"+dirPath, ignorePatterns)
+				if err != nil {
+					return err
+				}
+			}
+
+		} else if !fileDir.IsDir() {
+			return fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
+		} else {
+			ignorePatterns, err := DockerIgnorePatterns(dirPath)
+			if err != nil {
+				fmt.Print(err.Error())
+			}
+
+			err = CopyDirectoryContents(dirPath, tmpSingleFileDir+"/"+dirPath, ignorePatterns)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// copyChallengePaths takes
+func copyChallengePaths(target string, challengePaths []string) (err error) {
+	for _, filePath := range challengePaths {
+		if !strings.HasPrefix(filePath, "/") {
+			filePath = fmt.Sprintf("/%s", filePath)
+		}
+
+		// Ex. tests/dir/my_neat_test.js -> ["tests", "dir", "my_neat_tests.js"]
+		pathArray := strings.Split(filePath, "/")
+
+		linkDirs, err := createLinkDirectories(pathArray)
+		if err != nil {
+			return err
+		}
+		fileName := pathArray[len(pathArray)-1] // -> "my_neat_test.js"
+
+		// if filePath is /tests/test.js sourceLinkPath removes the first slash
+		sourceFilePath := trimFirstRune(fileName)
+
+		if _, err := os.Stat(sourceFilePath); os.IsNotExist(err) {
+			// Here we go back a directory at least 5 times trying to find the root of the project repo
+			// resource paths like 'data_path' are always from the root of the project, never relative.
+			// The file can be found if we keep checking for its existence, stepping back a dir when not found
+			useThisPath := ""
+			parent := "../" + sourceFilePath
+			for i := 1; i <= 5; i++ {
+				_, parentExists := os.Stat(parent)
+				if parentExists == nil {
+					useThisPath = parent
+					break
+				} else {
+					parent = "../" + parent
+				}
+			}
+
+			if useThisPath != "" {
+				err = Copy(useThisPath, tmpSingleFileDir+linkDirs+"/"+fileName)
+				if err != nil {
+					return err
+				}
+			} else {
+				log.Printf("challenge file not found with path '%s'\n", sourceFilePath)
+			}
+		} else {
+			// Copy the actual image into our new temp directory in it's appropriate spot
+			err = Copy(sourceFilePath, tmpSingleFileDir+linkDirs+"/"+fileName)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func createLinkDirectories(pathArray []string) (linkDirs string, err error) {
+	// create an linkDirs var and depending on how long the image file path is, update it to include
+	// everything up to the image itself
+	if len(pathArray) == 1 {
+		linkDirs = ""
+	} else if len(pathArray) == 2 {
+		linkDirs = pathArray[0]
+	} else {
+		// Collect everything up until the image name (last item) and join it back together
+		// This gives us the name of the directory(ies) to make to put the image in
+		linkDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
+	}
+
+	// Create appropriate directory for each link using the linkDirs
+	err = os.MkdirAll(tmpSingleFileDir+linkDirs, os.FileMode(0777))
+	if err != nil {
+		return "", err
 	}
 
 	return
