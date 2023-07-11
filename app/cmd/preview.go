@@ -35,8 +35,10 @@ type previewBuilder struct {
 	target string
 	// fileinfo is extracted from the initial target
 	fileInfo os.FileInfo
-	// resourcePaths collect single files which are references somewhere in the curriculum, either on challenge attributes or linked content
-	resourcePaths []string
+	// challengePaths collect single files from challenge attributes such as data_path, test_file, etc
+	challengePaths []string
+	// linkPaths collect single files which are references somewhere in linked content
+	linkPaths []string
 	// dockerPaths are defined in custom snippet challenges as directories which contain a Dockerfile, test.sh, and other files
 	// the contents of the directories must be included in the preview archive
 	dockerPaths []string
@@ -62,7 +64,8 @@ func NewPreviewBuilder(args []string) (*previewBuilder, error) {
 	p := &previewBuilder{
 		target:          args[0],
 		fileInfo:        fileInfo,
-		resourcePaths:   []string{},
+		challengePaths:  []string{},
+		linkPaths:       []string{},
 		dockerPaths:     []string{},
 		configYamlPaths: []string{},
 		startOfCmd:      time.Now(),
@@ -82,20 +85,20 @@ func (p *previewBuilder) collectPaths() error {
 		return nil
 	}
 
-	dockerPaths, resourcePaths, err := resourcesFromTarget(p.target)
+	dockerPaths, challengePaths, linkPaths, err := resourcesFromTarget(p.target)
 	if err != nil {
 		return fmt.Errorf("Failed to attach local images for single file preview for: (%s). Err: %v", p.target, err)
 	}
 
-	p.resourcePaths = resourcePaths
+	p.challengePaths = challengePaths
+	p.linkPaths = linkPaths
 	p.dockerPaths = dockerPaths
 
 	return nil
 }
 
 func (p *previewBuilder) buildAlternateTarget() error {
-	paths := p.resourcePaths
-	alternateTarget, err := createNewTarget(p.target, paths, p.dockerPaths)
+	alternateTarget, err := createNewTarget(p.target, p.challengePaths, p.linkPaths, p.dockerPaths)
 	if err != nil {
 		return err
 	}
@@ -137,7 +140,7 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 	// Start benchmark for compressDirectory
 	startOfCompression := time.Now()
 
-	resourcePaths := append(p.dockerPaths, p.resourcePaths...)
+	resourcePaths := append(append(p.dockerPaths, p.challengePaths...), p.linkPaths...)
 	// Create file with zipTarget name and defer its closing
 	zipfile, err := os.Create(zipTarget)
 	if err != nil {
@@ -349,7 +352,7 @@ func (p *previewBuilder) includesLinks() bool {
 }
 
 func (p *previewBuilder) fileContainsResourcePaths() bool {
-	return len(p.resourcePaths) > 0
+	return len(p.challengePaths) > 0 || len(p.linkPaths) > 0
 }
 
 func (p *previewBuilder) fileContainsDocker() bool {
@@ -451,7 +454,7 @@ preview and return/open the preview URL when it is complete.
 // createNewTarget will set up and create everything needed for single file previews if they are needed.
 // Returns a string representing the source name which if not single file tmp dir is needed, will return the
 // original
-func createNewTarget(target string, singleFilePaths, dockerPaths []string) (string, error) {
+func createNewTarget(target string, challengePaths, linkPaths, dockerPaths []string) (string, error) {
 	// Tmp dir so we can build out a new dir with the correct links in their correct
 	// paths based on relative link paths supplied in the single markdown file
 	newSrcPath := tmpSingleFileDir
@@ -461,7 +464,8 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 	srcMDFile := srcArray[len(srcArray)-1]
 	substringPaths := []string{}
 
-	for _, filePath := range singleFilePaths {
+	// TODO change from singleFilePaths are the parser's resource paths put together
+	for _, filePath := range linkPaths {
 		if !strings.HasPrefix(filePath, "/") {
 			filePath = fmt.Sprintf("/%s", filePath)
 		}
@@ -506,24 +510,39 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		// Get "oneDirBackFromTarget" because target will be an .md file with relative
 		// links so we need to go one back from "target" so things aren't trying
 		// to be nested in the .md file itself
+
+		// if target is units/second-topic/lesson.md
+		// targetArray becomes ["units", "second-topic", "lesson.md"]
 		targetArray := strings.Split(target, "/")
+		// if filePath is /tests/test.js sourceLinkPath removes the first slash
 		sourceLinkPath := trimFirstRune(filePath)
-		if len(targetArray[:len(targetArray)-1]) != 0 {
+		fmt.Println("filePath", filePath)
+		fmt.Println("sourceLinkPath before", sourceLinkPath)
+
+		// TODO this step should only be for links, this is a bad way to determine a 'data_path' link
+		if len(targetArray[:len(targetArray)-1]) != 0 && !strings.HasSuffix(sourceLinkPath, ".sql") {
 			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
 			sourceLinkPath = oneDirBackFromTarget + filePath
 		}
+		fmt.Println("sourceLinkPath  after", sourceLinkPath)
+		fmt.Println()
 
 		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
-			if true {
+			// TODO this action should only be performed for data paths,
+			if strings.HasSuffix(sourceLinkPath, ".sql") {
 				useThisPath := ""
 				parent := "../" + sourceLinkPath
+				// here we go back a directory at least 5 times trying to find the root of the project repo
+				// resource paths like 'data_path' are always from the root of the project, never relative
 				for i := 1; i <= 5; i++ {
 					_, parentExists := os.Stat(parent)
 					if parentExists == nil {
 						useThisPath = parent
+						fmt.Println("useThisPath:", useThisPath)
 						break
 					} else {
 						parent = "../" + parent
+						//fmt.Printf("parent %d: %+v\n", i, parent)
 					}
 				}
 
@@ -602,7 +621,7 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 		return "", err
 	}
 
-	if len(singleFilePaths) > 0 || len(dockerPaths) > 0 {
+	if len(challengePaths) > 0 || len(dockerPaths) > 0 || len(linkPaths) > 0 {
 		if len(substringPaths) > 0 {
 			// open contents of new target
 			b, err := ioutil.ReadFile(newTarget)
@@ -644,23 +663,20 @@ func printlnGreen(text string) {
 // resourcesFromTarget takes a target, reads it, and passes it's contents (slice of bytes)
 // to our MDResourceParser as a string. All relative/local markdown flavored images are parsed
 // into an array of strings and returned
-func resourcesFromTarget(target string) (uniqueDockerPaths, uniqueResourcePaths []string, err error) {
+func resourcesFromTarget(target string) (uniqueDockerPaths, challengePaths, linkPaths []string, err error) {
 	contents, err := ioutil.ReadFile(target)
 	if err != nil {
-		return []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+		return []string{}, []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
 	}
 
 	m := mdresourceparser.New([]rune(string(contents)))
+
 	dataPaths, dockerDirectoryPaths, testFilePaths, setupFilePaths := m.ParseResources()
-	fmt.Println("testFilePaths: %+v\n", testFilePaths)
 
-	uniqueDockerPaths = uniq(dockerDirectoryPaths)
+	// append dataPaths, testFilePaths, setupFilePaths together as challengePaths
+	challengePaths = append(append(dataPaths, testFilePaths...), setupFilePaths...)
 
-	// append dataPaths, testFilePaths, setupFilePaths, and Links together as resources
-	dataPaths = append(append(append(dataPaths, testFilePaths...), setupFilePaths...), m.Links...)
-	uniqueResourcePaths = uniq(dataPaths)
-
-	return uniqueDockerPaths, uniqueResourcePaths, nil
+	return uniq(dockerDirectoryPaths), uniq(challengePaths), uniq(m.Links), nil
 }
 
 func newfileUploadRequest(uri string, file *os.File) (*http.Request, error) {
