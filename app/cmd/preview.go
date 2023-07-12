@@ -424,9 +424,9 @@ preview and return/open the preview URL when it is complete.
 			return
 		}
 
-		return
 		// Removes artifacts on user's machine
 		defer removeArtifacts(tmpZipFile)
+		return
 
 		err = previewer.uploadZip(tmpZipFile)
 		if err != nil {
@@ -452,8 +452,7 @@ preview and return/open the preview URL when it is complete.
 }
 
 // createNewTarget will set up and create everything needed for single file previews if they are needed.
-// Returns a string representing the source name which if not single file tmp dir is needed, will return the
-// original
+// Returns a string representing the source name which if not single file tmp dir is needed, will return the original
 func createNewTarget(target string, challengePaths, linkPaths, dockerPaths []string) (string, error) {
 	substringPaths, err := copyLinks(target, linkPaths)
 	if err != nil {
@@ -510,8 +509,6 @@ func createNewTarget(target string, challengePaths, linkPaths, dockerPaths []str
 // directories for the link, then copies the link into the new temproary target directory. Links which
 // must be rewritten in the original target are returned if they contain '..'
 func copyLinks(target string, linkPaths []string) (substringPaths []string, err error) {
-	fmt.Println("inside copyLinks")
-	fmt.Println("links to copy:", linkPaths)
 	for _, filePath := range linkPaths {
 		if !strings.HasPrefix(filePath, "/") {
 			filePath = fmt.Sprintf("/%s", filePath)
@@ -623,22 +620,33 @@ func copyDockerPaths(target string, dockerPaths []string) (err error) {
 
 // copyChallengePaths takes
 func copyChallengePaths(target string, challengePaths []string) (err error) {
+	fmt.Println("in copyChallengePaths")
+	fmt.Println("challengePaths", challengePaths)
+	fmt.Println()
 	for _, filePath := range challengePaths {
 		if !strings.HasPrefix(filePath, "/") {
 			filePath = fmt.Sprintf("/%s", filePath)
 		}
+		fmt.Println("filePath", filePath)
+		fmt.Println()
 
 		// Ex. tests/dir/my_neat_test.js -> ["tests", "dir", "my_neat_tests.js"]
 		pathArray := strings.Split(filePath, "/")
+		fmt.Println("pathArray", pathArray)
+		fmt.Println()
 
 		linkDirs, err := createLinkDirectories(pathArray)
 		if err != nil {
 			return err
 		}
 		fileName := pathArray[len(pathArray)-1] // -> "my_neat_test.js"
+		fmt.Println("fileName", fileName)
+		fmt.Println()
 
 		// if filePath is /tests/test.js sourceLinkPath removes the first slash
 		sourceFilePath := trimFirstRune(fileName)
+		fmt.Println("sourceFilePath", sourceFilePath)
+		fmt.Println()
 
 		if _, err := os.Stat(sourceFilePath); os.IsNotExist(err) {
 			// Here we go back a directory at least 5 times trying to find the root of the project repo
