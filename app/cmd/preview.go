@@ -426,7 +426,6 @@ preview and return/open the preview URL when it is complete.
 
 		// Removes artifacts on user's machine
 		defer removeArtifacts(tmpZipFile)
-		return
 
 		err = previewer.uploadZip(tmpZipFile)
 		if err != nil {
@@ -620,40 +619,41 @@ func copyDockerPaths(target string, dockerPaths []string) (err error) {
 
 // copyChallengePaths takes
 func copyChallengePaths(target string, challengePaths []string) (err error) {
-	fmt.Println("in copyChallengePaths")
-	fmt.Println("challengePaths", challengePaths)
-	fmt.Println()
 	for _, filePath := range challengePaths {
-		if !strings.HasPrefix(filePath, "/") {
-			filePath = fmt.Sprintf("/%s", filePath)
-		}
-		fmt.Println("filePath", filePath)
-		fmt.Println()
 
-		// Ex. tests/dir/my_neat_test.js -> ["tests", "dir", "my_neat_tests.js"]
+		// Ex. /tests/dir/my_neat_test.js -> ["tests", "dir", "my_neat_tests.js"]
 		pathArray := strings.Split(filePath, "/")
-		fmt.Println("pathArray", pathArray)
-		fmt.Println()
 
 		linkDirs, err := createLinkDirectories(pathArray)
 		if err != nil {
 			return err
 		}
-		fileName := pathArray[len(pathArray)-1] // -> "my_neat_test.js"
-		fmt.Println("fileName", fileName)
-		fmt.Println()
 
-		// if filePath is /tests/test.js sourceLinkPath removes the first slash
-		sourceFilePath := trimFirstRune(fileName)
-		fmt.Println("sourceFilePath", sourceFilePath)
-		fmt.Println()
+		// lost in the file system
+		// /dir/foo/file.md
 
-		if _, err := os.Stat(sourceFilePath); os.IsNotExist(err) {
+		// * test_path: /dir/foo/test.js
+		// ../dir/foo/test.js
+		// ../../dir/foo/test.js <- find here
+		// ../../../dir/foo/test.js
+		// ../../../../dir/foo/test.js
+		// */*../../../../dir/foo/test.js >> os.Stat
+
+		// os.Stat("../../") isDir && fileName == "/"
+
+		if strings.HasPrefix(filePath, "/") {
+			filePath = trimFirstRune(filePath)
+		}
+		// -> "my_neat_test.js"
+		fileName := pathArray[len(pathArray)-1]
+
+		// use the full filePath as challenge paths start with a slash and begin at project root.
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
 			// Here we go back a directory at least 5 times trying to find the root of the project repo
 			// resource paths like 'data_path' are always from the root of the project, never relative.
 			// The file can be found if we keep checking for its existence, stepping back a dir when not found
 			useThisPath := ""
-			parent := "../" + sourceFilePath
+			parent := "../" + filePath
 			for i := 1; i <= 5; i++ {
 				_, parentExists := os.Stat(parent)
 				if parentExists == nil {
@@ -670,11 +670,11 @@ func copyChallengePaths(target string, challengePaths []string) (err error) {
 					return err
 				}
 			} else {
-				log.Printf("challenge file not found with path '%s'\n", sourceFilePath)
+				log.Printf("challenge file not found with path '%s'\n", filePath)
 			}
 		} else {
 			// Copy the actual image into our new temp directory in it's appropriate spot
-			err = Copy(sourceFilePath, tmpSingleFileDir+linkDirs+"/"+fileName)
+			err = Copy(filePath, tmpSingleFileDir+linkDirs+"/"+fileName)
 			if err != nil {
 				return err
 			}
