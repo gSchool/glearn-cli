@@ -510,6 +510,8 @@ func createNewTarget(target string, challengePaths, linkPaths, dockerPaths []str
 // directories for the link, then copies the link into the new temproary target directory. Links which
 // must be rewritten in the original target are returned if they contain '..'
 func copyLinks(target string, linkPaths []string) (substringPaths []string, err error) {
+	fmt.Println("inside copyLinks")
+	fmt.Println("links to copy:", linkPaths)
 	for _, filePath := range linkPaths {
 		if !strings.HasPrefix(filePath, "/") {
 			filePath = fmt.Sprintf("/%s", filePath)
