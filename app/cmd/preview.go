@@ -572,18 +572,10 @@ func copyDockerPaths(target string, dockerPaths []string) (err error) {
 
 		// when the directory does not exist, keep moving back in the directory structure until it is found
 		if os.IsNotExist(err) {
-			newDirPath := ""
-			parent := "../" + dirPath
-			for i := 1; i <= 5; i++ {
-				f, parentExists := os.Stat(parent)
-				if parentExists == nil && f.IsDir() {
-					newDirPath = parent
-					break
-				} else if parentExists == nil && !f.IsDir() {
-					return fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
-				} else {
-					parent = "../" + parent
-				}
+			fileInfo, newDirPath := fileFromParents(dirPath)
+
+			if fileInfo != nil && !fileInfo.IsDir() {
+				return fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
 			}
 
 			if newDirPath != "" {
@@ -629,40 +621,15 @@ func copyChallengePaths(target string, challengePaths []string) (err error) {
 			return err
 		}
 
-		// lost in the file system
-		// /dir/foo/file.md
-
-		// * test_path: /dir/foo/test.js
-		// ../dir/foo/test.js
-		// ../../dir/foo/test.js <- find here
-		// ../../../dir/foo/test.js
-		// ../../../../dir/foo/test.js
-		// */*../../../../dir/foo/test.js >> os.Stat
-
-		// os.Stat("../../") isDir && fileName == "/"
-
 		if strings.HasPrefix(filePath, "/") {
 			filePath = trimFirstRune(filePath)
 		}
 		// -> "my_neat_test.js"
 		fileName := pathArray[len(pathArray)-1]
 
-		// use the full filePath as challenge paths start with a slash and begin at project root.
+		// use the filePath as challenge paths start with a slash and begin at project root.
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			// Here we go back a directory at least 5 times trying to find the root of the project repo
-			// resource paths like 'data_path' are always from the root of the project, never relative.
-			// The file can be found if we keep checking for its existence, stepping back a dir when not found
-			useThisPath := ""
-			parent := "../" + filePath
-			for i := 1; i <= 5; i++ {
-				_, parentExists := os.Stat(parent)
-				if parentExists == nil {
-					useThisPath = parent
-					break
-				} else {
-					parent = "../" + parent
-				}
-			}
+			_, useThisPath := fileFromParents(filePath)
 
 			if useThisPath != "" {
 				err = Copy(useThisPath, tmpSingleFileDir+linkDirs+"/"+fileName)
@@ -924,6 +891,26 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 	}
 
 	return nil
+}
+
+// fileFromParents checks for a file from the given filePath, and if not found it will
+// move up a parent and check again. Checking stops once the root of the file system is hit
+func fileFromParents(filePath string) (file os.FileInfo, path string) {
+	dotdotSlashes := "../"
+	priorDir, _ := filepath.Abs(dotdotSlashes)
+	for priorDir != "/" {
+		file, parentExists := os.Stat(dotdotSlashes + filePath)
+		if parentExists == nil {
+			path = dotdotSlashes + filePath
+			file = file
+			break
+		} else {
+			dotdotSlashes = "../" + dotdotSlashes
+			priorDir, _ = filepath.Abs(dotdotSlashes)
+		}
+	}
+
+	return file, path
 }
 
 func trimFirstRune(s string) string {

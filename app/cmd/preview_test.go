@@ -50,13 +50,13 @@ func Test_compressDirectory(t *testing.T) {
 
 	tmpZipFile := "../../fixtures/test-block-auto-config/preview-curriculum.zip"
 
-	var resourcePaths []string
-	resourcePaths = append(resourcePaths, "test-block-auto-config/docker/text.text")
-	resourcePaths = append(resourcePaths, "test-block-auto-config/sql/database.sql")
+	var challengePaths []string
+	challengePaths = append(challengePaths, "test-block-auto-config/docker/text.text")
+	challengePaths = append(challengePaths, "test-block-auto-config/sql/database.sql")
 
 	previewer := previewBuilder{
 		target:          source,
-		resourcePaths:   resourcePaths,
+		challengePaths:  challengePaths,
 		configYamlPaths: configYamlPaths,
 	}
 	err = previewer.compressDirectory(tmpZipFile)
@@ -80,7 +80,7 @@ func Test_compressDirectory(t *testing.T) {
 				paths[path] = true
 			}
 		}
-		for _, includedPath := range resourcePaths {
+		for _, includedPath := range challengePaths {
 			if strings.Contains(includedPath, path) {
 				paths[path] = true
 			}
@@ -100,7 +100,7 @@ func Test_compressDirectory(t *testing.T) {
 }
 
 func Test_createNewTarget(t *testing.T) {
-	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{"./mrsmall-invert.png", "../mrsmall.png", "../image/nested-small.png", "deeper/deep-small.png"}, []string{})
+	result, err := createNewTarget("../../fixtures/test-links/nested/test.md", []string{}, []string{"./mrsmall-invert.png", "../mrsmall.png", "../image/nested-small.png", "deeper/deep-small.png"}, []string{})
 	if err != nil {
 		t.Errorf("Attempting to createNewTarget errored: %s\n", err)
 	}
@@ -151,7 +151,7 @@ func Test_createNewTargetSingleFileSQLWithImage(t *testing.T) {
 	}
 
 	output := captureOutput(func() {
-		createNewTarget("test.md", []string{"/data/some.sql", "image/nested-small.png"}, []string{})
+		createNewTarget("test.md", []string{"/data/some.sql"}, []string{"image/nested-small.png"}, []string{})
 		_, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "data/some.sql"))
 		if err == nil {
 			t.Errorf("data/some.sql should have been copied over and it was not")
@@ -192,7 +192,7 @@ func Test_createNewTargetSingleFileThatIsSQL(t *testing.T) {
 		t.Errorf("Error creating test.md: %s\n", err)
 	}
 	output := captureOutput(func() {
-		createNewTarget("test.md", []string{"/data/some.sql"}, []string{})
+		createNewTarget("test.md", []string{"/data/some.sql"}, []string{}, []string{})
 		_, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "data/some.sql"))
 		if err == nil {
 			t.Errorf("data/some.sql should have been copied over and it was not")
@@ -219,7 +219,7 @@ func Test_createNewTargetSingleFile(t *testing.T) {
 	}
 
 	output := captureOutput(func() {
-		result, err := createNewTarget("test.md", []string{"./image/nested-small.png", "image/nested-small.png", "../nested-small.png"}, []string{})
+		result, err := createNewTarget("test.md", []string{}, []string{"./image/nested-small.png", "image/nested-small.png", "../nested-small.png"}, []string{})
 		if err != nil {
 			t.Errorf("Attempting to createNewTarget errored: %s\n", err)
 		}
@@ -323,7 +323,7 @@ func Test_createNewTarget_DockerDirectoryIgnore(t *testing.T) {
 	ignoreFile.Write([]byte("docker-compose.yml"))
 
 	output := captureOutput(func() {
-		result, err := createNewTarget("test.md", []string{}, []string{"/path/to/dir"})
+		result, err := createNewTarget("test.md", []string{}, []string{}, []string{"/path/to/dir"})
 		if err != nil {
 			t.Errorf("Attempting to createNewTarget errored: %s\n", err)
 		}
@@ -403,7 +403,7 @@ func Test_createNewTarget_DockerDirectoryNestedMd(t *testing.T) {
 	}
 
 	output := captureOutput(func() {
-		result, err := createNewTarget("test.md", []string{}, []string{"/path/to/dir"})
+		result, err := createNewTarget("test.md", []string{}, []string{}, []string{"/path/to/dir"})
 		if err != nil {
 			t.Errorf("Attempting to createNewTarget errored: %s\n", err)
 		}
@@ -461,7 +461,7 @@ func Test_createNewTarget_DockerDirectoryDoubleNestedMd(t *testing.T) {
 	}
 
 	output := captureOutput(func() {
-		result, err := createNewTarget("test.md", []string{}, []string{"/path/to/dir"})
+		result, err := createNewTarget("test.md", []string{}, []string{}, []string{"/path/to/dir"})
 		if err != nil {
 			t.Errorf("Attempting to createNewTarget errored: %s\n", err)
 		}
