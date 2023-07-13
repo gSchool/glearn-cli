@@ -612,7 +612,6 @@ func copyDockerPaths(target string, dockerPaths []string) (err error) {
 // copyChallengePaths takes
 func copyChallengePaths(target string, challengePaths []string) (err error) {
 	for _, filePath := range challengePaths {
-
 		// Ex. /tests/dir/my_neat_test.js -> ["tests", "dir", "my_neat_tests.js"]
 		pathArray := strings.Split(filePath, "/")
 

@@ -142,7 +142,7 @@ func Test_createNewTarget(t *testing.T) {
 	}
 }
 
-func Test_createNewTargetSingleFileSQLWithImage(t *testing.T) {
+func Test_createNewTargetChallengePathsAndLinks(t *testing.T) {
 	createTestMD(testMDContent)
 	os.MkdirAll("image", os.FileMode(0777))
 	_, err := os.Create("image/nested-small.png")
@@ -178,6 +178,88 @@ func Test_createNewTargetSingleFileSQLWithImage(t *testing.T) {
 	err = os.RemoveAll("image")
 	if err != nil {
 		t.Errorf("could not remove image directory: %s\n", err)
+	}
+
+	err = os.Remove("test.md")
+	if err != nil {
+		t.Errorf("could not remove 'test.md' file: %s\n", err)
+	}
+}
+
+const allContent = ` ## all content
+![alt](image/nested-small.png)
+* docker_directory_path: /path/to/dir
+* test_file: /tests/test.js
+* setup_file: /setup.js
+`
+
+func Test_createNewTargetAllAssets(t *testing.T) {
+	createTestMD(allContent)
+	// link
+	os.MkdirAll("image", os.FileMode(0777))
+	_, err := os.Create("image/nested-small.png")
+	if err != nil {
+		t.Errorf("Error generating test image: %s\n", err)
+	}
+
+	// docker
+	os.MkdirAll("path/to/dir", os.FileMode(0777))
+	_, err = os.Create("path/to/dir/Dockerfile")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+	_, err = os.Create("path/to/dir/test.sh")
+	if err != nil {
+		t.Errorf("Error generating test fixtures: %s\n", err)
+	}
+
+	// challenge
+	os.MkdirAll("tests", os.FileMode(0777))
+	_, err = os.Create("tests/test.js")
+	if err != nil {
+		t.Errorf("Error generating test file tests/test.js: %s\n", err)
+	}
+	_, err = os.Create("setup.js")
+	if err != nil {
+		t.Errorf("Error generating test file setup.js: %s\n", err)
+	}
+
+	output := captureOutput(func() {
+		createNewTarget("test.md", []string{"/tests/test.js", "/setup.js"}, []string{"image/nested-small.png"}, []string{"/path/to/dir"})
+		testFilesExist(t, []string{"/tests/test.js", "/setup.js", "image/nested-small.png", "/path/to/dir"})
+	})
+
+	if strings.Contains(output, "Link not found with path") {
+		t.Errorf("output should not print 'Link not found with path', output was:\n%s\n", output)
+	}
+
+	if strings.Contains(output, "Failed build tmp files around single file preview for") {
+		t.Errorf("output should not print 'Failed build tmp files around single file preview for', output was:\n%s\n", output)
+	}
+
+	err = os.RemoveAll("single-file-upload")
+	if err != nil {
+		t.Errorf("could not remove single-file-upload directory: %s\n", err)
+	}
+
+	err = os.RemoveAll("image")
+	if err != nil {
+		t.Errorf("could not remove 'image' directory: %s\n", err)
+	}
+
+	err = os.RemoveAll("tests")
+	if err != nil {
+		t.Errorf("could not remove 'tests' directory: %s\n", err)
+	}
+
+	err = os.RemoveAll("path")
+	if err != nil {
+		t.Errorf("could not remove docker directory 'path': %s\n", err)
+	}
+
+	err = os.Remove("setup.js")
+	if err != nil {
+		t.Errorf("could not remove 'setup.js.md' file: %s\n", err)
 	}
 
 	err = os.Remove("test.md")
@@ -500,6 +582,14 @@ func Test_createNewTarget_DockerDirectoryDoubleNestedMd(t *testing.T) {
 
 	if output != "" {
 		t.Error("expected stdout exist")
+	}
+}
+
+func testFilesExist(t *testing.T, paths []string) {
+	for _, file := range paths {
+		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", file)); os.IsNotExist(err) {
+			t.Errorf("%s should have been created\n", file)
+		}
 	}
 }
 
