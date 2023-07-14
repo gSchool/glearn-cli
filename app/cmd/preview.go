@@ -35,8 +35,10 @@ type previewBuilder struct {
 	target string
 	// fileinfo is extracted from the initial target
 	fileInfo os.FileInfo
-	// resourcePaths collect single files which are references somewhere in the curriculum, either on challenge attributes or linked content
-	resourcePaths []string
+	// challengePaths collect single files from challenge attributes such as data_path, test_file, etc
+	challengePaths []string
+	// linkPaths collect single files which are references somewhere in linked content
+	linkPaths []string
 	// dockerPaths are defined in custom snippet challenges as directories which contain a Dockerfile, test.sh, and other files
 	// the contents of the directories must be included in the preview archive
 	dockerPaths []string
@@ -62,7 +64,8 @@ func NewPreviewBuilder(args []string) (*previewBuilder, error) {
 	p := &previewBuilder{
 		target:          args[0],
 		fileInfo:        fileInfo,
-		resourcePaths:   []string{},
+		challengePaths:  []string{},
+		linkPaths:       []string{},
 		dockerPaths:     []string{},
 		configYamlPaths: []string{},
 		startOfCmd:      time.Now(),
@@ -82,20 +85,20 @@ func (p *previewBuilder) collectPaths() error {
 		return nil
 	}
 
-	dockerPaths, resourcePaths, err := resourcesFromTarget(p.target)
+	dockerPaths, challengePaths, linkPaths, err := resourcesFromTarget(p.target)
 	if err != nil {
 		return fmt.Errorf("Failed to attach local images for single file preview for: (%s). Err: %v", p.target, err)
 	}
 
-	p.resourcePaths = resourcePaths
+	p.challengePaths = challengePaths
+	p.linkPaths = linkPaths
 	p.dockerPaths = dockerPaths
 
 	return nil
 }
 
 func (p *previewBuilder) buildAlternateTarget() error {
-	paths := p.resourcePaths
-	alternateTarget, err := createNewTarget(p.target, paths, p.dockerPaths)
+	alternateTarget, err := createNewTarget(p.target, p.challengePaths, p.linkPaths, p.dockerPaths)
 	if err != nil {
 		return err
 	}
@@ -137,7 +140,7 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 	// Start benchmark for compressDirectory
 	startOfCompression := time.Now()
 
-	resourcePaths := append(p.dockerPaths, p.resourcePaths...)
+	resourcePaths := append(append(p.dockerPaths, p.challengePaths...), p.linkPaths...)
 	// Create file with zipTarget name and defer its closing
 	zipfile, err := os.Create(zipTarget)
 	if err != nil {
@@ -349,7 +352,7 @@ func (p *previewBuilder) includesLinks() bool {
 }
 
 func (p *previewBuilder) fileContainsResourcePaths() bool {
-	return len(p.resourcePaths) > 0
+	return len(p.challengePaths) > 0 || len(p.linkPaths) > 0
 }
 
 func (p *previewBuilder) fileContainsDocker() bool {
@@ -448,160 +451,35 @@ preview and return/open the preview URL when it is complete.
 }
 
 // createNewTarget will set up and create everything needed for single file previews if they are needed.
-// Returns a string representing the source name which if not single file tmp dir is needed, will return the
-// original
-func createNewTarget(target string, singleFilePaths, dockerPaths []string) (string, error) {
-	// Tmp dir so we can build out a new dir with the correct links in their correct
-	// paths based on relative link paths supplied in the single markdown file
-	newSrcPath := tmpSingleFileDir
-
-	// Get the name of the single target file
-	srcArray := strings.Split(target, "/")
-	srcMDFile := srcArray[len(srcArray)-1]
-	substringPaths := []string{}
-
-	for _, filePath := range singleFilePaths {
-		if !strings.HasPrefix(filePath, "/") {
-			filePath = fmt.Sprintf("/%s", filePath)
-		}
-
-		// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
-		pathArray := []string{}
-		var containsPeriodPeriod bool
-		for _, dir := range strings.Split(filePath, "/") {
-			if dir != ".." { // sanitize any .. so we don't have to worry about nested things
-				containsPeriodPeriod = true
-				pathArray = append(pathArray, dir)
-			}
-		}
-		// We need to modify the actual markdown file so it no longer has `..` in links, since we're putting
-		// everything in the newSrcPath
-		if containsPeriodPeriod {
-			substringPaths = append(substringPaths, filePath)
-		}
-
-		imageName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
-
-		// create an linkDirs var and depending on how long the image file path is, update it to include
-		// everything up to the image itself
-		var linkDirs string
-
-		if len(pathArray) == 1 {
-			linkDirs = ""
-		} else if len(pathArray) == 2 {
-			linkDirs = pathArray[0]
-		} else {
-			// Collect everything up until the image name (last item) and join it back together
-			// This gives us the name of the directory(ies) to make to put the image in
-			linkDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
-		}
-
-		// Create appropriate directory for each link using the linkDirs
-		err := os.MkdirAll(newSrcPath+linkDirs, os.FileMode(0777))
-		if err != nil {
-			return "", err
-		}
-
-		// Get "oneDirBackFromTarget" because target will be an .md file with relative
-		// links so we need to go one back from "target" so things aren't trying
-		// to be nested in the .md file itself
-		targetArray := strings.Split(target, "/")
-		sourceLinkPath := trimFirstRune(filePath)
-		if len(targetArray[:len(targetArray)-1]) != 0 && !strings.HasSuffix(sourceLinkPath, ".sql") {
-			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
-			sourceLinkPath = oneDirBackFromTarget + filePath
-		}
-
-		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
-			if strings.HasSuffix(sourceLinkPath, ".sql") {
-				useThisPath := ""
-				parent := "../" + sourceLinkPath
-				for i := 1; i <= 5; i++ {
-					_, parentExists := os.Stat(parent)
-					if parentExists == nil {
-						useThisPath = parent
-						break
-					} else {
-						parent = "../" + parent
-					}
-				}
-
-				if useThisPath != "" {
-					err = Copy(useThisPath, newSrcPath+linkDirs+"/"+imageName)
-					if err != nil {
-						return "", err
-					}
-				}
-			} else {
-				log.Printf("Link not found with path '%s'\n", sourceLinkPath)
-			}
-		} else {
-			// Copy the actual image into our new temp directory in it's appropriate spot
-			err = Copy(sourceLinkPath, newSrcPath+linkDirs+"/"+imageName)
-			if err != nil {
-				return "", err
-			}
-		}
-	} // End of loop over files
-
-	// iterate over docker directories as their contents must be recursively copied
-	for _, dirPath := range dockerPaths {
-		fmt.Printf("Including docker_directory_path: %s\n", dirPath)
-		dirPath = trimFirstRune(dirPath)
-		fileDir, err := os.Stat(dirPath)
-
-		// when the directory does not exist, keep moving back in the directory structure until it is found
-		if os.IsNotExist(err) {
-			newDirPath := ""
-			parent := "../" + dirPath
-			for i := 1; i <= 5; i++ {
-				f, parentExists := os.Stat(parent)
-				if parentExists == nil && f.IsDir() {
-					newDirPath = parent
-					break
-				} else if parentExists == nil && !f.IsDir() {
-					return "", fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
-				} else {
-					parent = "../" + parent
-				}
-			}
-
-			if newDirPath != "" {
-				// the directory was found after checkpoint parents, copy contents
-				ignorePatterns, err := DockerIgnorePatterns(newDirPath)
-				if err != nil {
-					fmt.Print(err.Error())
-				}
-
-				err = CopyDirectoryContents(newDirPath, newSrcPath+"/"+dirPath, ignorePatterns)
-				if err != nil {
-					return "", err
-				}
-			}
-
-		} else if !fileDir.IsDir() {
-			return "", fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
-		} else {
-			ignorePatterns, err := DockerIgnorePatterns(dirPath)
-			if err != nil {
-				fmt.Print(err.Error())
-			}
-
-			err = CopyDirectoryContents(dirPath, newSrcPath+"/"+dirPath, ignorePatterns)
-			if err != nil {
-				return "", err
-			}
-		}
-	} // End docker path loop
-
-	// Copy original single markdown file into the base of our new tmp dir
-	newTarget := newSrcPath + "/" + srcMDFile
-	err := Copy(target, newTarget)
+// Returns a string representing the source name which if not single file tmp dir is needed, will return the original
+func createNewTarget(target string, challengePaths, linkPaths, dockerPaths []string) (string, error) {
+	substringPaths, err := copyLinks(target, linkPaths)
 	if err != nil {
 		return "", err
 	}
 
-	if len(singleFilePaths) > 0 || len(dockerPaths) > 0 {
+	err = copyDockerPaths(target, dockerPaths)
+	if err != nil {
+		return "", err
+	}
+
+	err = copyChallengePaths(target, challengePaths)
+	if err != nil {
+		return "", err
+	}
+
+	// Get the name of the single target file
+	srcArray := strings.Split(target, "/")
+	srcMDFile := srcArray[len(srcArray)-1]
+
+	// Copy original single markdown file into the base of our new tmp dir
+	newTarget := tmpSingleFileDir + "/" + srcMDFile
+	err = Copy(target, newTarget)
+	if err != nil {
+		return "", err
+	}
+
+	if len(challengePaths) > 0 || len(dockerPaths) > 0 || len(linkPaths) > 0 {
 		if len(substringPaths) > 0 {
 			// open contents of new target
 			b, err := ioutil.ReadFile(newTarget)
@@ -620,10 +498,178 @@ func createNewTarget(target string, singleFilePaths, dockerPaths []string) (stri
 				return "", fmt.Errorf("Could not write copied target file with cleaned up links: %s", err)
 			}
 		}
-		return newSrcPath, nil
+		return tmpSingleFileDir, nil
 	}
 
 	return target, nil
+}
+
+// copyLinks is used when creating a new target. It iterates over given links, creates necessary
+// directories for the link, then copies the link into the new temproary target directory. Links which
+// must be rewritten in the original target are returned if they contain '..'
+func copyLinks(target string, linkPaths []string) (substringPaths []string, err error) {
+	for _, filePath := range linkPaths {
+		if !strings.HasPrefix(filePath, "/") {
+			filePath = fmt.Sprintf("/%s", filePath)
+		}
+
+		// Ex. images/something-else/my_neat_image.png -> ["images", "something-else", "my_neat_image.png"]
+		pathArray := []string{}
+		var containsPeriodPeriod bool
+		for _, dir := range strings.Split(filePath, "/") {
+			if dir != ".." { // sanitize any .. so we don't have to worry about nested things
+				containsPeriodPeriod = true
+				pathArray = append(pathArray, dir)
+			}
+		}
+		// We need to modify the actual markdown file so it no longer has `..` in links, since we're putting
+		// everything in the tmpSingleFileDir
+		if containsPeriodPeriod {
+			substringPaths = append(substringPaths, filePath)
+		}
+
+		linkDirs, err := createLinkDirectories(pathArray)
+		if err != nil {
+			return []string{}, err
+		}
+		linkName := pathArray[len(pathArray)-1] // -> "my_neat_image.png"
+
+		// if target is units/second-topic/lesson.md
+		// targetArray becomes ["units", "second-topic", "lesson.md"]
+		targetArray := strings.Split(target, "/")
+		// if filePath is /tests/test.js sourceLinkPath removes the first slash
+		sourceLinkPath := trimFirstRune(filePath)
+
+		if len(targetArray[:len(targetArray)-1]) != 0 {
+			// Get "oneDirBackFromTarget" because target will be an .md file with relative
+			// links so we need to go one segment back from "target" so things aren't trying
+			// to be nested in the .md file itself
+			oneDirBackFromTarget := strings.Join(targetArray[:len(targetArray)-1], "/")
+			sourceLinkPath = oneDirBackFromTarget + filePath
+		}
+
+		if _, err := os.Stat(sourceLinkPath); os.IsNotExist(err) {
+			log.Printf("Link not found with path '%s'\n", sourceLinkPath)
+		} else {
+			// Copy the actual image into our new temp directory in it's appropriate spot
+			err = Copy(sourceLinkPath, tmpSingleFileDir+linkDirs+"/"+linkName)
+			if err != nil {
+				return []string{}, err
+			}
+		}
+	}
+
+	return
+}
+
+// copyDockerPaths copies the contents of docker directory paths into the temporary directory
+func copyDockerPaths(target string, dockerPaths []string) (err error) {
+	// iterate over docker directories as their contents must be recursively copied
+	for _, dirPath := range dockerPaths {
+		fmt.Printf("Including docker_directory_path: %s\n", dirPath)
+		dirPath = trimFirstRune(dirPath)
+		fileDir, err := os.Stat(dirPath)
+
+		// when the directory does not exist, keep moving back in the directory structure until it is found
+		if os.IsNotExist(err) {
+			fileInfo, newDirPath := fileFromParents(target, dirPath)
+
+			if fileInfo != nil && !fileInfo.IsDir() {
+				return fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
+			}
+
+			if newDirPath != "" {
+				// the directory was found after checking parents, copy contents
+				ignorePatterns, err := DockerIgnorePatterns(newDirPath)
+				if err != nil {
+					fmt.Print(err.Error())
+				}
+
+				err = CopyDirectoryContents(newDirPath, tmpSingleFileDir+"/"+dirPath, ignorePatterns)
+				if err != nil {
+					return err
+				}
+			}
+
+		} else if !fileDir.IsDir() {
+			return fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
+		} else {
+			ignorePatterns, err := DockerIgnorePatterns(dirPath)
+			if err != nil {
+				fmt.Print(err.Error())
+			}
+
+			err = CopyDirectoryContents(dirPath, tmpSingleFileDir+"/"+dirPath, ignorePatterns)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// copyChallengePaths takes
+func copyChallengePaths(target string, challengePaths []string) (err error) {
+	for _, filePath := range challengePaths {
+		// Ex. /tests/dir/my_neat_test.js -> ["tests", "dir", "my_neat_tests.js"]
+		pathArray := strings.Split(filePath, "/")
+
+		linkDirs, err := createLinkDirectories(pathArray)
+		if err != nil {
+			return err
+		}
+
+		if strings.HasPrefix(filePath, "/") {
+			filePath = trimFirstRune(filePath)
+		}
+		// -> "my_neat_test.js"
+		fileName := pathArray[len(pathArray)-1]
+
+		// use the filePath as challenge paths start with a slash and begin at project root.
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			_, useThisPath := fileFromParents(target, filePath)
+
+			if useThisPath != "" {
+				err = Copy(useThisPath, tmpSingleFileDir+linkDirs+"/"+fileName)
+				if err != nil {
+					return err
+				}
+			} else {
+				log.Printf("challenge file not found with path '%s'\n", filePath)
+			}
+		} else {
+			// Copy the actual image into our new temp directory in it's appropriate spot
+			err = Copy(filePath, tmpSingleFileDir+linkDirs+"/"+fileName)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func createLinkDirectories(pathArray []string) (linkDirs string, err error) {
+	// create an linkDirs var and depending on how long the image file path is, update it to include
+	// everything up to the image itself
+	if len(pathArray) == 1 {
+		linkDirs = ""
+	} else if len(pathArray) == 2 {
+		linkDirs = pathArray[0]
+	} else {
+		// Collect everything up until the image name (last item) and join it back together
+		// This gives us the name of the directory(ies) to make to put the image in
+		linkDirs = strings.Join(pathArray[:len(pathArray)-1], "/")
+	}
+
+	// Create appropriate directory for each link using the linkDirs
+	err = os.MkdirAll(tmpSingleFileDir+linkDirs, os.FileMode(0777))
+	if err != nil {
+		return "", err
+	}
+
+	return
 }
 
 // previewCmdError is a small wrapper for all errors within the preview command. It ensures
@@ -643,22 +689,20 @@ func printlnGreen(text string) {
 // resourcesFromTarget takes a target, reads it, and passes it's contents (slice of bytes)
 // to our MDResourceParser as a string. All relative/local markdown flavored images are parsed
 // into an array of strings and returned
-func resourcesFromTarget(target string) (uniqueDockerPaths, uniqueResourcePaths []string, err error) {
+func resourcesFromTarget(target string) (uniqueDockerPaths, challengePaths, linkPaths []string, err error) {
 	contents, err := ioutil.ReadFile(target)
 	if err != nil {
-		return []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+		return []string{}, []string{}, []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
 	}
 
 	m := mdresourceparser.New([]rune(string(contents)))
+
 	dataPaths, dockerDirectoryPaths, testFilePaths, setupFilePaths := m.ParseResources()
 
-	uniqueDockerPaths = uniq(dockerDirectoryPaths)
+	// append dataPaths, testFilePaths, setupFilePaths together as challengePaths
+	challengePaths = append(append(dataPaths, testFilePaths...), setupFilePaths...)
 
-	// append dataPaths, testFilePaths, setupFilePaths, and Links together as resources
-	dataPaths = append(append(append(dataPaths, testFilePaths...), setupFilePaths...), m.Links...)
-	uniqueResourcePaths = uniq(dataPaths)
-
-	return uniqueDockerPaths, uniqueResourcePaths, nil
+	return uniq(dockerDirectoryPaths), uniq(challengePaths), uniq(m.Links), nil
 }
 
 func newfileUploadRequest(uri string, file *os.File) (*http.Request, error) {
@@ -846,6 +890,33 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 	}
 
 	return nil
+}
+
+// fileFromParents checks for a file from the given filePath, and if not found it will
+// move up a parent and check again. Checking stops once the root of the file system is hit
+func fileFromParents(target, filePath string) (file os.FileInfo, path string) {
+	if !strings.HasPrefix(filePath, "/") {
+		filePath = fmt.Sprintf("/%s", filePath)
+	}
+	abs, _ := filepath.Abs(target)
+	abs, _ = filepath.Split(abs)
+	absDir := strings.Split(abs, "/")
+
+	// has to be greater than 1 because an absolute path split on / always has a blank entry at 0 index
+	for len(absDir) > 1 {
+		fileLocation := strings.Join(absDir, "/") + filePath
+		file, parentExists := os.Stat(fileLocation)
+
+		if parentExists == nil {
+			file = file
+			path = fileLocation
+			break
+		} else {
+			absDir = absDir[:len(absDir)-1]
+		}
+	}
+
+	return file, path
 }
 
 func trimFirstRune(s string) string {
