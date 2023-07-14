@@ -572,7 +572,7 @@ func copyDockerPaths(target string, dockerPaths []string) (err error) {
 
 		// when the directory does not exist, keep moving back in the directory structure until it is found
 		if os.IsNotExist(err) {
-			fileInfo, newDirPath := fileFromParents(dirPath)
+			fileInfo, newDirPath := fileFromParents(target, dirPath)
 
 			if fileInfo != nil && !fileInfo.IsDir() {
 				return fmt.Errorf("docker_directory_path %s is not a directory", dirPath)
@@ -628,7 +628,7 @@ func copyChallengePaths(target string, challengePaths []string) (err error) {
 
 		// use the filePath as challenge paths start with a slash and begin at project root.
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			_, useThisPath := fileFromParents(filePath)
+			_, useThisPath := fileFromParents(target, filePath)
 
 			if useThisPath != "" {
 				err = Copy(useThisPath, tmpSingleFileDir+linkDirs+"/"+fileName)
@@ -894,18 +894,25 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 
 // fileFromParents checks for a file from the given filePath, and if not found it will
 // move up a parent and check again. Checking stops once the root of the file system is hit
-func fileFromParents(filePath string) (file os.FileInfo, path string) {
-	dotdotSlashes := "../"
-	priorDir, _ := filepath.Abs(dotdotSlashes)
-	for priorDir != "/" {
-		file, parentExists := os.Stat(dotdotSlashes + filePath)
+func fileFromParents(target, filePath string) (file os.FileInfo, path string) {
+	if !strings.HasPrefix(filePath, "/") {
+		filePath = fmt.Sprintf("/%s", filePath)
+	}
+	abs, _ := filepath.Abs(target)
+	abs, _ = filepath.Split(abs)
+	absDir := strings.Split(abs, "/")
+
+	// has to be greater than 1 because an absolute path split on / always has a blank entry at 0 index
+	for len(absDir) > 1 {
+		fileLocation := strings.Join(absDir, "/") + filePath
+		file, parentExists := os.Stat(fileLocation)
+
 		if parentExists == nil {
-			path = dotdotSlashes + filePath
 			file = file
+			path = fileLocation
 			break
 		} else {
-			dotdotSlashes = "../" + dotdotSlashes
-			priorDir, _ = filepath.Abs(dotdotSlashes)
+			absDir = absDir[:len(absDir)-1]
 		}
 	}
 
