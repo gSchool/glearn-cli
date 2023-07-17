@@ -108,15 +108,7 @@ func Test_createNewTarget(t *testing.T) {
 		t.Errorf("result should be the temp directory with the target markdown, '%s'", result)
 	}
 
-	if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
-		t.Errorf("test.md should have been created")
-	}
-	if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "mrsmall-invert.png")); os.IsNotExist(err) {
-		t.Errorf("mrsmall-invert should have been created, was not")
-	}
-	if _, err = os.Stat(fmt.Sprintf("single-file-upload/deeper/%s", "deep-small.png")); os.IsNotExist(err) {
-		t.Errorf("deeper/deep-small.png should have been created in its directory, was not")
-	}
+	testFilesExist(t, []string{"test.md", "mrsmall-invert.png", "deeper/deep-small.png"})
 
 	// test cases for ,./
 	if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "mrsmall.png")); os.IsNotExist(err) {
@@ -154,7 +146,7 @@ func Test_createNewTargetChallengePathsAndLinks(t *testing.T) {
 		createNewTarget("test.md", []string{"/data/some.sql"}, []string{"image/nested-small.png"}, []string{})
 		_, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "data/some.sql"))
 		if err == nil {
-			t.Errorf("data/some.sql should have been copied over and it was not")
+			t.Errorf("data/some.sql should not have been copied over")
 		}
 
 		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "/image/nested-small.png")); os.IsNotExist(err) {
@@ -309,17 +301,7 @@ func Test_createNewTargetSingleFile(t *testing.T) {
 			t.Errorf("result should be the temp directory with the target markdown, '%s'", result)
 		}
 
-		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
-			t.Errorf("test.md should have been created")
-		}
-
-		if _, err = os.Stat(fmt.Sprintf("single-file-upload/image/%s", "nested-small.png")); os.IsNotExist(err) {
-			t.Errorf("nested-small.png should have been created and it's image dir moved to the root of the single file directory, was not")
-		}
-
-		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "nested-small.png")); os.IsNotExist(err) {
-			t.Errorf("nested-small.png should have been created and it's image dir moved to the root of the single file directory, was not")
-		}
+		testFilesExist(t, []string{"test.md", "image/nested-small.png", "nested-small.png"})
 
 		err = os.RemoveAll("single-file-upload")
 		if err != nil {
@@ -414,27 +396,15 @@ func Test_createNewTarget_DockerDirectoryIgnore(t *testing.T) {
 			t.Errorf("result should be the temp directory with the target markdown, '%s'", result)
 		}
 
-		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
-			t.Errorf("test.md should have been created")
-		}
-
-		// Always allow files
-		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/%s", "Dockerfile")); os.IsNotExist(err) {
-			t.Errorf("Dockerfile should have been created")
-		}
-		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/%s", "test.sh")); os.IsNotExist(err) {
-			t.Errorf("test.sh should have been created")
-		}
-		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/%s", "docker-compose.yaml")); os.IsNotExist(err) {
-			t.Errorf("docker-compose.yaml should have been created")
-		}
-		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/%s", "docker-compose.yml")); os.IsNotExist(err) {
-			t.Errorf("docker-compose.yml should have been created")
-		}
-
-		if _, err := os.Stat(fmt.Sprintf("single-file-upload/path/to/dir/child/%s", "dont_agnore_me.png")); os.IsNotExist(err) {
-			t.Errorf("dont_agnore_me.png should have been created")
-		}
+		testFilesExist(t, []string{
+			"test.md",
+			"path/to/dir/Dockerfile",
+			"path/to/dir/test.sh",
+			"path/to/dir/docker-compose.yaml",
+			"path/to/dir/docker-compose.yml",
+			"path/to/dir/child/dont_agnore_me.png",
+			"path/to/dir/child/nest.png",
+		})
 
 		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/ignore_me.jpg")); !os.IsNotExist(err) {
 			t.Errorf("path/to/dir/ignore_me.jpg should NOT have been created because its in the docker ignore file")
@@ -442,10 +412,6 @@ func Test_createNewTarget_DockerDirectoryIgnore(t *testing.T) {
 
 		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/child/ignore_me.jpg")); !os.IsNotExist(err) {
 			t.Errorf("path/to/dir/child/ignore_me.jpg should NOT have been created because its in the docker ignore file")
-		}
-
-		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/child/nest.png")); os.IsNotExist(err) {
-			t.Errorf("path/to/dir/child/nest.png should have been created and it's image dir moved to the root of the single file directory, was not")
 		}
 
 		err = os.RemoveAll("single-file-upload")
@@ -494,17 +460,7 @@ func Test_createNewTarget_DockerDirectoryNestedMd(t *testing.T) {
 			t.Errorf("result should be the temp directory with the target markdown, '%s'", result)
 		}
 
-		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
-			t.Errorf("test.md should have been created")
-		}
-
-		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/root.png")); os.IsNotExist(err) {
-			t.Errorf("path/to/dir/root.png should have been created and it's image dir moved to the root of the single file directory, was not")
-		}
-
-		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/child/nest.png")); os.IsNotExist(err) {
-			t.Errorf("path/to/dir/child/nest.png should have been created and it's image dir moved to the root of the single file directory, was not")
-		}
+		testFilesExist(t, []string{"test.md", "path/to/dir/root.png", "path/to/dir/child/nest.png"})
 
 		err = os.RemoveAll("single-file-upload")
 		if err != nil {
@@ -552,17 +508,7 @@ func Test_createNewTarget_DockerDirectoryDoubleNestedMd(t *testing.T) {
 			t.Errorf("result should be the temp directory with the target markdown, '%s'", result)
 		}
 
-		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", "test.md")); os.IsNotExist(err) {
-			t.Errorf("test.md should have been created")
-		}
-
-		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/root.png")); os.IsNotExist(err) {
-			t.Errorf("path/to/dir/root.png should have been created and it's image dir moved to the root of the single file directory, was not")
-		}
-
-		if _, err = os.Stat(fmt.Sprintf("single-file-upload/%s", "path/to/dir/child/nest.png")); os.IsNotExist(err) {
-			t.Errorf("path/to/dir/child/nest.png should have been created and it's image dir moved to the root of the single file directory, was not")
-		}
+		testFilesExist(t, []string{"test.md", "path/to/dir/root.png", "path/to/dir/child/nest.png"})
 
 		err = os.RemoveAll("single-file-upload")
 		if err != nil {
