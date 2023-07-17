@@ -216,6 +216,7 @@ Questions:
   java (ja)
   python (py)
   sql (sq)
+  ruby (rb)
   upload (up)
   customsnippet (cs)
   project (pr)
@@ -1623,6 +1624,6 @@ const distributeCodeTemplate = `<!-- Replace everything in square brackets [] an
 const distributeCodeTemplateMin = `### !distribute-code
 
 * student_folder_path:
-* repository_url: 
+* repository_url:
 
 ### !end-distribute-code`
