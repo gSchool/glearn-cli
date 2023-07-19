@@ -19,6 +19,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/gSchool/glearn-cli/api/learn"
 	di "github.com/gSchool/glearn-cli/ignorematcher"
@@ -117,7 +118,7 @@ func (p *previewBuilder) setConfigYaml() error {
 		return fmt.Errorf("Failed to find or create a config file for: (%s).\nErr: %v", p.target, err)
 	}
 
-	configYamlPaths, err := parseConfigAndGatherLinkedPaths(p.target)
+	configYamlPaths, err := p.parseConfigAndGatherPaths()
 	if err != nil {
 		return fmt.Errorf("Failed to parse config/autoconfig yaml for: (%s).\nErr: %v", p.target, err)
 	}
@@ -178,7 +179,8 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 			}
 		}
 		for _, d := range resourcePaths {
-			if strings.Contains(path, d) {
+			if strings.Contains(path, d) || strings.Contains(path, trimFirstRune(d)) {
+				fmt.Println("file included", d)
 				fileIsIncluded = true
 			}
 		}
@@ -416,6 +418,7 @@ preview and return/open the preview URL when it is complete.
 				previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 				return
 			}
+			//previewer.addPathsFromConfigFiles()
 		}
 
 		err = previewer.compressDirectory(tmpZipFile)
@@ -890,6 +893,56 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 	}
 
 	return nil
+}
+
+// parseConfigAndGatherPaths
+func (p *previewBuilder) parseConfigAndGatherPaths() ([]string, error) {
+	ret := []string{}
+	config := ConfigYaml{}
+
+	configYaml, _ := findConfig(p.target)
+	data, err := ioutil.ReadFile(configYaml)
+	if err != nil {
+		return ret, err
+	}
+
+	err = yaml.Unmarshal([]byte(data), &config)
+	if err != nil {
+		return ret, err
+	}
+
+	for _, std := range config.Standards {
+		for _, cf := range std.ContentFiles {
+			fmt.Println("parsing content file:", cf)
+			contents, err := ioutil.ReadFile(p.target + cf.Path)
+			if err != nil {
+				return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+			}
+
+			m := mdresourceparser.New([]rune(string(contents)))
+			// TODO include all files in dockerDirPaths
+			dataPaths, _, testFilePaths, setupFilePaths := m.ParseResources()
+			p.challengePaths = append(append(append(p.challengePaths, dataPaths...), testFilePaths...), setupFilePaths...)
+
+			// add links
+			for _, link := range m.Links {
+				var pathSplits = strings.Split(cf.Path, "/")
+				pathSplits = pathSplits[:len(pathSplits)-1]
+				if !strings.HasPrefix(link, "/") {
+					link = "/" + link
+				}
+				var linkRelativePath = p.target + strings.Join(pathSplits, "/") + link
+				linkAbsPath, _ := filepath.Abs(linkRelativePath)
+				ret = append(ret, linkAbsPath)
+			}
+
+			cfPath, _ := filepath.Abs(p.target + cf.Path)
+			ret = append(ret, cfPath)
+
+		}
+	}
+
+	return ret, nil
 }
 
 // fileFromParents checks for a file from the given filePath, and if not found it will
