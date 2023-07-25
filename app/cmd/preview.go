@@ -416,7 +416,6 @@ preview and return/open the preview URL when it is complete.
 				previewCmdError(fmt.Sprintf("%v", err), tmpZipFile)
 				return
 			}
-			//previewer.addPathsFromConfigFiles()
 		}
 
 		err = previewer.compressDirectory(tmpZipFile)
@@ -893,7 +892,9 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 	return nil
 }
 
-// parseConfigAndGatherPaths
+// parseConfigAndGatherPaths ranges over content files found int he config yaml and reads each one
+// collecting the challenge paths, docker paths, and relative links from each file. The asset names
+// can be read later to ensure they are included in the preview.
 func (p *previewBuilder) parseConfigAndGatherPaths() error {
 	config := ConfigYaml{}
 
