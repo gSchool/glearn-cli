@@ -732,7 +732,7 @@ func uploadToS3(file *os.File) error {
 	if err != nil {
 		return err
 	}
-	client := &http.Client{Timeout: time.Second * 60}
+	client := &http.Client{Timeout: time.Second * 180}
 	resp, err := client.Do(request)
 	if err != nil {
 		return err
@@ -922,14 +922,14 @@ func (p *previewBuilder) parseConfigAndGatherPaths() error {
 			// add challenge paths
 			p.challengePaths = append(append(append(p.challengePaths, dataPaths...), testFilePaths...), setupFilePaths...)
 
-			// add contents of docker dir
+			// add contents of docker dir as challenge paths
 			for _, dockerPath := range dockerDirPaths {
 				if strings.HasPrefix(dockerPath, "/") {
 					dockerPath = trimFirstRune(dockerPath)
 				}
 				filepath.Walk(dockerPath, func(path string, info os.FileInfo, err error) error {
 					path = filepath.ToSlash(path)
-					p.configYamlPaths = append(p.configYamlPaths, path)
+					p.challengePaths = append(p.challengePaths, path)
 
 					return nil
 				})
