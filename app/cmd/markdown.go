@@ -167,6 +167,8 @@ var templates = map[string]temp{
 	"javascript":      {"Javascript markdown", javascriptTemplate, javascriptTemplateMin, true},
 	"ja":              {"Java markdown", javaTemplate, javaTemplateMin, true},
 	"java":            {"Java markdown", javaTemplate, javaTemplateMin, true},
+	"rb":              {"Ruby markdown", rubyTemplate, rubyTemplateMin, true},
+	"ruby":            {"Ruby markdown", rubyTemplate, rubyTemplateMin, true},
 	"py":              {"Python markdown", pythonTemplate, pythonTemplateMin, true},
 	"python":          {"Python markdown", pythonTemplate, pythonTemplateMin, true},
 	"sq":              {"Sql markdown", sqlTemplate, sqlTemplateMin, true},
@@ -214,6 +216,7 @@ Questions:
   java (ja)
   python (py)
   sql (sq)
+  ruby (rb)
   upload (up)
   customsnippet (cs)
   project (pr)
@@ -1012,6 +1015,98 @@ const javaTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>
 
 <!-- ======================= END CHALLENGE ======================= -->`
 
+const rubyTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+<!-- Replace everything in square brackets [] and remove brackets  -->
+
+### !challenge
+
+* type: code-snippet
+* language: ruby3
+* id: %s
+* title: [text, a short question title]
+<!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
+<!-- * topics: [block, proc, lambda] (Checkpoints only, optional the topics for analyzing points) -->
+
+##### !question
+
+[markdown, your question]
+
+##### !end-question
+
+##### !placeholder
+
+~~~ruby
+class Foo
+  def initialize
+  end
+
+  def truthy
+    return true
+  end
+end
+~~~
+
+##### !end-placeholder
+
+##### !tests
+
+~~~ruby
+describe Foo do
+  it "does something" do
+    f = Foo.new
+    expect(f.truthy).to eq true
+  end
+end
+~~~
+
+##### !end-tests
+
+<!-- other optional sections -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
+<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
+<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
+const rubyTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+
+### !challenge
+
+* type: code-snippet
+* language: ruby3
+* id: %s
+* title:
+
+##### !question
+
+
+
+##### !end-question
+
+##### !setup
+
+
+
+##### !end-setup
+
+##### !placeholder
+
+
+
+##### !end-placeholder
+
+##### !tests
+
+
+
+##### !end-tests
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->`
+
 const pythonTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
 <!-- Replace everything in square brackets [] and remove brackets  -->
 
@@ -1529,6 +1624,6 @@ const distributeCodeTemplate = `<!-- Replace everything in square brackets [] an
 const distributeCodeTemplateMin = `### !distribute-code
 
 * student_folder_path:
-* repository_url: 
+* repository_url:
 
 ### !end-distribute-code`
