@@ -26,12 +26,12 @@ Create a github token with `repo` access. This gives you the ability to push rel
 Create a new semantic version tag (ex. v0.1.0)
 
 ```
-git tag -a v0.10.10 -m "Some new release commit"
+git tag -a v0.10.11 -m "Some new release commit"
 ```
 
 Push new tag
 ```
-git push origin v0.10.10
+git push origin v0.10.11
 ```
 
 To release run:
