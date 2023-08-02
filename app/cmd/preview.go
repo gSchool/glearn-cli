@@ -19,6 +19,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/gSchool/glearn-cli/api/learn"
 	di "github.com/gSchool/glearn-cli/ignorematcher"
@@ -117,11 +118,10 @@ func (p *previewBuilder) setConfigYaml() error {
 		return fmt.Errorf("Failed to find or create a config file for: (%s).\nErr: %v", p.target, err)
 	}
 
-	configYamlPaths, err := parseConfigAndGatherLinkedPaths(p.target)
+	err = p.parseConfigAndGatherPaths()
 	if err != nil {
 		return fmt.Errorf("Failed to parse config/autoconfig yaml for: (%s).\nErr: %v", p.target, err)
 	}
-	p.configYamlPaths = configYamlPaths
 
 	return nil
 }
@@ -178,7 +178,7 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 			}
 		}
 		for _, d := range resourcePaths {
-			if strings.Contains(path, d) {
+			if strings.Contains(path, d) || strings.Contains(path, trimFirstRune(d)) {
 				fileIsIncluded = true
 			}
 		}
@@ -732,7 +732,7 @@ func uploadToS3(file *os.File) error {
 	if err != nil {
 		return err
 	}
-	client := &http.Client{Timeout: time.Second * 60}
+	client := &http.Client{Timeout: time.Second * 180}
 	resp, err := client.Do(request)
 	if err != nil {
 		return err
@@ -886,6 +886,70 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 			if err != nil {
 				return err
 			}
+		}
+	}
+
+	return nil
+}
+
+// parseConfigAndGatherPaths ranges over content files found int he config yaml and reads each one
+// collecting the challenge paths, docker paths, and relative links from each file. The asset names
+// can be read later to ensure they are included in the preview.
+func (p *previewBuilder) parseConfigAndGatherPaths() error {
+	config := ConfigYaml{}
+
+	configYaml, _ := findConfig(p.target)
+	data, err := ioutil.ReadFile(configYaml)
+	if err != nil {
+		return err
+	}
+
+	err = yaml.Unmarshal([]byte(data), &config)
+	if err != nil {
+		return err
+	}
+
+	for _, std := range config.Standards {
+		for _, cf := range std.ContentFiles {
+			contents, err := ioutil.ReadFile(p.target + cf.Path)
+			if err != nil {
+				return fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
+			}
+
+			m := mdresourceparser.New([]rune(string(contents)))
+			dataPaths, dockerDirPaths, testFilePaths, setupFilePaths := m.ParseResources()
+
+			// add challenge paths
+			p.challengePaths = append(append(append(p.challengePaths, dataPaths...), testFilePaths...), setupFilePaths...)
+
+			// add contents of docker dir as challenge paths
+			for _, dockerPath := range dockerDirPaths {
+				if strings.HasPrefix(dockerPath, "/") {
+					dockerPath = trimFirstRune(dockerPath)
+				}
+				filepath.Walk(dockerPath, func(path string, info os.FileInfo, err error) error {
+					path = filepath.ToSlash(path)
+					p.challengePaths = append(p.challengePaths, path)
+
+					return nil
+				})
+			}
+
+			// add links
+			for _, link := range m.Links {
+				var pathSplits = strings.Split(cf.Path, "/")
+				pathSplits = pathSplits[:len(pathSplits)-1]
+				if !strings.HasPrefix(link, "/") {
+					link = "/" + link
+				}
+				var linkRelativePath = p.target + strings.Join(pathSplits, "/") + link
+				linkAbsPath, _ := filepath.Abs(linkRelativePath)
+				p.configYamlPaths = append(p.configYamlPaths, linkAbsPath)
+			}
+
+			cfPath, _ := filepath.Abs(p.target + cf.Path)
+			p.configYamlPaths = append(p.configYamlPaths, cfPath)
+
 		}
 	}
 

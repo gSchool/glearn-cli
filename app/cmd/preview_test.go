@@ -38,13 +38,24 @@ Question
 ### !end-challenge
 `
 
+func Test_ParseConfigFileForPaths(t *testing.T) {
+	previewFindOrCreateConfig(withNoConfigFixture, false, []string{})
+	p := previewBuilder{target: withNoConfigFixture}
+	err := p.parseConfigAndGatherPaths()
+
+	if err != nil || len(p.configYamlPaths) == 0 {
+		t.Errorf("Should of parse the yaml and gathered some content file paths")
+	}
+}
+
 func Test_compressDirectory(t *testing.T) {
 	source := "../../fixtures/test-block-auto-config"
-	configYamlPaths, err := parseConfigAndGatherLinkedPaths(source)
+	p := previewBuilder{target: source}
+	err := p.parseConfigAndGatherPaths()
 	if err != nil {
 		t.Errorf("Attempting to parseConfigAndGatherLinkedPaths errored: %s\n", err)
 	}
-	if len(configYamlPaths) < 1 {
+	if len(p.configYamlPaths) < 1 {
 		t.Errorf("There should be paths parsed from the target")
 	}
 
@@ -57,7 +68,7 @@ func Test_compressDirectory(t *testing.T) {
 	previewer := previewBuilder{
 		target:          source,
 		challengePaths:  challengePaths,
-		configYamlPaths: configYamlPaths,
+		configYamlPaths: p.configYamlPaths,
 	}
 	err = previewer.compressDirectory(tmpZipFile)
 	if err != nil {
@@ -75,7 +86,7 @@ func Test_compressDirectory(t *testing.T) {
 	}
 
 	for path := range paths {
-		for _, includedPath := range configYamlPaths {
+		for _, includedPath := range p.configYamlPaths {
 			if strings.Contains(includedPath, path) {
 				paths[path] = true
 			}

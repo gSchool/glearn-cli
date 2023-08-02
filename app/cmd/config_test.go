@@ -291,12 +291,3 @@ func Test_findConfigMethodReturnsProperConfig(t *testing.T) {
 		t.Errorf("Should of found a config or autoconig file")
 	}
 }
-
-func Test_ParseConfigFileForPaths(t *testing.T) {
-	previewFindOrCreateConfig(withNoConfigFixture, false, []string{})
-	paths, err := parseConfigAndGatherLinkedPaths(withNoConfigFixture)
-
-	if err != nil || len(paths) == 0 {
-		t.Errorf("Should of parse the yaml and gathered some content file paths")
-	}
-}

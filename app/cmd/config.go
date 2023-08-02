@@ -14,7 +14,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gSchool/glearn-cli/mdresourceparser"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -375,48 +374,6 @@ func anyMatchingPrefix(target string, prefixes []string) bool {
 		}
 	}
 	return false
-}
-
-func parseConfigAndGatherLinkedPaths(target string) ([]string, error) {
-	ret := []string{}
-	config := ConfigYaml{}
-
-	configYaml, _ := findConfig(target)
-	data, err := ioutil.ReadFile(configYaml)
-	if err != nil {
-		return ret, err
-	}
-
-	err = yaml.Unmarshal([]byte(data), &config)
-	if err != nil {
-		return ret, err
-	}
-
-	for _, std := range config.Standards {
-		for _, cf := range std.ContentFiles {
-			contents, err := ioutil.ReadFile(target + cf.Path)
-			if err != nil {
-				return []string{}, fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
-			}
-
-			m := mdresourceparser.New([]rune(string(contents)))
-			m.ParseResources()
-			for _, link := range m.Links {
-				var pathSplits = strings.Split(cf.Path, "/")
-				pathSplits = pathSplits[:len(pathSplits)-1]
-				if !strings.HasPrefix(link, "/") {
-					link = "/" + link
-				}
-				var linkRelativePath = target + strings.Join(pathSplits, "/") + link
-				linkAbsPath, _ := filepath.Abs(linkRelativePath)
-				ret = append(ret, linkAbsPath)
-			}
-			cfPath, _ := filepath.Abs(target + cf.Path)
-			ret = append(ret, cfPath)
-		}
-	}
-
-	return ret, nil
 }
 
 // tries to find the config yaml or autoconfig yaml
