@@ -828,6 +828,8 @@ const javascriptTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
 <!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
+<!-- * test_file: [/path/to/file.txt] (External test file, replaces 'tests' section) -->
+<!-- * setup_file: [/path/to/file.txt] (External setup file, replaces 'setup' section) -->
 
 ##### !question
 
@@ -914,6 +916,8 @@ const javaTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
 <!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
+<!-- * test_file: [/path/to/file.txt] (External test file, replaces 'tests' section) -->
+<!-- * setup_file: [/path/to/file.txt] (External setup file, replaces 'setup' section) -->
 
 ##### !question
 
@@ -1026,6 +1030,8 @@ const rubyTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
 <!-- * topics: [block, proc, lambda] (Checkpoints only, optional the topics for analyzing points) -->
+<!-- * test_file: [/path/to/file.txt] (External test file, replaces 'tests' section) -->
+<!-- * setup_file: [/path/to/file.txt] (External setup file, replaces 'setup' section) -->
 
 ##### !question
 
@@ -1118,6 +1124,8 @@ const pythonTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
 <!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
+<!-- * test_file: [/path/to/file.txt] (External test file, replaces 'tests' section) -->
+<!-- * setup_file: [/path/to/file.txt] (External setup file, replaces 'setup' section) -->
 
 ##### !question
 
@@ -1207,6 +1215,7 @@ const sqlTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>
 * data_path: /[text, the path to the folder with the .sql file]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
 <!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
+<!-- * test_file: [/path/to/file.txt] (External test file, replaces 'tests' section) -->
 
 ##### !question
 
@@ -1284,7 +1293,7 @@ const customsnippetTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>
 ### !challenge
 
 * type: custom-snippet
-* language: [text, one of: csharp, html, java, javascript, json, markdown, python, or sql]
+* language: [text, one of: csharp, html, java, javascript, json, markdown, python, ruby, or sql]
 * id: %s
 * title: [text, a short question title]
 * docker_directory_path: /[text, the path to the folder with the Docker setup]
