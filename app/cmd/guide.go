@@ -125,9 +125,9 @@ func doesCurrentDirHaveConfig(currentDir string) (bool, bool) {
 func generateGuide(currentDir string) error {
 	guideFiles := []guideFile{
 		{"README.md", readme},
-		{"01-example-unit/01-markdown-examples.md", helloWorldMd},
-		{"01-example-unit/02-challenges.md", markdownExamplesMd},
-		{"01-example-unit/03-checkpoint.md", challengesMd},
+		{"01-example-unit/00-hello-world.md", helloWorldMd},
+		{"01-example-unit/01-markdown-examples.md", markdownExamplesMd},
+		{"01-example-unit/02-challenges.md", challengesMd},
 		{"01-example-unit/03-checkpoint.md", checkpointMd},
 		{"01-example-unit/images/github.jpg", githubJpg},
 		{"01-example-unit/images/kmeans.png", kmeansPng},
