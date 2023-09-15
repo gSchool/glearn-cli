@@ -74,12 +74,12 @@ var guideCmd = &cobra.Command{
 		}
 		_, dirExists := os.Stat("/" + guideDir)
 		if dirExists == nil {
-			fmt.Printf("A directory already exists by the name '%s', rename or move it.\n")
+			fmt.Printf("A directory already exists by the name '%s', rename or move it.\n", guideDir)
 			os.Exit(1)
 		}
 
 		// Clone the template from github
-		fmt.Println("\nWriting 'learn-curriculum-init' directory and contents...")
+		fmt.Printf("\nWriting '%s' directory and contents...\n", guideDir)
 
 		// Create contents int he directory
 		err = generateGuide(currentDir)
@@ -93,6 +93,7 @@ Success!
 ========
 
 A small example curriculum for use with the walkthrough at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/01-overview.md has been added to this directory.`)
+		fmt.Println("\nFrom inside the new directory run 'learn preview .' to preview the walkthrough materials.")
 	},
 }
 
