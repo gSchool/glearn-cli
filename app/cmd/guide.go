@@ -58,8 +58,6 @@ var guideCmd = &cobra.Command{
 	Long:    "Generate examples for use in the walkthrough",
 	Args:    cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-
-		// Get the current directoryhell
 		currentDir, err := os.Getwd()
 		if err != nil {
 			fmt.Println("Could not detect a working directory")
@@ -78,10 +76,9 @@ var guideCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// Clone the template from github
 		fmt.Printf("\nWriting '%s' directory and contents...\n", guideDir)
 
-		// Create contents int he directory
+		// Create contents in the directory
 		err = generateGuide(currentDir)
 		if err != nil {
 			fmt.Println(err)
