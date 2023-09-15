@@ -1,4 +1,4 @@
-# Assessment Example
+# Checkpoint Example
 
 <!--BEGIN CHALLENGE-->
 
