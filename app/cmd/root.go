@@ -38,7 +38,7 @@ Edit existing curriculum:
       learn publish
 
 Learn more and build new curriculum:
-  walkthrough at https://galvanize-learn.zendesk.com/hc/en-us/articles/1500000930401-Introduction`,
+  walkthrough at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/01-overview.md`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("Requires at least 1 argument")
