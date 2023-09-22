@@ -3,13 +3,19 @@
 Type: Checkpoint
 UID: 2df27a2d-6db3-4dd6-aa82-2e6169e5b77f
 # DefaultVisibility: hidden # Uncomment this line to default Checkpoint to hidden
-MaxCheckpointSubmissions: 1 # Uncomment this line to limit the number of submissions
+MaxCheckpointSubmissions: 1
 # EmailOnCompletion: true #  Uncomment this line to send instructors an email once a student has completed a checkpoint
-TimeLimit: 60 # Uncomment this line to set a time limit in minutes
+TimeLimit: 60
 # Autoscore: true # Uncomment this line to finalize checkpoint scores without instructor review
 ---
 
 # Checkpoint Example
+
+Check the top of this file to see how things like the time allowed and maximum number of submissions can be configured. You do not require a maximum number of submissions or a time limit if you so choose.
+
+Saving and Exiting will not pause the timer, but will allow you to return to the test if you wish.
+
+The checkpoint will be graded if the time elapses without submitting, even if you close their browser.
 
 <!--BEGIN CHALLENGE-->
 

@@ -1,6 +1,10 @@
 # Markdown Examples
 
-Lessons are written in markdown. You can see a bunch of examples of markdown syntax in this file.
+Lessons are written in markdown. You can see a number of examples of markdown syntax in this file.
+
+You can view a complete list of available Learn custom markdown elements by running `learn md` and looking under the 'Other Markdown' section.
+
+File headers can be written to define attributes for the content file itself, which are under the 'Files' section.
 
 # H1 Top-Level Heading
 
@@ -8,7 +12,7 @@ Galvanize is committed to creating opportunities for Veterans to gain the skills
 
 ## H2 Next-Level Heading
 
-At Galvanize, we’re putting a whole new spin on Study Hall with monthly, members-only sessions. At every Study Hall, industry all-stars present on one of three topics –– growth, funding, or product –– and collaborate…
+At Galvanize, we’re putting a whole new spin on Study Hall with monthly sessions. At every Study Hall, industry all-stars present on one of three topics –– growth, funding, or product –– and collaborate…
 
 ### H3 Next-Level Heading
 

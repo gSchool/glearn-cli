@@ -2,7 +2,9 @@
 
 Interactive questions called "challenges" can be added to any markdown lesson to check for understanding. These same challenges can also be used to construct practice assignments, quizzes, and assessments.
 
-## Examples of Each Type
+You can view a complete list of available challenge types by running `learn md` and looking under the 'Questions' section.
+
+## Examples of Types
 
 * multiple choice (select one)
 * checkbox (select multiple)
@@ -11,7 +13,6 @@ Interactive questions called "challenges" can be added to any markdown lesson to
 * paragraph
 * code snippet--js, py, java, sql (code directly in Learn)
 * project, testable project (code locally, submit a repo)
-
 
 
 ## Multiple Choice
@@ -34,7 +35,7 @@ Multiple Choice challenges allow a student to submit a single answer to a multip
 
 ### !question
 
-Which of these cities is home to a Galvanize campus?
+In which of these U.S. cities could you travel directly North, South, East, or West until you left the state, and arrive in the same new state no matter which direction you chose?
 
 ### !end-question
 
@@ -42,10 +43,10 @@ Which of these cities is home to a Galvanize campus?
 
 ### !options
 
-* Chicago
-* Denver
-* Fort Collins
-* Miami
+a| Wheeling, West Virginia
+b| Dover, Delaware
+c| Stamford, Connecticut
+d| Jacksonville, Florida
 
 ### !end-options
 
@@ -53,11 +54,17 @@ Which of these cities is home to a Galvanize campus?
 
 ### !answer
 
-Denver
+c|
 
 ### !end-answer
 
 <!--'explanation' is optional. Shown after the student correctly answers the question.-->
+
+### !explanation
+
+If you headed in any of the four directions you would still end up in New York, with East being the most surprising as you'd first pass over ocean until you ended up in Long Island.
+
+### !end-explanation
 
 ### !end-challenge
 
@@ -80,23 +87,24 @@ Checkbox challenges allow a student to submit multiple answers to a multiple-cho
 
 ##### !question
 
-Mark all of the cities that are home to a Galvanize campus.
+Mark all of the ingredients in a peanut butter and jelly sandwich.
 
 ##### !end-question
 
 ##### !options
 
-* Portland
-* Denver
-* Los Angeles
-* Miami
+* Peanut Butter
+* Coleslaw
+* Jelly
+* Bread
 
 ##### !end-options
 
 ##### !answer
 
-* Denver
-* Los Angeles
+* Peanut Butter
+* Jelly
+* Bread
 
 ##### !end-answer
 
@@ -599,7 +607,7 @@ To do this, you need two things --
 
 * type: testable-project
 * id: a06bbaaf-b851-456b-b928-520883bcfd1b
-* title: [text, a short question title]
+* title: A simple upstream example
 * upstream: https://github.com/gSchool/simple-upstream
 * validate_fork: false
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
