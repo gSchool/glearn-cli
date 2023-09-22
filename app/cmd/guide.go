@@ -90,7 +90,7 @@ Success!
 ========
 
 A small example curriculum for use with the walkthrough at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/01-overview.md has been added to this directory.`)
-		fmt.Println("\nFrom inside the new directory run 'learn preview .' to preview the walkthrough materials.")
+		fmt.Printf("\nTo get started run 'cd %s && learn preview 01-example-unit/00-hello-world.md' and follow the instructions to find your content.\n\n", guideDir)
 	},
 }
 

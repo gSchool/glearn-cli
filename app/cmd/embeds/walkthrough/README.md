@@ -4,7 +4,7 @@ This repo has example curriculum for use when learning how to publish curriculum
 
 Preview an individual file with `learn preview 00-hello-world.md`. Modify the file and preview again to see your changes.
 
-Running `learn preview .` from the root of this project will preview the full directory contents.
+Running `learn preview .` from the root of this project to preview the full directory contents.
 
 ## Challenges
 

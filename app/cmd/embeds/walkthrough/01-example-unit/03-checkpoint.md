@@ -1,3 +1,14 @@
+---
+# autoconfig.yml will use these settings. config.yml will override.
+Type: Checkpoint
+UID: 2df27a2d-6db3-4dd6-aa82-2e6169e5b77f
+# DefaultVisibility: hidden # Uncomment this line to default Checkpoint to hidden
+MaxCheckpointSubmissions: 1 # Uncomment this line to limit the number of submissions
+# EmailOnCompletion: true #  Uncomment this line to send instructors an email once a student has completed a checkpoint
+TimeLimit: 60 # Uncomment this line to set a time limit in minutes
+# Autoscore: true # Uncomment this line to finalize checkpoint scores without instructor review
+---
+
 # Checkpoint Example
 
 <!--BEGIN CHALLENGE-->
@@ -121,7 +132,7 @@ your answer
 
 ##### !question
 
-When should you use a class component?
+When should you use a class component vs a functional component?
 
 ##### !end-question
 
