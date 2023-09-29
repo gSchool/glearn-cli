@@ -12,6 +12,7 @@ You can view a complete list of available challenge types by running `learn md` 
 * number
 * paragraph
 * code snippet--js, py, java, sql (code directly in Learn)
+* custom-snippet--write your own `Dockerfile` and `test.sh` to allow student code to run in a customized container
 * project, testable project (code locally, submit a repo)
 
 
@@ -243,10 +244,11 @@ Your answer may have covered accessibility, SEO, and human readability.
 <!----------------------END CHALLENGE----------------------------->
 
 
-
 ## Javascript Code Snippet
 
 Code Snippet Challenges allow a student to write code directly in Learn. The submission is evaluated against unit tests that are setup as part of the Challenge. The student then sees the standard output from the test runner in Learn.
+
+Attributes like tests can be written to external files with the attribute `test_file`, allowing for ease of local testing.
 
 <!----------------------BEGIN CHALLENGE----------------------------->
 
@@ -256,6 +258,8 @@ Code Snippet Challenges allow a student to write code directly in Learn. The sub
 <!--'id' is required, string, must be unique within a branch-->
 <!--'language' is required for type: code-snippet. For javascript, use 'javascript' -->
 <!--'title' is required, string, used when displaying results-->
+<!-- * test_file: [/path/to/file.txt] (External test file, replaces 'tests' section) -->
+<!-- * setup_file: [/path/to/file.txt] (External setup file, replaces 'setup' section) -->
 
 * type: code-snippet
 * id: dd9c31af-0fe8-440d-b4ec-bab3e8dc8a1d
@@ -549,6 +553,51 @@ ORDER BY users.last DESC
 <!----------------------END CHALLENGE----------------------------->
 
 
+## Custom Snippet Challenge
+
+The custom snippet challenge allows students to submit the input as a file to run inside customizable a container. The `docker_directory_path` attribute should always be from the root of the project and be a directory containing a `Dockerfile` and `test.sh` file.
+
+### Steps Learn Takes
+
+1. The image will build
+1. The container will start
+1. The text editor input is copied to `submission.txt` in the `WORKDIR`
+1. The container runs `bash test.sh` and the output captured
+1. The answer is correct only if the exit code is 0
+
+<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>>>>>>> -->
+<!-- Replace everything in square brackets [] and remove brackets  -->
+
+### !challenge
+
+* type: custom-snippet
+* language: text
+* id: aa5958ba-9d7a-4751-8d2d-38d4f5769f0d
+* title: hello world
+* docker_directory_path: /01-example-unit/custom-snippets/hello-world
+<!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
+<!-- * topics: [python, pandas] (Checkpoints only, optional the topics for analyzing points) -->
+
+##### !question
+
+Write the words "Hello world!" in the editor below. Then inspect the contents of the docker directory path in the walkthrough `/01-example-unit/custom-snippets/hello-world/Dockerfile` to learn more.
+
+`
+
+##### !end-question
+
+##### !placeholder
+
+##### !end-placeholder
+
+<!-- other optional sections -->
+<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
+<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
+<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+
+### !end-challenge
+
+<!-- ======================= END CHALLENGE ======================= -->
 
 ## Project Challenge
 

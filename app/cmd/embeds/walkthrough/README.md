@@ -1,16 +1,16 @@
 # Walkthrough Materials
 
-This repo has example curriculum for use when learning how to publish curriculum for Galvanize Learn.
+Use this directory when learning how to publish curriculum to Galvanize Learn.
 
-Preview an individual file with `learn preview 00-hello-world.md`. Modify the file and preview again to see your changes.
+Start by previewing an individual file with `learn preview 00-hello-world.md`. Modify the file and preview again to see your changes. Follow the directions in the lesson to learn more.
 
 Running `learn preview .` from the root of this project to preview the full directory contents.
 
-## Challenges
+## Access Requirements
 
-Challenges with some examples are available in `01-example-unit/02-challenges.md`. Previewing this file will show you interactive checks for understanding called 'challenges'.
+In order to preview curriculum, a Learn user is required with the ability to [generate an api token](https://learn-2.galvanize.com/api_token). Only admins and instructors can generate an API token. To publish blocks, your user will also need the role `forge.blocks_manager`; this role is not necessary to preview curriculum.
 
-Challenge markdown content (along with other config boilerplate) can be generated with the `learn md` command, which displays the list of available content to generate.
+Once an API token is obtained, it can be stored locally with `learn set --api_token=<YOUR_TOKEN>` which writes to a dotfile in your home directory called `.glearn-config.yaml`. The token is then used for authorizing CLI access to Learn.
 
 ## More details
 
