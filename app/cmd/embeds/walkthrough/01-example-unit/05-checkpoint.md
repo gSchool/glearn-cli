@@ -11,11 +11,13 @@ TimeLimit: 60
 
 # Checkpoint Example
 
-Check the top of this file to see how things like the time allowed and maximum number of submissions can be configured. You do not require a maximum number of submissions or a time limit if you so choose.
+Each unit can have only one Checkpoint, and the checkpoint must have challenges. Checkpoints can be configured to score points automatically, grant a limited number of attempts, require a certain time limit to complete, and email the instructors upon completion.
+
+See the header on this file `01-example-unit/05-checkpoint.md` to configure these options.
 
 Saving and Exiting will not pause the timer, but will allow you to return to the test if you wish.
 
-The checkpoint will be graded if the time elapses without submitting, even if you close their browser.
+If a time limit is set, the checkpoint will be graded if the time elapses without submitting, even if you close the browser.
 
 <!--BEGIN CHALLENGE-->
 

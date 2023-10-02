@@ -1,3 +1,8 @@
+---
+Type: Lesson
+UID: markdown-examples
+---
+
 # Markdown Examples
 
 Lessons are written in markdown. You can see a number of examples of markdown syntax in this file.

@@ -1,14 +1,14 @@
 ---
 # This is yaml frontmatter which will set values for a generated `autoconfig.yaml` file
-# It is not displayed in Learn
+# It is not displayed in Learn.
 Type: Lesson # Options: Lesson, Checkpoint, Survey, Instructor, Resource
-UID: unique-in-the-repository # can be set to any string, must be unique
-# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
+UID: unique-identifier # can be set to any string, must be unique in the repository
+# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden when used
 ---
 
 # Configuration
 
-If look at this file in your preferred text editor, you'll notice content at the top that is not displayed in Learn. This yaml frontmatter is used to set attributes on the content file.
+If look at this file in your preferred text editor, you'll see content at the top that is not displayed in Learn. This yaml frontmatter is used to set attributes on the content file for Learn.
 
 You can see an example header by running
 ```
@@ -20,15 +20,15 @@ from your command line.
 
 ## Setting Title
 
-You'll notice the title is not configured in the front matter- it is always derived from the first h1 header in the content file.
+You'll notice the title is not configured in the front matter- it is always derived from the first h1 header in the content file. If none can be found, the file name defines the title.
 
 ### !end-callout
 
 ## Tracking configuration in a file
 
-After you ran `learn preview .` you may notice a new file in the root of the walkthrough directory named `autoconfig.yaml`. The yaml frontmatter on each file sets the values within this file.
+After you ran `learn preview .` you'll see a new file in the root of the walkthrough directory named `autoconfig.yaml`. The yaml frontmatter at the top of each file sets the values for the `autoconfig.yaml` content files.
 
-You can see the format and more information on configuration options by running
+You can see the format and more information for configuration options by running
 ```
 learn md cfy -o
 ```
@@ -38,22 +38,45 @@ from your command line.
 
 Each time the preview is created, the `autoconfig.yaml` file is overwritten.
 
-However, running `learn preview` or `learn publish` won't generate an `autoconfig.yaml` file if there is already a file named `config.yaml` at the root of the project. This file is used to define content, and takes precedence over `autoconfig.yaml`.
+However, running `learn preview` or `learn publish` won't generate an `autoconfig.yaml` file if there is already a file named `config.yaml` at the root of the project. Both files are used to define content; `config.yaml` takes precedence over `autoconfig.yaml`, and the latter will rebuild itself on each `preview` or `publish`.
 
-Go ahead and change the `autoconfig.yaml` file to `config.yaml`. Then comment out the `ContentFiles` entry that looks like
+Go ahead and change the `autoconfig.yaml` file to `config.yaml`, then comment out the `ContentFiles` entry that looks like
 ```
   - Type: Lesson
     Path: /01-example-unit/01-configuration.md
-    UID: unique-in-the-repository
+    UID: unique-identifier
 ```
 Then from the root of the project run `learn preview .` again. You'll notice that this content file is now missing!
 
+Delete the `config.yaml` file entirely, and run `learn preview .` again. It will recreate the `autoconfig.yaml` file again as no config file was discovered.
+
 ## Controlling Unit attributes
 
-You'll notice in the configuration file there is a single standard. When the autoconfig was generated, its attributes were read from the file `01-example-unit/description.yaml`. 
+In the configuration file there is a single entry for `Standards`. When the autoconfig was generated, its attributes were read from the file `01-example-unit/description.yaml`.
 
 You can see an example `description.yaml` file by running
 ```
 learn md dsy -o
 ```
 from your command line.
+
+Each unit directory like `01-example-unit/` should have one `description.yaml` file.
+
+## Adding more Units
+
+Create a new Unit directory as a sibling to `01-example-unit/` and name it `02-my-unit/`. Populate it with a single markdown file called `01-playground.md` and write the following contents to the file:
+
+```
+---
+Type: Lesson
+UID: playground
+---
+# Playground
+
+Use this file to experiment!
+```
+
+Then run `learn preview .` again from the root of the walkthrough directory. Follow the link and notice that you now have _two_ units displayed in your preview.
+
+We never wrote a `description.yaml` file for our second unit! What did it display for the unit Title and Description? Try adding your own `description.yaml` file inside your `02-my-unit/` directory and change the settings as you see fit. Re-preview to see how Title and Description are now configured.
+

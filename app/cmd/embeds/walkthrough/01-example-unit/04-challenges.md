@@ -1,3 +1,8 @@
+---
+Type: Lesson
+UID: challenges
+---
+
 # Challenge Examples
 
 Interactive questions called "challenges" can be added to any markdown lesson to check for understanding. These same challenges can also be used to construct practice assignments, quizzes, and assessments.
