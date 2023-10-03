@@ -16,14 +16,23 @@ var readme []byte
 //go:embed embeds/walkthrough/01-example-unit/00-hello-world.md
 var helloWorldMd []byte
 
-//go:embed embeds/walkthrough/01-example-unit/01-markdown-examples.md
+//go:embed embeds/walkthrough/01-example-unit/01-configuration.md
+var configurationMd []byte
+
+//go:embed embeds/walkthrough/01-example-unit/02-publishing.md
+var publishingMd []byte
+
+//go:embed embeds/walkthrough/01-example-unit/03-markdown-examples.md
 var markdownExamplesMd []byte
 
-//go:embed embeds/walkthrough/01-example-unit/02-challenges.md
+//go:embed embeds/walkthrough/01-example-unit/04-challenges.md
 var challengesMd []byte
 
-//go:embed embeds/walkthrough/01-example-unit/03-checkpoint.md
+//go:embed embeds/walkthrough/01-example-unit/05-checkpoint.md
 var checkpointMd []byte
+
+//go:embed embeds/walkthrough/01-example-unit/description.yaml
+var descriptionYml []byte
 
 //go:embed embeds/walkthrough/01-example-unit/images/github.jpg
 var githubJpg []byte
@@ -124,9 +133,12 @@ func generateGuide(currentDir string) error {
 	guideFiles := []guideFile{
 		{"README.md", readme},
 		{"01-example-unit/00-hello-world.md", helloWorldMd},
-		{"01-example-unit/01-markdown-examples.md", markdownExamplesMd},
-		{"01-example-unit/02-challenges.md", challengesMd},
-		{"01-example-unit/03-checkpoint.md", checkpointMd},
+		{"01-example-unit/01-configuration.md", configurationMd},
+		{"01-example-unit/02-publishng.md", publishingMd},
+		{"01-example-unit/02-markdown-examples.md", markdownExamplesMd},
+		{"01-example-unit/04-challenges.md", challengesMd},
+		{"01-example-unit/05-checkpoint.md", checkpointMd},
+		{"01-example-unit/description.yaml", descriptionYml},
 		{"01-example-unit/images/github.jpg", githubJpg},
 		{"01-example-unit/images/kmeans.png", kmeansPng},
 		{"01-example-unit/images/react.png", reactPng},
