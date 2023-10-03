@@ -98,7 +98,7 @@ var guideCmd = &cobra.Command{
 Success!
 ========
 
-A small example curriculum for use with the walkthrough at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/01-overview.md has been added to this directory.`)
+Open kj`)
 		fmt.Printf("\nTo get started run 'cd %s && learn preview 01-example-unit/00-hello-world.md' and follow the instructions to find your content.\n\n", guideDir)
 	},
 }
@@ -135,7 +135,7 @@ func generateGuide(currentDir string) error {
 		{"01-example-unit/00-hello-world.md", helloWorldMd},
 		{"01-example-unit/01-configuration.md", configurationMd},
 		{"01-example-unit/02-publishng.md", publishingMd},
-		{"01-example-unit/02-markdown-examples.md", markdownExamplesMd},
+		{"01-example-unit/03-markdown-examples.md", markdownExamplesMd},
 		{"01-example-unit/04-challenges.md", challengesMd},
 		{"01-example-unit/05-checkpoint.md", checkpointMd},
 		{"01-example-unit/description.yaml", descriptionYml},

@@ -65,7 +65,7 @@ Bulleted with `-`
 
 Links to markdown files in the curriculum will redirect within Learn. Write them with a relative path in the repo. Links to lessons in other repos are not supported.
 
-[challenge examples](02-challenges.md)
+[challenge examples](04-challenges.md)
 
 ## Link (external)
 

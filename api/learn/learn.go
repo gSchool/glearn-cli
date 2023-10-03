@@ -79,7 +79,7 @@ func NewAPI(baseURL string, client api.Client, getPresignedPostUrl bool) (*APICl
 	creds, err := apiClient.RetrieveCredentials(getPresignedPostUrl)
 	if err != nil {
 		return nil, fmt.Errorf(
-			"Could not retrieve credentials from Learn. Please reset your API token with this command: learn set --api_token=your-token-from-%s/api_token", baseURL,
+			"Could not retrieve credentials from Learn. Please reset your API token with this command: learn set --api_token=your-token-from-%s/api_token\n\n", baseURL,
 		)
 	}
 

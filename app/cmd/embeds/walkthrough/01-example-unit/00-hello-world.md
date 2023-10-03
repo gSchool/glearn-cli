@@ -19,6 +19,8 @@ learn preview .
 ```
 to see your update. You may preview individual files by specifying them for faster previewing. This is the part of the recommended workflow when developing new content and modifying existing content.
 
+## TODO explain preview cohort
+
 If you just ran `learn preview .` from the root of the walkthrough directory, you'll notice new content in the side bar. This content is rendered from the walkthrough files:
 ```
 ├── 01-example-unit
