@@ -11,6 +11,8 @@ You can view a complete list of available Learn custom markdown elements by runn
 
 File headers can be written to define attributes for the content file itself, which are under the 'Files' section.
 
+You can use a bare minimum template with the `-m` flag.
+
 # H1 Top-Level Heading
 
 Galvanize is committed to creating opportunities for Veterans to gain the skills and knowledge they need to enter the tech industry after service to their country. As Veterans Day approaches, we’ll be chronicling the stories…
@@ -55,9 +57,9 @@ Bulleted with `*`
 
 Bulleted with `-`
 
-* one
-* two
-* three
+- one
+- two
+- three
 
 ## Link to other content in Learn
 

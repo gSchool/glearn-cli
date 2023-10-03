@@ -44,6 +44,6 @@ The block will now be discoverable by users with proper access from the [searcha
 
 A lot of first time curriculum developers wonder why we have to define so many identifiers within the content, "Shouldn't the database handle this?" they ask. Well, because git repositories back the content rendered in Learn, there needs to be a way for Learn to keep track of the same content _across releases_.
 
-Suppose
+Suppose a student does work on one released commit of content, then a minor update to the curriculum is prepared and a second release is made for the block. If the lesson the student worked on did not fundamentally change, they still deserve credit for the work done on the prior release.
 
-Content files, units, and as you'll see challenges all require their own identifiers.
+Content files, units, and as you'll see challenges all require their own identifiers to keep track of the same content across releases.

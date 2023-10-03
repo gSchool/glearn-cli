@@ -9,6 +9,8 @@ Interactive questions called "challenges" can be added to any markdown lesson to
 
 You can view a complete list of available challenge types by running `learn md` and looking under the 'Questions' section.
 
+You can use a bare minimum template with the `-m` flag.
+
 ## Examples of Types
 
 * multiple choice (select one)

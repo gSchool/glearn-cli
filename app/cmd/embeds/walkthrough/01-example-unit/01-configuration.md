@@ -2,6 +2,11 @@
 # This is yaml frontmatter which will set values for a generated `autoconfig.yaml` file
 # It is not displayed in Learn.
 Type: Lesson # Options: Lesson, Checkpoint, Survey, Instructor, Resource
+# Lesson is a normal content file
+# Checkpoint is a test, which has special configuration options; limit one per unit
+# Surveys hold a set of ungraded challenges, and are submitted all at once
+# Instructor files are only visible to instructors
+# Resources can be linked within content, but will not show up in the navigation side bar
 UID: unique-identifier # can be set to any string, must be unique in the repository
 # DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden when used
 ---
