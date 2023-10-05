@@ -13,6 +13,58 @@ File headers can be written to define attributes for the content file itself, wh
 
 You can use a bare minimum template with the `-m` flag.
 
+## Link to other content in Learn
+
+Links to other markdown files in the repository will navigate within Learn. Write them with a relative path in the repo. For example:
+
+[This is a link to the Challenge Examples file in this repository `04-challenges.md`.](04-challenges.md)
+
+Links to lessons in other repos are possible by using permalinks. Once a block of curriculum is [published](02-publishing.md) and available on a cohort, each content file will have a chain link icon at the top available to instructors and administrators.
+
+Clicking this link will reveal the option to 'Copy page permalink' to your clipboard. Here is an example permalink you can copy:
+
+```
+https://learn-2.galvanize.com/content_link/github.com/gSchool/learn-content/other-challenge-attributes.md
+```
+
+## Link (external)
+
+Links to external content should be absolute links, starting with `http://` or `https://`
+
+[Google](https://www.google.com/)
+
+[Curriculum on github/gSchool](https://github.com/gSchool)
+
+*The markdown examples here are not necessary to read to continue the walkthrough. Read them for reference and to see what's possible with Learn markdown.
+
+## Callouts
+
+Callouts are Learn rendered sections of content to highlight 
+
+### !callout-info
+This information is the most important thing to read on the page!
+### !end-callout
+
+### !callout-warning
+Warnings don't really mean much when you know Danger is still an option.
+### !end-callout
+
+### !callout-danger
+You should probably do what this says.
+### !end-callout
+
+### !callout-success
+Yay?
+### !end-callout
+
+### !callout-secondary
+When grayscale is your style.
+### !end-callout
+
+### !callout-star
+Purple for when you want things to pop!
+### !end-callout
+
 # H1 Top-Level Heading
 
 Galvanize is committed to creating opportunities for Veterans to gain the skills and knowledge they need to enter the tech industry after service to their country. As Veterans Day approaches, we’ll be chronicling the stories…
@@ -61,20 +113,6 @@ Bulleted with `-`
 - two
 - three
 
-## Link to other content in Learn
-
-Links to markdown files in the curriculum will redirect within Learn. Write them with a relative path in the repo. Links to lessons in other repos are not supported.
-
-[challenge examples](04-challenges.md)
-
-## Link (external)
-
-Links to external content should be absolute links, starting with `http://` or `https://`
-
-[Google](https://www.google.com/)
-
-[Curriculum on github/gSchool](https://github.com/gSchool)
-
 ## Images
 
 Images included in your repo will be automatically uploaded to S3 for display on Learn.
@@ -118,32 +156,6 @@ Here is a table with a header row
 > ## Look a heading in a blockquote!
 > This is a very long line that will still be quoted properly when it wraps. Oh boy let's keep writing to make sure this is long enough to actually wrap for everyone.
 
-
-## Callouts
-
-### !callout-info
-This information is the most important thing to read on the page!
-### !end-callout
-
-### !callout-warning
-Warnings don't really mean much when you know Danger is still an option.
-### !end-callout
-
-### !callout-danger
-You should probably do what this says.
-### !end-callout
-
-### !callout-success
-Yay?
-### !end-callout
-
-### !callout-secondary
-When grayscale is your style.
-### !end-callout
-
-### !callout-star
-Purple for when you want things to pop!
-### !end-callout
 
 ## Rendering LaTeX for Math equations
 

@@ -11,6 +11,19 @@ You can view a complete list of available challenge types by running `learn md` 
 
 You can use a bare minimum template with the `-m` flag.
 
+## Structure
+
+You can see the basic structure of a multiple choice question by running:
+```
+learn md mc -om
+```
+
+Each challenge begins with a `### !challenge` delimiter, and ends with `### !end-challenge` delimiter. Short one-line challenge attributes are defined in the challenge header, such as the `type`, `id`, `title`, or some type specific attributes such as `language` for code snippets.
+
+Other attributes are multiline, and are given their own delimiters. For example the `multiple-choice` type challenge requires a section to configure the available options; the delimiter for that section is `##### !options` and `##### !end-options`.
+
+When generating challenges with the `learn md` command, you can see explanations in comments for challenge attributes specific to that challenge. If you wish to omit these comments for a minimal template, pass the `-m` flag when generating the challenge.
+
 ## Examples of Types
 
 * multiple choice (select one)
@@ -22,6 +35,7 @@ You can use a bare minimum template with the `-m` flag.
 * custom-snippet--write your own `Dockerfile` and `test.sh` to allow student code to run in a customized container
 * project, testable project (code locally, submit a repo)
 
+*Don't feel the need to correctly answer all the challenges below to complete the walkthrough, they are here for reference and to see how they render in Learn.*
 
 ## Multiple Choice
 

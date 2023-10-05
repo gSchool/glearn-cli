@@ -96,10 +96,10 @@ var guideCmd = &cobra.Command{
 
 		fmt.Println(`
 Success!
-========
-
-Open kj`)
+========`)
 		fmt.Printf("\nTo get started run 'cd %s && learn preview 01-example-unit/00-hello-world.md' and follow the instructions to find your content.\n\n", guideDir)
+
+		fmt.Println(`Open the learn-curriculum-walkthrough directory in your favorite editor while working through the preview.`)
 	},
 }
 

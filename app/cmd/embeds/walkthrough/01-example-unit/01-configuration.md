@@ -31,7 +31,7 @@ You'll notice the title is not configured in the front matter- it is always deri
 
 ## Tracking configuration in a file
 
-After you ran `learn preview .` you'll see a new file in the root of the walkthrough directory named `autoconfig.yaml`. The yaml frontmatter at the top of each file sets the values for the `autoconfig.yaml` content files.
+After you ran `learn preview .` you'll see a new file in the root of the walkthrough directory named `autoconfig.yaml`. The yaml frontmatter at the top of each file sets the values for the `ContentFiles` key in the `autoconfig.yaml`.
 
 You can see the format and more information for configuration options by running
 ```
@@ -69,7 +69,14 @@ Each unit directory like `01-example-unit/` should have one `description.yaml` f
 
 ## Adding more Units
 
-Create a new Unit directory as a sibling to `01-example-unit/` and name it `02-my-unit/`. Populate it with a single markdown file called `01-playground.md` and write the following contents to the file:
+Create a new Unit directory as a sibling to `01-example-unit/` and name it `02-my-unit/`. Populate it with a single markdown file called `00-playground.md`. From the root of the walkthrough
+
+```
+mkdir 02-my-unit/
+touch 02-my-unit/00-playground.md
+```
+
+Write the following contents to your new file:
 
 ```
 ---
@@ -85,3 +92,4 @@ Then run `learn preview .` again from the root of the walkthrough directory. Fol
 
 We never wrote a `description.yaml` file for our second unit! What did it display for the unit Title and Description? Try adding your own `description.yaml` file inside your `02-my-unit/` directory and change the settings as you see fit. Re-preview to see how Title and Description are now configured.
 
+Try renaming your new unit directory to `00-my-unit/` and preview again with `learn preview .` to see that the ordering 

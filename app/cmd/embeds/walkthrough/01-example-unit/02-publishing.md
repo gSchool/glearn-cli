@@ -13,13 +13,13 @@ Publishing 'deploys' a new release of curriculum content for that block at that 
 
 ## Requirements
 
-In order to publish curriculum, the project must be in a remote git based VCS, and Learn must have permission to access the repository.
+In order to publish curriculum, the project must be in a remote git based version control system, and Learn must have permission to access the repository.
 
 Learn works with GitHub, Gitlab SaaS, and self hosted GitLab instances. Private repositories can be used; when doing so for GitHub, the `github-forge-production` user must have read access to the repository. For GitLab, the `galvanize-learn-production` user must have read access to the project.
 
 ## Push to the Remote
 
-In the VCS of your choice, create a repository/project ([GitHub](https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github), [GitLab](https://docs.gitlab.com/ee/user/project/)), then commit all contents of the walkthrough:
+In the version control system of your choice, create a repository/project ([GitHub](https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github), [GitLab](https://docs.gitlab.com/ee/user/project/)), then commit all contents of the walkthrough:
 ```
 git add -A
 git commit -m "testing learn publish"
