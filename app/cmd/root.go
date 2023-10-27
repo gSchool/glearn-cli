@@ -37,8 +37,8 @@ Edit existing curriculum:
   4. Publish changes for any cohort in Learn. Run:
       learn publish
 
-Learn more and build new curriculum:
-  walkthrough at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/01-overview.md`,
+Learn more by running 'learn walkthrough' to create sample materials, or visit
+  https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/01-overview.md`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("Requires at least 1 argument")

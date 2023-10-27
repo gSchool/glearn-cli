@@ -63,8 +63,8 @@ type guideFile struct {
 var guideCmd = &cobra.Command{
 	Use:     "walkthrough",
 	Aliases: []string{"guide"},
-	Short:   "Generate examples for use in the walkthrough",
-	Long:    "Generate examples for use in the walkthrough",
+	Short:   "Create sample materials for use in the walkthrough",
+	Long:    "Create sample materials for use in the walkthrough",
 	Args:    cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		currentDir, err := os.Getwd()
