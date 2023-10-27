@@ -1,0 +1,10 @@
+# description.yaml file template, defines Unit/Standard details when generating an autoconfig.yaml
+# Populates a file called 'description.yaml'. When placed in a unit directory, autoconfig.yaml generation will read this file
+# and apply these settings to the block's autoconfig.
+---
+Title: Developing Curriculum
+Description: Walkthrough to get started learning how to build curriculum for Learn
+UID: walkthrough-standard-01
+SuccessCriteria:
+ - Student understands the basics creating curriculum for Learn
+ - Student creates their own block and publishes it

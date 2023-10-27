@@ -1,23 +1,72 @@
 package cmd
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
 
+const guideDir = "learn-curriculum-walkthrough"
+
+//go:embed embeds/walkthrough/README.md
+var readme []byte
+
+//go:embed embeds/walkthrough/01-example-unit/00-hello-world.md
+var helloWorldMd []byte
+
+//go:embed embeds/walkthrough/01-example-unit/01-configuration.md
+var configurationMd []byte
+
+//go:embed embeds/walkthrough/01-example-unit/02-publishing.md
+var publishingMd []byte
+
+//go:embed embeds/walkthrough/01-example-unit/03-markdown-examples.md
+var markdownExamplesMd []byte
+
+//go:embed embeds/walkthrough/01-example-unit/04-challenges.md
+var challengesMd []byte
+
+//go:embed embeds/walkthrough/01-example-unit/05-checkpoint.md
+var checkpointMd []byte
+
+//go:embed embeds/walkthrough/01-example-unit/description.yaml
+var descriptionYml []byte
+
+//go:embed embeds/walkthrough/01-example-unit/images/github.jpg
+var githubJpg []byte
+
+//go:embed embeds/walkthrough/01-example-unit/images/kmeans.png
+var kmeansPng []byte
+
+//go:embed embeds/walkthrough/01-example-unit/images/react.png
+var reactPng []byte
+
+//go:embed embeds/walkthrough/01-example-unit/sql-files/foodtruck.sql
+var foodtruckSql []byte
+
+//go:embed embeds/walkthrough/01-example-unit/custom-snippets/hello-world/Dockerfile
+var Dockerfile []byte
+
+//go:embed embeds/walkthrough/01-example-unit/custom-snippets/hello-world/submission.txt
+var submissionTxt []byte
+
+//go:embed embeds/walkthrough/01-example-unit/custom-snippets/hello-world/test.sh
+var testSh []byte
+
+type guideFile struct {
+	path    string
+	content []byte
+}
+
 var guideCmd = &cobra.Command{
 	Use:     "walkthrough",
 	Aliases: []string{"guide"},
-	Short:   "Download examples for use in the walkthrough",
-	Long:    "Download examples for use in the walkthrough",
+	Short:   "Create sample materials for use in the walkthrough",
+	Long:    "Create sample materials for use in the walkthrough",
 	Args:    cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		// Get the current directory
 		currentDir, err := os.Getwd()
 		if err != nil {
 			fmt.Println("Could not detect a working directory")
@@ -26,36 +75,32 @@ var guideCmd = &cobra.Command{
 
 		// Does that directory have a config file
 		hasConfig, _ := doesCurrentDirHaveConfig(currentDir)
-
 		if hasConfig {
 			fmt.Println("WARNING: configuration file detected and cannot continue with `learn walkthrough` command.")
 			os.Exit(1)
 		}
-
-		// Clone the template from github
-		fmt.Println("Copying curriculum template from Github")
-		fmt.Println("=======================================")
-		fmt.Println("\nCloning into 'learn-curriculum-init'...")
-		err = cloneTemplate()
-		if err != nil {
-			fmt.Println("We had trouble cloning into learn-curriculum-init, please check that you have the correct github credentials")
+		_, dirExists := os.Stat("/" + guideDir)
+		if dirExists == nil {
+			fmt.Printf("A directory already exists by the name '%s', rename or move it.\n", guideDir)
 			os.Exit(1)
 		}
 
-		// Move the files into working dir
-		fmt.Println("Copying curriculum")
-		err = moveClonedMaterials(currentDir)
+		fmt.Printf("\nWriting '%s' directory and contents...\n", guideDir)
+
+		// Create contents in the directory
+		err = generateGuide(currentDir)
 		if err != nil {
-			fmt.Println("Could not move template into working repository")
+			fmt.Println(err)
 			os.Exit(1)
 		}
-		fmt.Println("Removing cloned repo")
 
 		fmt.Println(`
 Success!
-========
+========`)
+		fmt.Printf("\nTo get started run 'cd %s && learn preview 01-example-unit/00-hello-world.md' and follow the instructions to find your content.\n\n", guideDir)
 
-A small example curriculum for use with the walkthrough at https://learn-2.galvanize.com/cohorts/667/blocks/13/content_files/walkthrough/01-overview.md has been added to this directory.`)
+		fmt.Println("Open the learn-curriculum-walkthrough directory in your favorite editor while working through the preview.")
+		fmt.Println()
 	},
 }
 
@@ -85,32 +130,39 @@ func doesCurrentDirHaveConfig(currentDir string) (bool, bool) {
 	return configExist, autoConfigExist
 }
 
-func cloneTemplate() error {
-	_, err := exec.Command("bash", "-c", "git clone git@github.com:gSchool/learn-curriculum-init.git").CombinedOutput()
-	if err != nil {
-		_, errr := exec.Command("bash", "-c", "git clone https://github.com/gSchool/learn-curriculum-init.git").CombinedOutput()
-		if errr != nil {
-			return errr
+func generateGuide(currentDir string) error {
+	guideFiles := []guideFile{
+		{"README.md", readme},
+		{"01-example-unit/00-hello-world.md", helloWorldMd},
+		{"01-example-unit/01-configuration.md", configurationMd},
+		{"01-example-unit/02-publishng.md", publishingMd},
+		{"01-example-unit/03-markdown-examples.md", markdownExamplesMd},
+		{"01-example-unit/04-challenges.md", challengesMd},
+		{"01-example-unit/05-checkpoint.md", checkpointMd},
+		{"01-example-unit/description.yaml", descriptionYml},
+		{"01-example-unit/images/github.jpg", githubJpg},
+		{"01-example-unit/images/kmeans.png", kmeansPng},
+		{"01-example-unit/images/react.png", reactPng},
+		{"01-example-unit/sql-files/foodtruck.sql", foodtruckSql},
+		{"01-example-unit/custom-snippets/hello-world/Dockerfile", Dockerfile},
+		{"01-example-unit/custom-snippets/hello-world/submission.txt", submissionTxt},
+		{"01-example-unit/custom-snippets/hello-world/test.sh", testSh},
+	}
+
+	os.MkdirAll(guideDir, os.FileMode(0777))
+	os.MkdirAll(guideDir+"/01-example-unit", os.FileMode(0777))
+	os.MkdirAll(guideDir+"/01-example-unit/images", os.FileMode(0777))
+	os.MkdirAll(guideDir+"/01-example-unit/sql-files", os.FileMode(0777))
+	os.MkdirAll(guideDir+"/01-example-unit/custom-snippets", os.FileMode(0777))
+	os.MkdirAll(guideDir+"/01-example-unit/custom-snippets/hello-world", os.FileMode(0777))
+
+	for _, file := range guideFiles {
+		location := fmt.Sprintf("./%s/%s", guideDir, file.path)
+		err := os.WriteFile(location, file.content, 0677)
+		if err != nil {
+			return fmt.Errorf("Error writing guide contents '%s': %v\n", file.path, err)
 		}
 	}
 
-	return nil
-}
-
-func moveClonedMaterials(currentDir string) error {
-	initDir := "/learn-curriculum-init"
-	os.RemoveAll(currentDir + initDir + "/.git/")
-	err := filepath.Walk(currentDir+initDir, func(path string, info os.FileInfo, err error) error {
-		if !strings.HasSuffix(path, initDir) && !strings.Contains(path, ".git/") {
-			oldLocation := path
-			newLocation := strings.Replace(path, initDir, "", 1)
-			os.Rename(oldLocation, newLocation)
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	os.RemoveAll(currentDir + initDir)
 	return nil
 }
