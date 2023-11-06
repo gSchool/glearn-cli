@@ -102,8 +102,8 @@ func (t temp) appendContent(target string) error {
 	if Minimal {
 		template = t.MinTemplate
 	}
-	if !strings.HasSuffix(target, ".md") {
-		return fmt.Errorf("'%s' must have an `.md` extension to append %s content.\n", target, t.Name)
+	if !(strings.HasSuffix(target, ".md") || strings.HasSuffix(target, ".yaml") || strings.HasSuffix(target, ".yml")) {
+		return fmt.Errorf("'%s' must have an `.md`, `.yml`, or `.yaml` extension to append %s content.\n", target, t.Name)
 	}
 
 	targetInfo, err := os.Stat(target)

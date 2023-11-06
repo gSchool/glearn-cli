@@ -60,7 +60,11 @@ learn help
 
 ## Get Started: Walkthrough
 
-Visit [Guru](https://app.getguru.com/boards/iEdB57dT/Creating-Content-in-Learn) for a short walkthrough to publish your first curriculum.
+You can generate a sample piece of curriculum to begin a walkthrough of how to develop curriculum with Learn with
+
+```
+learn walkthrough
+```
 
 ### Get Started: Quick Edits to Existing Curriculum
 

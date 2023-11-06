@@ -578,6 +578,7 @@ func newStandard(unitDir, unit string) Standard {
 		return standardFromUnit(unit)
 	} else {
 		// read yaml contents of file
+		//return standardFromUnit(unit)
 		standard := Standard{}
 		if err = yaml.NewDecoder(bytes.NewReader(yamlBytes)).Decode(&standard); err != nil {
 			return standardFromUnit(unit)
