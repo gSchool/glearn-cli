@@ -7,10 +7,11 @@ awk -F: '/.+/{files[$1]+=1;} END{for(f in files)print f" "files[f];}' <(staticch
 staticcheck ./... >staticcheck.out
 awk -F\: '/.+/{print "[ ]"$4}' staticcheck.out | sort -u -t \( -k2 -k1
 
-[x] should use strings.Contains(".$", string(ch)) instead (S1003)
-[x] should replace this if statement with an unconditional strings.TrimPrefix (S1017)
-[x] should use fmt.Errorf(...) instead of errors.New(fmt.Sprintf(...)) (S1028)
+[ ] "io/ioutil" has been deprecated since Go 1.19
+[ ] should omit second index in slice, s[a
+[ ] strings.Title has been deprecated since Go 1.18 and an alternative has been available since Go 1.0
+[ ] this value of file is never used (SA4006)
+[ ] self-assignment of file to file (SA4018)
 [ ] error strings should not be capitalized (ST1005)
-[ ] error strings should not end with punctuation or a newline (ST1005)
-[ ] field position is unused (U1000)
-[ ] field value is unused (U1000)
+[ ] error strings should not end with punctuation or newlines (ST1005)
+[ ] func createChecksumFromZip is unused (U1000)
