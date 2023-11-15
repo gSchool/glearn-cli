@@ -2,10 +2,15 @@
 
 awk -F: '/.+/{files[$1]+=1;} END{for(f in files)print f" "files[f];}' <(staticcheck ./...) | sort -nk2
 
-# Unique check errors
+# Unique check errors.
 
+# Produce novel static check into outfile
 staticcheck ./... >staticcheck.out
-awk -F\: '/.+/{print "[ ]"$4}' staticcheck.out | sort -u -t \( -k2 -k1
+
+# Append latest checklist into TODO.txt
+awk -F\: 'BEGIN{print ""} /.+/{print "[ ]"$4}' staticcheck.out | sort -u -t \( -k2 -k1 >> TODO.txt
+
+# Edit TODO.txt and remove old task list after appending.
 
 [ ] "io/ioutil" has been deprecated since Go 1.19
 [ ] should omit second index in slice, s[a
