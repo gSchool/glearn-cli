@@ -2,7 +2,8 @@
 
 awk -F: '/.+/{files[$1]+=1;} END{for(f in files)print f" "files[f];}' <(staticcheck ./...) | sort -nk2
 
-# Unique check errors.
+# Unique check errors. Descriptions are at https://staticcheck.dev/docs/checks
+# e.g. https://staticcheck.dev/docs/checks/#SA1006
 
 # Produce novel static check into outfile
 # Remove previous tasklist
