@@ -11,13 +11,13 @@ awk -F: '/.+/{files[$1]+=1;} END{for(f in files)print f" "files[f];}' <(staticch
 
 staticcheck ./... >staticcheck.out
 sed -i '' '/^\[[ xX]\]/d' TODO.txt
-awk -F\: '/.+/{print "[ ]"$4}' staticcheck.out | sort -u -t \( -k2 -k1 >> TODO.txt
+awk -F\: '/^[a-zA-Z0-9]/{desc=""; for(i=4; i<=NF; ++i){desc=desc":"$i}; print "[ ]"substr(desc,2)}' staticcheck.out | sort -u -t \( -k2 -k1 >> TODO.txt
 
-[ ] "io/ioutil" has been deprecated since Go 1.19
-[ ] should omit second index in slice, s[a
-[ ] strings.Title has been deprecated since Go 1.18 and an alternative has been available since Go 1.0
+[ ] "io/ioutil" has been deprecated since Go 1.19: As of Go 1.16, the same functionality is now provided by package [io] or package [os], and those implementations should be preferred in new code. See the specific function documentation for details.  (SA1019)
+[ ] strings.Title has been deprecated since Go 1.18 and an alternative has been available since Go 1.0: The rule Title uses for word boundaries does not handle Unicode punctuation properly. Use golang.org/x/text/cases instead.  (SA1019)
 [ ] this value of file is never used (SA4006)
 [ ] self-assignment of file to file (SA4018)
 [ ] error strings should not be capitalized (ST1005)
 [ ] error strings should not end with punctuation or newlines (ST1005)
 [ ] func createChecksumFromZip is unused (U1000)
+[ ] should omit second index in slice, s[a:len(s)] is identical to s[a:] (S1010)
