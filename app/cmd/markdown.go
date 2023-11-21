@@ -263,8 +263,8 @@ UID: %s
 
 # Title
 
-<!--Lesson content can be markdown, videos, slides, images, gifs, etc. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
-<!--Lessons can include Challenges, which make the content interactive and give instructors visibility into student learning. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
+<!--Lesson content can be markdown, videos, slides, images, gifs, etc. See examples of markdown formatting by running 'learn walkthrough' and previewing the tutorial. -->
+<!--Lessons can include Challenges, which make the content interactive and give instructors visibility into student learning. -->
 `
 
 const lessonTemplateMin = `---
@@ -286,7 +286,7 @@ UID: %s
 
 # Title
 
-<!--A Resource can have all of the same markdown and challenges as a lesson. Resources do not appear in the left nav and don't count toward course completion.-->
+<!--A Resource can have all of the same markdown and challenges as a lesson. Resources do not appear in the left nav and don't count toward course completion. -->
 `
 
 const resourceTemplateMin = `---
@@ -329,8 +329,8 @@ UID: %s
 
 # Title
 
-<!--A Survey can have any markdown. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
-<!--A Survey must include include one or more Challenges, which are the survey questions a student will answer. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
+<!--A Survey can have any markdown. See examples of markdown formatting by running 'learn walkthrough' and previewing the tutorial. -->
+<!--A Survey must include include one or more Challenges, which are the survey questions a student will answer. -->
 `
 
 const surveyTemplateMin = `---
@@ -357,8 +357,8 @@ UID: %s
 
 # Title
 
-<!--A Checkpoint is an assessment and must include include one or more Challenges. See -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061964054-Galvanize-Learn-Markdown-Extensions-Challenges-and-Callouts-->
-<!--A Checkpoint can have any markdown. See examples of markdown formatting -- https://galvanize-learn.zendesk.com/hc/en-us/articles/360061963154-Markdown-Formatting-->
+<!--A Checkpoint is an assessment and must include include one or more Challenges. -->
+<!--A Checkpoint can have any markdown. See examples of markdown formatting by running 'learn walkthrough' and previewing the tutorial.-->
 `
 
 const checkpointTemplateMin = `---
@@ -1119,7 +1119,7 @@ const pythonTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 ### !challenge
 
 * type: code-snippet
-* language: python3.9
+* language: python3.11
 * id: %s
 * title: [text, a short question title]
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
@@ -1177,7 +1177,7 @@ const pythonTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 ### !challenge
 
 * type: code-snippet
-* language: python3.9
+* language: python3.11
 * id: %s
 * title:
 
