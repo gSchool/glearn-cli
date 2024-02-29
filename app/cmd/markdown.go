@@ -198,9 +198,11 @@ func buildOptionalAttributes() string {
 
 	joinedComments := strings.TrimSpace(strings.Join(comments, "\n"))
 	joinedAttrs := strings.TrimSpace(strings.Join(attrs, "\n\n"))
-	blocks := fmt.Sprintf("\n%s\n\n%s\n", joinedComments, joinedAttrs)
+
+	blocks := fmt.Sprintf("\n%s\n", joinedAttrs)
 
 	if !Minimal {
+		blocks = fmt.Sprintf("%s\n\n%s", joinedComments, joinedAttrs)
 		blocks = strings.TrimSpace(blocks)
 	}
 
