@@ -120,6 +120,9 @@ func init() {
 	publishCmd.Flags().BoolVarP(&CiCdEnvironment, "ci-cd", "", false, "Running in a CI/CD environment (cannot use with autoconfig feature)")
 	markdownCmd.Flags().BoolVarP(&PrintTemplate, "out", "o", false, "Prints the template to stdout")
 	markdownCmd.Flags().BoolVarP(&Minimal, "min", "m", false, "Uses a terse, minimal version of the template")
+	markdownCmd.Flags().BoolVarP(&WithExplanation, "with-explanation", "e", false, "Questions only: include explanation blocks")
+	markdownCmd.Flags().BoolVarP(&WithRubric, "with-rubric", "r", false, "Questions only: include rubric blocks")
+	markdownCmd.Flags().IntVarP(&WithHints, "with-hints", "n", 0, "Questions only: include one or more hint blocks")
 }
 
 // Execute runs the learn CLI according to the user's command/subcommand/flags

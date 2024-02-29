@@ -14,6 +14,12 @@ var PrintTemplate bool
 
 var Minimal bool
 
+var WithExplanation bool
+
+var WithRubric bool
+
+var WithHints int
+
 var markdownCmd = &cobra.Command{
 	Use:     "markdown",
 	Aliases: []string{"md"},
@@ -70,10 +76,8 @@ type temp struct {
 }
 
 func (t temp) printContent() {
-	template := t.Template
-	if Minimal {
-		template = t.MinTemplate
-	}
+	template := t.renderTemplate()
+
 	if t.RequireId {
 		id := uuid.New().String()
 		fmt.Printf(strings.ReplaceAll(template, `~~~`, "```")+"\n", id)
@@ -83,10 +87,8 @@ func (t temp) printContent() {
 }
 
 func (t temp) copyContent() {
-	template := t.Template
-	if Minimal {
-		template = t.MinTemplate
-	}
+	template := t.renderTemplate()
+
 	if t.RequireId {
 		id := uuid.New().String()
 		clipboard.WriteAll(fmt.Sprintf(strings.ReplaceAll(template, `~~~`, "```"), id))
@@ -98,10 +100,8 @@ func (t temp) copyContent() {
 }
 
 func (t temp) appendContent(target string) error {
-	template := t.Template
-	if Minimal {
-		template = t.MinTemplate
-	}
+	template := t.renderTemplate()
+
 	if !(strings.HasSuffix(target, ".md") || strings.HasSuffix(target, ".yaml") || strings.HasSuffix(target, ".yml")) {
 		return fmt.Errorf("'%s' must have an `.md`, `.yml`, or `.yaml` extension to append %s content.\n", target, t.Name)
 	}
@@ -134,6 +134,77 @@ func (t temp) appendContent(target string) error {
 	}
 
 	return nil
+}
+
+func (t temp) renderTemplate() string {
+	template := t.Template
+
+	if Minimal {
+		template = t.MinTemplate
+	}
+
+	template = strings.ReplaceAll(template, "<optional-attributes>", buildOptionalAttributes())
+
+	return template
+}
+
+func buildOptionalAttributes() string {
+	comments := []string{"", "", "", ""}
+	attrs := []string{"", "", ""}
+
+	if !Minimal && (!WithExplanation || !WithRubric || WithHints == 0) {
+		comments = append(comments, blockHeader)
+	}
+
+	if !Minimal && WithHints == 0 {
+		comments = append(comments, hintTemplateSilent)
+	}
+
+	if !Minimal && !WithRubric {
+		comments = append(comments, rubricTemplateSilent)
+	}
+
+	if !Minimal && !WithExplanation {
+		comments = append(comments, explanationTemplateSilent)
+	}
+
+	if WithHints > 0 {
+		t := hintTemplate
+		if Minimal {
+			t = hintTemplateMin
+		}
+		repeats := make([]string, WithHints)
+		for i := 0; i < WithHints; i += 1 {
+			repeats[i] = t
+		}
+		attrs = append(attrs, strings.Join(repeats, "\n\n"))
+	}
+
+	if WithRubric {
+		t := rubricTemplate
+		if Minimal {
+			t = rubricTemplateMin
+		}
+		attrs = append(attrs, t)
+	}
+
+	if WithExplanation {
+		t := explanationTemplate
+		if Minimal {
+			t = explanationTemplateMin
+		}
+		attrs = append(attrs, t)
+	}
+
+	joinedComments := strings.TrimSpace(strings.Join(comments, "\n"))
+	joinedAttrs := strings.TrimSpace(strings.Join(attrs, "\n\n"))
+	blocks := fmt.Sprintf("\n%s\n\n%s\n", joinedComments, joinedAttrs)
+
+	if !Minimal {
+		blocks = strings.TrimSpace(blocks)
+	}
+
+	return blocks
 }
 
 var templates = map[string]temp{
@@ -405,10 +476,7 @@ b|
 
 ##### !end-answer
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -441,7 +509,7 @@ c|
 a|
 
 ##### !end-answer
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -478,10 +546,7 @@ c|
 
 ##### !end-answer
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -515,7 +580,7 @@ b|
 c|
 
 ##### !end-answer
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -545,10 +610,7 @@ const tasklistTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 
 ##### !end-options
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -575,7 +637,7 @@ const tasklistTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>
 *
 
 ##### !end-options
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -609,10 +671,7 @@ const shortanswerTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>
 
 ##### !end-answer
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -637,7 +696,7 @@ const shortanswerTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>
 
 
 ##### !end-answer
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -672,10 +731,7 @@ const numberTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 
 ##### !end-answer
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -701,7 +757,7 @@ const numberTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 
 
 ##### !end-answer
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -729,10 +785,7 @@ const paragraphTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 
 ##### !end-placeholder
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -752,7 +805,7 @@ const paragraphTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>
 
 
 ##### !end-question
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -782,10 +835,7 @@ const orderingTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>
 
 ##### !end-answer
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -812,7 +862,7 @@ const orderingTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>
 3.
 
 ##### !end-answer
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -863,10 +913,7 @@ describe('doSomething', function() {
 
 ##### !end-tests
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -898,9 +945,7 @@ const javascriptTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>
 
 
 ##### !end-tests
-
-
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -973,10 +1018,7 @@ public class SnippetTest {
 
 ##### !end-tests
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -1014,7 +1056,7 @@ const javaTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>
 
 
 ##### !end-tests
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -1067,10 +1109,7 @@ end
 
 ##### !end-tests
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -1108,7 +1147,7 @@ const rubyTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>
 
 
 ##### !end-tests
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -1163,10 +1202,7 @@ class TestPython1(unittest.TestCase):
 
 ##### !end-tests
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -1198,7 +1234,7 @@ const pythonTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>
 
 
 ##### !end-tests
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -1246,10 +1282,7 @@ ORDER BY something
 
 ##### !end-tests
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -1282,7 +1315,7 @@ const sqlTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>
 
 
 ##### !end-tests
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -1316,10 +1349,7 @@ function doSomething() {
 
 ##### !end-placeholder
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -1346,7 +1376,7 @@ const customsnippetTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>
 
 
 ##### !end-placeholder
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -1374,10 +1404,7 @@ const projectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>
 
 ##### !end-placeholder
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -1402,7 +1429,7 @@ const projectTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>
 
 
 ##### !end-placeholder
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -1432,10 +1459,7 @@ const testableProjectTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>
 
 ##### !end-placeholder
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge
 
@@ -1462,7 +1486,7 @@ const testableProjectTemplateMin = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE 
 
 
 ##### !end-placeholder
-
+<optional-attributes>
 ### !end-challenge
 
 <!-- ======================= END CHALLENGE ======================= -->`
@@ -1602,10 +1626,7 @@ const uploadTemplate = `### !challenge
 [markdown, your question]
 ##### !end-question
 
-<!-- other optional sections -->
-<!-- !hint - !end-hint (markdown, hidden, students click to view) -->
-<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->
-<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->
+<optional-attributes>
 
 ### !end-challenge`
 
@@ -1618,7 +1639,7 @@ const uploadTemplateMin = `### !challenge
 ##### !question
 
 ##### !end-question
-
+<optional-attributes>
 ### !end-challenge`
 
 const distributeCodeTemplate = `<!-- Replace everything in square brackets [] and remove brackets  -->
@@ -1637,3 +1658,61 @@ const distributeCodeTemplateMin = `### !distribute-code
 * repository_url:
 
 ### !end-distribute-code`
+
+/******************************************************************************
+ * Challenge template optional blocks
+ *
+ * These come in three pieces:
+ *   - The "full" one with the place holder/description
+ *   - The "minimum" one with just the markup
+ *   - The "silent" one that shows up as a comment when the option isn't
+ *     specified
+ */
+
+const blockHeader = `<!-- other optional sections -->`
+
+const rubricTemplate = `##### !rubric
+
+[Put your rubric here specifying how to allocate points for the challenge]
+
+##### !end-rubric`
+
+const rubricTemplateMin = `##### !rubric
+
+##### !end-rubric`
+
+const rubricTemplateSilent = `<!-- !rubric - !end-rubric (markdown, instructors can see while scoring a checkpoint) -->`
+
+const hintTemplate = `##### !hint
+
+[Put a single hint, here. Add more hint blocks as needed.]
+
+##### !end-hint`
+
+const hintTemplateMin = `##### !hint
+
+##### !end-hint`
+
+const hintTemplateSilent = `<!-- !hint - !end-hint (markdown, hidden, students click to view) -->`
+
+const explanationTemplate = `##### !explanation-correct:
+
+[Put the explanation for the CORRECT response, here.]
+
+##### !end-explanation
+
+##### !explanation-incorrect:
+
+[Put the explanation for the INCORRECT response, here.]
+
+##### !end-explanation`
+
+const explanationTemplateMin = `##### !explanation-correct:
+
+##### !end-explanation
+
+##### !explanation-incorrect:
+
+##### !end-explanation`
+
+const explanationTemplateSilent = `<!-- !explanation - !end-explanation (markdown, students can see after answering correctly) -->`
