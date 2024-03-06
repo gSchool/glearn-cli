@@ -13,6 +13,7 @@ require (
 )
 
 require (
+	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/VividCortex/ewma v1.1.1 // indirect
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
