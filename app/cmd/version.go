@@ -14,7 +14,7 @@ var versionCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
-			fmt.Println("The version command does not take any arguments")
+			fmt.Fprintln(os.Stderr, "The version command does not take any arguments")
 			os.Exit(1)
 		}
 
