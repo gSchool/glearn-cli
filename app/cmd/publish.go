@@ -34,14 +34,14 @@ new block. If the block already exists, it will update the existing block.
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
-			fmt.Println(setAPITokenMessage)
+			fmt.Fprintln(os.Stderr, setAPITokenMessage)
 			os.Exit(1)
 		}
 
 		setupLearnAPI(false)
 
 		if len(args) != 0 {
-			fmt.Println("Usage: `learn publish` takes no arguments, merely pushing latest master and releasing a version to Learn. Use the command from inside a block repository.")
+			fmt.Fprintln(os.Stderr, "Usage: `learn publish` takes no arguments, merely pushing latest master and releasing a version to Learn. Use the command from inside a block repository.")
 			os.Exit(1)
 		}
 
@@ -50,30 +50,30 @@ new block. If the block already exists, it will update the existing block.
 
 		repoPieces, err := remotePieces()
 		if err != nil {
-			fmt.Printf("Cannot run git remote detection with command: %s\n%s\n", pushRemoteCommand, err)
+			fmt.Fprintf(os.Stderr, "Cannot run git remote detection with command: %s\n%s\n", pushRemoteCommand, err)
 			os.Exit(1)
 		}
 		if repoPieces.RepoName == "" {
-			fmt.Println("no fetch remote detected")
+			fmt.Fprintln(os.Stderr, "no fetch remote detected")
 			os.Exit(1)
 		}
 
 		block, err := learn.API.GetBlockByRepoName(repoPieces)
 		if err != nil {
-			fmt.Printf("Error fetching block from learn: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error fetching block from learn: %s\n", err)
 			os.Exit(1)
 		}
 		if !block.Exists() {
 			block, err = learn.API.CreateBlockByRepoName(repoPieces)
 			if err != nil {
-				fmt.Printf("Error creating block from learn: %s\n", err)
+				fmt.Fprintf(os.Stderr, "Error creating block from learn: %s\n", err)
 				os.Exit(1)
 			}
 		}
 
 		branch, err := currentBranch()
 		if err != nil {
-			fmt.Println("Cannot run git branch detection with bash:", err)
+			fmt.Fprintln(os.Stderr, "Cannot run git branch detection with bash:", err)
 			os.Exit(1)
 		}
 
@@ -90,21 +90,21 @@ new block. If the block already exists, it will update the existing block.
 		path, _ := os.Getwd()
 		createdConfig, err := publishFindOrCreateConfig(path + "/")
 		if err != nil {
-			fmt.Printf("%s", fmt.Sprintf("failed to find or create a config file for repo: (%s). Err: %v", branch, err))
+			fmt.Fprintf(os.Stderr, "%s", fmt.Sprintf("failed to find or create a config file for repo: (%s). Err: %v", branch, err))
 			os.Exit(1)
 		}
 		fmt.Printf("Publishing block with repo name %s from branch %s\n", repoPieces.RepoName, branch)
 
 		if createdConfig && CiCdEnvironment {
-			fmt.Println("\nError: You cannot use autoconfig.yaml from a CI/CD environment.")
-			fmt.Println("Please create a config.yaml file and commit it.")
+			fmt.Fprintln(os.Stderr, "\nError: You cannot use autoconfig.yaml from a CI/CD environment.")
+			fmt.Fprintln(os.Stderr, "Please create a config.yaml file and commit it.")
 			os.Exit(1)
 		} else if createdConfig {
 			fmt.Println("Committing autoconfig.yaml to", branch)
 			err = addAutoConfigAndCommit()
 
 			if err != nil && !strings.Contains(err.Error(), fmt.Sprintf("Your branch is up to date with 'origin/%s'.", branch)) {
-				fmt.Printf("Error committing the autoconfig.yaml to origin remote on branch, run 'git rm autoconfig.yaml' to remove it from reference then add a new commit: %s", err)
+				fmt.Fprintf(os.Stderr, "Error committing the autoconfig.yaml to origin remote on branch, run 'git rm autoconfig.yaml' to remove it from reference then add a new commit: %s", err)
 				os.Exit(1)
 			}
 		}
@@ -115,7 +115,7 @@ new block. If the block already exists, it will update the existing block.
 
 			err = pushToRemote(branch)
 			if err != nil {
-				fmt.Printf("\nError pushing to origin remote on branch:\n\n%s", err)
+				fmt.Fprintf(os.Stderr, "\nError pushing to origin remote on branch:\n\n%s", err)
 				os.Exit(1)
 			}
 		}
@@ -132,7 +132,7 @@ new block. If the block already exists, it will update the existing block.
 		// Create a release on learn, notify user
 		releaseID, err := learn.API.CreateBranchRelease(block.ID, branch)
 		if err != nil || releaseID == 0 {
-			fmt.Printf("Release failed. releaseID: %d. Error: %s\n", releaseID, err)
+			fmt.Fprintf(os.Stderr, "Release failed. releaseID: %d. Error: %s\n", releaseID, err)
 			os.Exit(1)
 		}
 
@@ -142,27 +142,27 @@ new block. If the block already exists, it will update the existing block.
 			s.Stop()
 
 			if p != nil && p.Errors != "" {
-				fmt.Printf("Release failed: %s\n", p.Errors)
+				fmt.Fprintf(os.Stderr, "Release failed: %s\n", p.Errors)
 				os.Exit(1)
 			}
 
 			if p != nil && len(p.SyncWarnings) > 0 {
-				fmt.Printf("Release warnings:")
+				fmt.Fprintf(os.Stderr, "Release warnings:")
 
 				for _, sw := range p.SyncWarnings {
-					fmt.Println(sw)
+					fmt.Fprintln(os.Stderr, sw)
 				}
 			}
 
 			block, err := learn.API.GetBlockByRepoName(repoPieces)
 			if err != nil {
-				fmt.Printf("Release failed. Error fetching block from learn: %s\n", err)
+				fmt.Fprintf(os.Stderr, "Release failed. Error fetching block from learn: %s\n", err)
 				os.Exit(1)
 			}
 			if len(block.SyncErrors) > 0 {
-				fmt.Println("Release failed. Errors on block:")
+				fmt.Fprintln(os.Stderr, "Release failed. Errors on block:")
 				for _, e := range block.SyncErrors {
-					fmt.Println(e)
+					fmt.Fprintln(os.Stderr, e)
 				}
 			}
 			os.Exit(1)

@@ -73,7 +73,7 @@ var CiCdEnvironment bool
 func init() {
 	u, err := user.Current()
 	if err != nil {
-		fmt.Println("Error retrieving your user path information")
+		fmt.Fprintln(os.Stderr, "Error retrieving your user path information")
 		os.Exit(1)
 		return
 	}
@@ -90,13 +90,13 @@ func init() {
 			// Write a ~/.glearn-config.yaml file with all the needed credential keys to fill in.
 			err = ioutil.WriteFile(configPath, initialConfig, 0600)
 			if err != nil {
-				fmt.Println("Error writing your glearn config file")
+				fmt.Fprintln(os.Stderr, "Error writing your glearn config file")
 				os.Exit(1)
 				return
 			}
 		} else {
 			// Config file was found but another error was produced
-			fmt.Printf("Error: %s", err)
+			fmt.Fprintf(os.Stderr, "Error: %s", err)
 			os.Exit(1)
 			return
 		}
@@ -128,7 +128,7 @@ func init() {
 // Execute runs the learn CLI according to the user's command/subcommand/flags
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
@@ -143,7 +143,7 @@ func setupLearnAPI(getPresignedPostUrl bool) {
 
 	api, err := learn.NewAPI(baseURL, &client, getPresignedPostUrl)
 	if err != nil {
-		fmt.Printf("Error creating API client. Err: %v", err)
+		fmt.Fprintf(os.Stderr, "Error creating API client. Err: %v", err)
 		os.Exit(1)
 		return
 	}

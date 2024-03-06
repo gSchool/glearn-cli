@@ -29,7 +29,7 @@ var markdownCmd = &cobra.Command{
 		if len(args) == 1 {
 			t, err := getTemp(args[0])
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 			if PrintTemplate {
@@ -41,19 +41,19 @@ var markdownCmd = &cobra.Command{
 		} else if len(args) == 2 {
 			t, err := getTemp(args[0])
 			if err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 			if PrintTemplate {
 				fmt.Println("-o flag skipped when appending...")
 			}
 			if err = t.appendContent(args[1]); err != nil {
-				fmt.Println(err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
 
 		} else {
-			fmt.Println(incorrectNumArgs)
+			fmt.Fprintln(os.Stderr, incorrectNumArgs)
 			os.Exit(1)
 		}
 

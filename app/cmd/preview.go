@@ -582,7 +582,7 @@ func copyDockerPaths(target string, dockerPaths []string) (err error) {
 				// the directory was found after checking parents, copy contents
 				ignorePatterns, err := DockerIgnorePatterns(newDirPath)
 				if err != nil {
-					fmt.Print(err.Error())
+					fmt.Fprint(os.Stderr, err.Error())
 				}
 
 				err = CopyDirectoryContents(newDirPath, tmpSingleFileDir+"/"+dirPath, ignorePatterns)
@@ -596,7 +596,7 @@ func copyDockerPaths(target string, dockerPaths []string) (err error) {
 		} else {
 			ignorePatterns, err := DockerIgnorePatterns(dirPath)
 			if err != nil {
-				fmt.Print(err.Error())
+				fmt.Fprint(os.Stderr, err.Error())
 			}
 
 			err = CopyDirectoryContents(dirPath, tmpSingleFileDir+"/"+dirPath, ignorePatterns)
@@ -675,7 +675,7 @@ func createLinkDirectories(pathArray []string) (linkDirs string, err error) {
 // previewCmdError is a small wrapper for all errors within the preview command. It ensures
 // artifacts are cleaned up with a call to removeArtifacts
 func previewCmdError(msg, tmpZipFile string) {
-	fmt.Println(msg)
+	fmt.Fprintln(os.Stderr, msg)
 	removeArtifacts(tmpZipFile)
 	learn.API.NotifySlack(errors.New(msg))
 	os.Exit(1)
@@ -778,14 +778,14 @@ func createChecksumFromZip(file *os.File) (string, error) {
 func removeArtifacts(tmpZipFile string) {
 	err := os.Remove(tmpZipFile)
 	if err != nil {
-		fmt.Println("Sorry, we had trouble cleaning up the zip file created for curriculum preview")
+		fmt.Fprintln(os.Stderr, "Sorry, we had trouble cleaning up the zip file created for curriculum preview")
 	}
 
 	// Remove tmpSingleFileDir if it exists at this point
 	if _, err := os.Stat(tmpSingleFileDir); !os.IsNotExist(err) {
 		err = os.RemoveAll(tmpSingleFileDir)
 		if err != nil {
-			fmt.Println("Sorry, we had trouble cleaning up the tmp single file preview directory")
+			fmt.Fprintln(os.Stderr, "Sorry, we had trouble cleaning up the tmp single file preview directory")
 		}
 	}
 }
@@ -865,7 +865,7 @@ func CopyDirectoryContents(src, dst string, ignorePatterns []string) error {
 			localizedPattern := src + "/" + pattern
 			matched, err := di.IgnoreMatches(localizedPattern, source)
 			if err != nil {
-				fmt.Printf("error while parsing at: %s", err)
+				fmt.Fprintf(os.Stderr, "error while parsing at: %s", err)
 			}
 			if matched {
 				ignore = matched

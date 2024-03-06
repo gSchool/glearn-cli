@@ -69,19 +69,19 @@ var guideCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		currentDir, err := os.Getwd()
 		if err != nil {
-			fmt.Println("Could not detect a working directory")
+			fmt.Fprintln(os.Stderr, "Could not detect a working directory")
 			os.Exit(1)
 		}
 
 		// Does that directory have a config file
 		hasConfig, _ := doesCurrentDirHaveConfig(currentDir)
 		if hasConfig {
-			fmt.Println("WARNING: configuration file detected and cannot continue with `learn walkthrough` command.")
+			fmt.Fprintln(os.Stderr, "WARNING: configuration file detected and cannot continue with `learn walkthrough` command.")
 			os.Exit(1)
 		}
 		_, dirExists := os.Stat("/" + guideDir)
 		if dirExists == nil {
-			fmt.Printf("A directory already exists by the name '%s', rename or move it.\n", guideDir)
+			fmt.Fprintf(os.Stderr, "A directory already exists by the name '%s', rename or move it.\n", guideDir)
 			os.Exit(1)
 		}
 
@@ -90,7 +90,7 @@ var guideCmd = &cobra.Command{
 		// Create contents in the directory
 		err = generateGuide(currentDir)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 
