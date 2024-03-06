@@ -158,11 +158,9 @@ func setupLearnAPI(getPresignedPostUrl bool) {
 		versionInstalled, versionInstalledErr := semver.NewVersion(currentReleaseVersion)
 		if versionRemoteErr != nil {
 			fmt.Printf("Failed to parse the CLI's current version. Err: %v", err)
-		}
-		if versionInstalledErr != nil {
+		} else if versionInstalledErr != nil {
 			fmt.Printf("Failed to parse the latest CLI release version. Err: %v", err)
-		}
-		if versionInstalled.LessThan(versionRemote) {
+		} else if versionInstalled.LessThan(versionRemote) {
 			fmt.Printf("\nWARNING: There is newer version of the learn tool available.\nLatest: %s\nCurrent: %s\nTo avoid issues, upgrade by following the instructions at this link:\nhttps://github.com/gSchool/glearn-cli/blob/master/upgrade_instructions.md\n\n", version, currentReleaseVersion)
 		}
 	}
