@@ -9,6 +9,7 @@ import (
 	"os/user"
 	"time"
 
+	"github.com/Masterminds/semver"
 	"github.com/gSchool/glearn-cli/api/github"
 	"github.com/gSchool/glearn-cli/api/learn"
 	"github.com/spf13/cobra"
@@ -153,7 +154,15 @@ func setupLearnAPI(getPresignedPostUrl bool) {
 	if err != nil {
 		fmt.Printf("Something went wrong when fetching latest CLI version: %s\n", err)
 	} else if version != currentReleaseVersion {
-		fmt.Printf("\nWARNING: There is newer version of the learn tool available.\nLatest: %s\nCurrent: %s\nTo avoid issues, upgrade by following the instructions at this link:\nhttps://github.com/gSchool/glearn-cli/blob/master/upgrade_instructions.md\n\n", version, currentReleaseVersion)
+		versionRemote, versionRemoteErr := semver.NewVersion(version)
+		versionInstalled, versionInstalledErr := semver.NewVersion(currentReleaseVersion)
+		if versionRemoteErr != nil {
+			fmt.Printf("Failed to parse the CLI's current version. Err: %v", err)
+		} else if versionInstalledErr != nil {
+			fmt.Printf("Failed to parse the latest CLI release version. Err: %v", err)
+		} else if versionInstalled.LessThan(versionRemote) {
+			fmt.Printf("\nWARNING: There is newer version of the learn tool available.\nLatest: %s\nCurrent: %s\nTo avoid issues, upgrade by following the instructions at this link:\nhttps://github.com/gSchool/glearn-cli/blob/master/upgrade_instructions.md\n\n", version, currentReleaseVersion)
+		}
 	}
 
 	learn.API = api
