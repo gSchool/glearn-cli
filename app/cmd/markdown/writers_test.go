@@ -52,12 +52,6 @@ func Test_StandardOutWritingDoesNotThrowError(t *testing.T) {
 	}
 }
 
-func Test_ClipboardWritingDoesNotThrowError(t *testing.T) {
-	if err := getWriter(nil, false).Write("Name", "Content"); err != nil {
-		t.Errorf("Got an error writing to stdout: %s", err)
-	}
-}
-
 func Test_FileAppendWritingFailsForNonMdYamlFile(t *testing.T) {
 	destination := "not-md-yaml"
 	if err := getWriter(&destination, false).Write("Name", "Content"); err == nil {
