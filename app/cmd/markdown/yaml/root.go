@@ -18,6 +18,7 @@ type NewYamlCommandParams struct {
 	abbr        string
 	maxTemplate string
 	minTemplate string
+	needsUID    bool
 }
 
 func createYamlCommand(params NewYamlCommandParams) *cobra.Command {
@@ -39,6 +40,9 @@ func createYamlCommand(params NewYamlCommandParams) *cobra.Command {
 			}
 			templateName := fmt.Sprintf("%s Template", params.name)
 			t := templates.NewStaticTemplate(templateName, template)
+			if params.needsUID {
+				t = templates.NewIdTemplate(templateName, template)
+			}
 			var fileName *string
 			if len(args) == 1 {
 				fileName = &args[0]

@@ -10,6 +10,7 @@ func NewDescriptionYamlCommand(params NewYamlCommandParams) *cobra.Command {
 	params.abbr = "dsy"
 	params.maxTemplate = descYamlTemplate
 	params.minTemplate = descYamlTemplateMin
+	params.needsUID = true
 
 	return createYamlCommand(params)
 }

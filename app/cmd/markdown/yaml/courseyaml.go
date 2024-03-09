@@ -10,6 +10,7 @@ func NewCourseYamlCommand(params NewYamlCommandParams) *cobra.Command {
 	params.abbr = "cry"
 	params.maxTemplate = courseYamlTemplate
 	params.minTemplate = courseYamlTemplateMin
+	params.needsUID = false
 
 	return createYamlCommand(params)
 }

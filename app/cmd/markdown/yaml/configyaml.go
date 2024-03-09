@@ -10,6 +10,7 @@ func NewConfigYamlCommand(params NewYamlCommandParams) *cobra.Command {
 	params.abbr = "cfy"
 	params.maxTemplate = configYamlTemplate
 	params.minTemplate = configYamlTemplateMin
+	params.needsUID = false
 
 	return createYamlCommand(params)
 }

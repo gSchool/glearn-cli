@@ -2,6 +2,7 @@ package yaml
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/gSchool/glearn-cli/app/cmd/markdown/templates"
@@ -15,13 +16,14 @@ type testCase struct {
 	command     NewYamlCommand
 	maxTemplate string
 	minTemplate string
+	hasUID      bool
 }
 
 func getTestCases() []testCase {
 	return []testCase{
-		{"configyaml", "cfy", NewConfigYamlCommand, configYamlTemplate, configYamlTemplateMin},
-		{"courseyaml", "cry", NewCourseYamlCommand, courseYamlTemplate, courseYamlTemplateMin},
-		{"descyaml", "dsy", NewDescriptionYamlCommand, descYamlTemplate, descYamlTemplateMin},
+		{"configyaml", "cfy", NewConfigYamlCommand, configYamlTemplate, configYamlTemplateMin, false},
+		{"courseyaml", "cry", NewCourseYamlCommand, courseYamlTemplate, courseYamlTemplateMin, false},
+		{"descyaml", "dsy", NewDescriptionYamlCommand, descYamlTemplate, descYamlTemplateMin, true},
 	}
 }
 
@@ -62,6 +64,13 @@ func Test_NoDestinationWorksAsExpected(t *testing.T) {
 			}
 			if template.GetUnrenderedContent() != tc.maxTemplate {
 				t.Errorf("Failed to get the expected template")
+			}
+			re := regexp.MustCompile(`UID: [[:alnum:]]{8}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{4}-[[:alnum:]]{12}`)
+			if tc.hasUID {
+				rendered := template.Render()
+				if !re.MatchString(rendered) {
+					t.Error("Did not find a UID GUID in the rendered file:\n" + rendered)
+				}
 			}
 		})
 	}
