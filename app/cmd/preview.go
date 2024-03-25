@@ -165,6 +165,8 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 		baseDir = filepath.Base(p.target)
 	}
 
+	ignore := NewGitIgnore(p.target)
+
 	// Walk the whole filepath
 	filepath.Walk(p.target, func(path string, info os.FileInfo, err error) error {
 		path = filepath.ToSlash(path)
@@ -189,8 +191,21 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 
 		var isConfigFile = strings.Contains(path, "config.yml") || strings.Contains(path, "config.yaml") || strings.Contains(path, "autoconfig.yaml")
 		ext := filepath.Ext(path)
+
+		isGitIgnored := false
+		if !info.IsDir() {
+			relPath, relPathErr := filepath.Rel(p.target, path)
+			if relPathErr == nil {
+				match := ignore.Relative(relPath, false)
+				if match != nil && match.Ignore() {
+					isGitIgnored = true
+				}
+				fmt.Printf("%v %s\n", isGitIgnored, relPath)
+			}
+		}
+
 		// Ignoring all files over 1mb for preivew and warning users if the file is over 20mb that it will be ignored in publish action as well.
-		if !info.IsDir() && info.Size() > 1000000 && !strings.Contains(path, ".git/") {
+		if !isGitIgnored && !info.IsDir() && info.Size() > 1000000 && !strings.Contains(path, ".git/") {
 			if path == "preview-curriculum.zip" { // don't warn on preview-curriculum, it gets read here but still cleaned up
 				return nil
 			}
@@ -202,7 +217,7 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 			return nil
 		}
 
-		if isConfigFile || fileIsIncluded || (info.IsDir() && !strings.Contains(path, ".git/") && (ext != ".git" && path != "node_modules")) {
+		if !isGitIgnored && isConfigFile || fileIsIncluded || (info.IsDir() && !strings.Contains(path, ".git/") && (ext != ".git" && path != "node_modules")) {
 			if err != nil {
 				return err
 			}

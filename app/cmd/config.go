@@ -14,6 +14,8 @@ import (
 	"sort"
 	"strings"
 
+	gitignore "github.com/denormal/go-gitignore"
+
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -64,6 +66,60 @@ type ContentFileAttrs struct {
 	TimeLimit                int    `yaml:"TimeLimit,omitempty"`
 	Autoscore                bool   `yaml:"Autoscore,omitempty"`
 	fromHeader               bool   // fromHeader is set true when the attrs were parsed from the header
+}
+
+type emptyGitIgnore struct{}
+type alwaysMatch struct {
+	path string
+}
+
+func (am *alwaysMatch) Ignore() bool {
+	return false
+}
+
+func (am *alwaysMatch) Include() bool {
+	return true
+}
+
+func (am *alwaysMatch) String() string {
+	return am.path
+}
+
+func (am *alwaysMatch) Position() gitignore.Position {
+	return gitignore.Position{am.path, 0, 0, 0}
+}
+
+func (gi emptyGitIgnore) Base() string {
+	return ""
+}
+
+func (gi emptyGitIgnore) Match(path string) gitignore.Match {
+	return &alwaysMatch{path}
+}
+
+func (gi emptyGitIgnore) Absolute(path string, something bool) gitignore.Match {
+	return &alwaysMatch{path}
+}
+
+func (gi emptyGitIgnore) Relative(path string, something bool) gitignore.Match {
+	return &alwaysMatch{path}
+}
+
+func (gi emptyGitIgnore) Ignore(path string) bool {
+	return false
+}
+
+func (gi emptyGitIgnore) Include(path string) bool {
+	return true
+}
+
+func NewGitIgnore(repoPath string) gitignore.GitIgnore {
+	ignore, err := gitignore.NewRepository(repoPath)
+	if err != nil {
+		fmt.Fprintf(os.Stdout, "Did not find gitignore in %s\n", repoPath)
+		ignore = emptyGitIgnore{}
+	}
+	return ignore
 }
 
 var gitTopLevelCmd = "git rev-parse --show-toplevel"
@@ -237,6 +293,8 @@ func (cb *ConfigBuilder) newConfigYaml() (ConfigYaml, error) {
 	}
 	sort.Strings(unitKeys)
 
+	ignore := NewGitIgnore(cb.target)
+
 	formattedTargetName := formattedName(cb.target)
 	for _, unit := range unitKeys {
 		parts := strings.Split(unit, "/")
@@ -271,6 +329,10 @@ func (cb *ConfigBuilder) newConfigYaml() (ConfigYaml, error) {
 		}
 
 		for _, contentFile := range unitToContentFileMap[unit] {
+			match := ignore.Relative(contentFile.Path, false)
+			if match != nil && match.Ignore() {
+				continue
+			}
 			if anyMatchingPrefix("/"+contentFile.Path, cb.excludePaths) {
 				continue
 			}
@@ -316,7 +378,9 @@ func (cb *ConfigBuilder) newConfigYaml() (ConfigYaml, error) {
 				}
 			}
 		}
-		config.Standards = append(config.Standards, standard)
+		if len(standard.ContentFiles) > 0 {
+			config.Standards = append(config.Standards, standard)
+		}
 	}
 
 	return config, nil

@@ -11,6 +11,10 @@ import (
 	"testing"
 )
 
+const ignoredMDContent = `## Ignored
+
+This file should be ignored.`
+
 const testMDContent = `## Test links
 
 ![alt](./image/nested-small.png)
@@ -59,6 +63,21 @@ func Test_compressDirectory(t *testing.T) {
 		t.Errorf("There should be paths parsed from the target")
 	}
 
+	err = createTestFile("../../fixtures/test-block-auto-config/ignored.md", ignoredMDContent)
+	if err != nil {
+		t.Error("Could not make ignored.md")
+	}
+
+	err = os.MkdirAll("../../fixtures/test-block-auto-config/ignored/", os.FileMode(0777))
+	if err != nil {
+		t.Error("Could not make ignored/")
+	}
+
+	err = createTestFile("../../fixtures/test-block-auto-config/ignored/ignored.md", ignoredMDContent)
+	if err != nil {
+		t.Error("Could not make ignored/ignored.md")
+	}
+
 	tmpZipFile := "../../fixtures/test-block-auto-config/preview-curriculum.zip"
 
 	var challengePaths []string
@@ -105,6 +124,16 @@ func Test_compressDirectory(t *testing.T) {
 		if found == false {
 			t.Errorf("Should of found: %s In zipped dir", path)
 		}
+	}
+
+	fmt.Printf("%+v", paths)
+
+	if _, ok := paths["ignored.md"]; ok {
+		t.Error("ZIP should not contain ignored.md")
+	}
+
+	if _, ok := paths["ignored/ignored.md"]; ok {
+		t.Error("ZIP should not contain ignored/ignored.md")
 	}
 
 	os.Remove(tmpZipFile)
@@ -551,7 +580,11 @@ func testFilesExist(t *testing.T, paths []string) {
 }
 
 func createTestMD(content string) error {
-	f, err := os.OpenFile("test.md", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	return createTestFile("test.md", content)
+}
+
+func createTestFile(fileName string, content string) error {
+	f, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
