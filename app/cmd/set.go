@@ -23,7 +23,7 @@ func NewSetCommand() *cobra.Command {
 
 var setCmd = &cobra.Command{
 	Use:   "set",
-	Short: fmt.Sprintf("Set your your credentials in %s", appConfig.ConfigPath()),
+	Short: fmt.Sprintf("Set your credentials in %s", appConfig.ConfigPath()),
 	Long: fmt.Sprintf(`In order to use learn resources through our CLI you must set your
 credentials inside %s
 	`, appConfig.ConfigPath()),
