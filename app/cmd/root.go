@@ -3,10 +3,8 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"os/user"
 	"time"
 
 	"github.com/Masterminds/semver"
@@ -14,7 +12,6 @@ import (
 	"github.com/gSchool/glearn-cli/api/learn"
 	"github.com/gSchool/glearn-cli/app/cmd/markdown"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const setAPITokenMessage = `
@@ -53,9 +50,6 @@ Learn more by running 'learn walkthrough' to create sample materials, or visit
 	},
 }
 
-// APIToken is an initialized string used for holding it's flag value
-var APIToken string
-
 // UnitsDirectory is a flag for preview command that denotes a location for the units
 var UnitsDirectory string
 
@@ -73,47 +67,15 @@ var IgnoreLocal bool
 var CiCdEnvironment bool
 
 func init() {
-	u, err := user.Current()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error retrieving your user path information")
-		os.Exit(1)
-		return
-	}
-
-	viper.AddConfigPath(u.HomeDir)
-	viper.SetConfigName(".glearn-config")
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found. Either user's first time using CLI or they deleted it
-			configPath := fmt.Sprintf("%s/.glearn-config.yaml", u.HomeDir)
-			initialConfig := []byte(`api_token:`)
-
-			// Write a ~/.glearn-config.yaml file with all the needed credential keys to fill in.
-			err = ioutil.WriteFile(configPath, initialConfig, 0600)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, "Error writing your glearn config file")
-				os.Exit(1)
-				return
-			}
-		} else {
-			// Config file was found but another error was produced
-			fmt.Fprintf(os.Stderr, "Error: %s", err)
-			os.Exit(1)
-			return
-		}
-	}
-
 	// Add all the other learn commands defined in cmd/ directory
 	rootCmd.AddCommand(markdown.NewMarkdownCommand())
+	rootCmd.AddCommand(NewSetCommand())
 	rootCmd.AddCommand(previewCmd)
 	rootCmd.AddCommand(publishCmd)
 	rootCmd.AddCommand(guideCmd)
-	rootCmd.AddCommand(setCmd)
 	rootCmd.AddCommand(versionCmd)
 
 	// Check for flags set by the user and hydrate their corresponding variables.
-	setCmd.Flags().StringVarP(&APIToken, "api_token", "", "", "Your Learn api token")
 	previewCmd.Flags().StringVarP(&UnitsDirectory, "units", "u", "", "The directory where your units exist")
 	previewCmd.Flags().BoolVarP(&OpenPreview, "open", "o", false, "Open the preview in the browser")
 	previewCmd.Flags().BoolVarP(&FileOnly, "fileonly", "x", false, "Excludes images when previewing a single file, defaults false")

@@ -12,8 +12,8 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/gSchool/glearn-cli/api/learn"
+	appConfig "github.com/gSchool/glearn-cli/app/config"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -33,7 +33,7 @@ new block. If the block already exists, it will update the existing block.
 	`,
 	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
+		if token, err := appConfig.GetString("api_token"); token == "" || err != nil {
 			fmt.Fprintln(os.Stderr, setAPITokenMessage)
 			os.Exit(1)
 		}

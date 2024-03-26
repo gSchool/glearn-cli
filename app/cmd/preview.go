@@ -18,10 +18,10 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/gSchool/glearn-cli/api/learn"
+	appConfig "github.com/gSchool/glearn-cli/app/config"
 	di "github.com/gSchool/glearn-cli/ignorematcher"
 	"github.com/gSchool/glearn-cli/mdresourceparser"
 )
@@ -54,7 +54,7 @@ type previewBuilder struct {
 func NewPreviewBuilder(args []string) (*previewBuilder, error) {
 	setupLearnAPI(true)
 
-	if viper.Get("api_token") == "" || viper.Get("api_token") == nil {
+	if token, err := appConfig.GetString("api_token"); token == "" || err != nil {
 		return &previewBuilder{}, fmt.Errorf(setAPITokenMessage)
 	}
 
