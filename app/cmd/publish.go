@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -45,6 +46,29 @@ new block. If the block already exists, it will update the existing block.
 			os.Exit(1)
 		}
 
+		// Add as many repo urls as you would like
+		urls := []string{
+			"https://gitlab.com/gsei19/nineteen-week/REPO_NAME_HERE",
+		}
+		for _, url := range urls {
+			rp, err := parseHostedGit(url)
+			if err != nil {
+				log.Panic(err)
+			}
+			fmt.Printf("publishing url %s\n", url)
+			block, err := learn.API.CreateBlockByRepoName(rp)
+			if err != nil {
+				fmt.Printf("Error creating block from learn: %s\n", err)
+				os.Exit(1)
+			}
+			releaseID, err := learn.API.CreateBranchRelease(block.ID, "main")
+			if err != nil || releaseID == 0 {
+				fmt.Printf("Release failed. releaseID: %d. Error: %s\n", releaseID, err)
+				os.Exit(1)
+			}
+			fmt.Printf("Block %d:\nreleaseID: %d\n\n", block.ID, releaseID)
+		}
+		return
 		// Start benchmarking the total time spent in publish cmd
 		startOfCmd := time.Now()
 
