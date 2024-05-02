@@ -19,7 +19,7 @@ const courseYamlTemplate = `# Course.yaml files specify the grouping and orderin
 #
 # Supported Fields
 # ===================
-# DefaultUnitVisibility -- (optional) set to 'hidden' to hide all units when a course first starts.
+# DefaultUnitVisibility -- (optional) set to 'hidden' to hide all units when a course first starts. Visibility setting is applied only during the initial sync of a course.
 # Course -- The top level array containing the sections of a course
 # Course.Section -- An array contining a single array of repos. Content in the same section is grouped together on curriculum homepage.
 # Course.Repos --  An array containing block repos that have been published in Learn.

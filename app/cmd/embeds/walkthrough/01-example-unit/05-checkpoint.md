@@ -2,7 +2,7 @@
 # autoconfig.yml will use these settings. config.yml will override.
 Type: Checkpoint
 UID: 2df27a2d-6db3-4dd6-aa82-2e6169e5b77f
-# DefaultVisibility: hidden # Uncomment this line to default Checkpoint to hidden
+# DefaultVisibility: hidden # Uncomment this line to default Checkpoint to hidden. Please Note, this setting is applied only during the initial sync of a course file with a cohort.
 MaxCheckpointSubmissions: 1
 # EmailOnCompletion: true #  Uncomment this line to send instructors an email once a student has completed a checkpoint
 TimeLimit: 60

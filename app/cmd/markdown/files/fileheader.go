@@ -18,7 +18,7 @@ const fileHeaderTemplate = `---
 # autoconfig.yml will use these settings. config.yml will override.
 Type: Lesson # Options: Lesson, Checkpoint, Survey, Instructor, Resource
 UID: %s
-# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden
+# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden. Please note, the default visibility setting is applied only during the initial sync of a course file within a cohort.
 # MaxCheckpointSubmissions: 1 # Checkpoints only. Uncomment this line to limit the number of submissions
 # EmailOnCompletion: true # Checkpoints only. Uncomment this line to send instructors an email once a student has completed a checkpoint
 # TimeLimit: 60 # Checkpoints only. Uncomment this line to set a time limit in minutes
