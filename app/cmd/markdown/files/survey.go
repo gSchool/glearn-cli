@@ -18,7 +18,7 @@ const surveyTemplate = `---
 # autoconfig.yml will use these settings. config.yml will override.
 Type: Survey
 UID: %s
-# DefaultVisibility: hidden # Uncomment this line to default Survey to hidden
+# DefaultVisibility: hidden # Uncomment this line to default Survey to hidden. Please note, the default visibility setting is applied only during the initial sync of a course file within a cohort.
 # END FILE CONFIGURATION YML HEADER <<<<<
 ---
 

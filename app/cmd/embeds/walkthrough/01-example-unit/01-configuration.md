@@ -8,7 +8,7 @@ Type: Lesson # Options: Lesson, Checkpoint, Survey, Instructor, Resource
 # Instructor files are only visible to instructors
 # Resources can be linked within content, but will not show up in the navigation side bar
 UID: unique-identifier # can be set to any string, must be unique in the repository
-# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden when used
+# DefaultVisibility: hidden # Uncomment this line to default Lesson to hidden. Please Note, this setting is applied only during the initial sync of a course file with a cohort.
 ---
 
 # Configuration
