@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gSchool/glearn-cli/api"
-	"github.com/spf13/viper"
+	appConfig "github.com/gSchool/glearn-cli/app/config"
 )
 
 // API is the exported APIClient, it is set during Init
@@ -97,8 +97,11 @@ func (api *APIClient) BaseURL() string {
 // from Learn. It returns a populated *S3Credentials struct or an error
 func (api *APIClient) RetrieveCredentials(getPresignedPostUrl bool) (*Credentials, error) {
 	// Early return if user's api_token is not set
-	apiToken, ok := viper.Get("api_token").(string)
-	if !ok {
+	apiToken, err := appConfig.GetString("api_token")
+	if err != nil {
+		return nil, err
+	}
+	if apiToken == "" {
 		return nil, errors.New("Please set your API token with this command: learn set --api_token=your-token-from-https://learn-2.galvanize.com/api_token")
 	}
 

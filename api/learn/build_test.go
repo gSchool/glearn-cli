@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/gSchool/glearn-cli/api"
-	"github.com/spf13/viper"
+	appConfig "github.com/gSchool/glearn-cli/app/config"
 )
 
 const validBlockResponse = `{"blocks":[{"id":1,"repo_name":"blocks-test","sync_errors":["somethin is wrong"],"title":"Blocks Test","cohorts_using":[7,9]}]}`
 
 func Test_Getters(t *testing.T) {
-	viper.Set("api_token", "apiToken")
+	appConfig.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validBlockResponse)
 	API, _ := NewAPI("https://example.com", mockClient, false)
 
@@ -20,7 +20,7 @@ func Test_Getters(t *testing.T) {
 }
 
 func Test_GetBlockByRepoName(t *testing.T) {
-	viper.Set("api_token", "apiToken")
+	appConfig.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validBlockResponse)
 	API, _ := NewAPI("https://example.com", mockClient, false)
 
@@ -62,7 +62,7 @@ func Test_GetBlockByRepoName(t *testing.T) {
 }
 
 func Test_CreateBlockByRepoName(t *testing.T) {
-	viper.Set("api_token", "apiToken")
+	appConfig.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validBlockResponse)
 	API, _ := NewAPI("https://example.com", mockClient, false)
 
@@ -106,7 +106,7 @@ func Test_CreateBlockByRepoName(t *testing.T) {
 const validMasterReleaseResponse = `{"release_id":9}`
 
 func Test_CreateBranchRelease(t *testing.T) {
-	viper.Set("api_token", "apiToken")
+	appConfig.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validMasterReleaseResponse)
 	API, _ := NewAPI("https://example.com", mockClient, false)
 

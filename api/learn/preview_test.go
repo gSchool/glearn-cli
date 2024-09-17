@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/gSchool/glearn-cli/api"
-	"github.com/spf13/viper"
+	appConfig "github.com/gSchool/glearn-cli/app/config"
 )
 
 const validPreviewResponse = `{"status":"success","release_id":1,"preview_url":"http://example.com"}`
@@ -13,7 +13,7 @@ const pendingPreviewResponse = `{"status":"pending","release_id":1,"preview_url"
 const credentialsResponse = `{"presigned_url":"https://aws-presigned-url.com", "dev_notify_url": "development","user_id":5,"user_email":"abc@example.com"}`
 
 func Test_PollForBuildResponse(t *testing.T) {
-	viper.Set("api_token", "apiToken")
+	appConfig.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validPreviewResponse)
 	API, _ := NewAPI("https://example.com", mockClient, true)
 
@@ -55,7 +55,7 @@ func Test_PollForBuildResponse(t *testing.T) {
 }
 
 func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
-	viper.Set("api_token", "apiToken")
+	appConfig.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(pendingPreviewResponse)
 	API, _ := NewAPI("https://example.com", mockClient, true)
 
@@ -97,7 +97,7 @@ func Test_PollForBuildResponse_EndAttempts(t *testing.T) {
 }
 
 func Test_BuildReleaseFromS3_Directory(t *testing.T) {
-	viper.Set("api_token", "apiToken")
+	appConfig.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(validPreviewResponse)
 	API, _ := NewAPI("https://example.com", mockClient, true)
 
@@ -139,7 +139,7 @@ func Test_BuildReleaseFromS3_Directory(t *testing.T) {
 }
 
 func Test_BuildReleaseFromS3_notDirectory(t *testing.T) {
-	viper.Set("api_token", "apiToken")
+	appConfig.Set("api_token", "apiToken")
 	mockClient := api.MockResponses(credentialsResponse, validPreviewResponse)
 	API, _ := NewAPI("https://example.com", mockClient, true)
 
@@ -180,7 +180,7 @@ func Test_BuildReleaseFromS3_notDirectory(t *testing.T) {
 }
 
 func Test_RetrieveCredentials(t *testing.T) {
-	viper.Set("api_token", "apiToken")
+	appConfig.Set("api_token", "apiToken")
 	mockClient := api.MockResponse(credentialsResponse)
 	API, _ := NewAPI("https://example.com", mockClient, true)
 
