@@ -135,7 +135,7 @@ func generateGuide(currentDir string) error {
 		{"README.md", readme},
 		{"01-example-unit/00-hello-world.md", helloWorldMd},
 		{"01-example-unit/01-configuration.md", configurationMd},
-		{"01-example-unit/02-publishng.md", publishingMd},
+		{"01-example-unit/02-publishing.md", publishingMd},
 		{"01-example-unit/03-markdown-examples.md", markdownExamplesMd},
 		{"01-example-unit/04-challenges.md", challengesMd},
 		{"01-example-unit/05-checkpoint.md", checkpointMd},

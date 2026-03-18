@@ -1,0 +1,13 @@
+Standards:
+  - Title: Unit with External
+    UID: abc123
+    Description: A unit with an external content file
+    SuccessCriteria:
+      - success criteria
+    ContentFiles:
+      - Type: Lesson
+        Path: /units/lesson.md
+        UID: def456
+      - Type: External
+        Path: https://gitlab.galvanize.com/galvanize-it/sandboxes/grunde/test-repo/-/blob/main/sample-report.pdf
+        UID: ghi789
