@@ -542,6 +542,33 @@ func Test_createNewTarget_DockerDirectoryDoubleNestedMd(t *testing.T) {
 	}
 }
 
+func Test_ParseConfigFileSkipsExternalType(t *testing.T) {
+	source := "../../fixtures/test-block-with-external"
+	p := previewBuilder{target: source}
+	err := p.parseConfigAndGatherPaths()
+	if err != nil {
+		t.Errorf("parseConfigAndGatherPaths should not error when external content files are present: %s", err)
+	}
+
+	// The external content file should not be in configYamlPaths
+	for _, path := range p.configYamlPaths {
+		if strings.Contains(path, "external-link") {
+			t.Errorf("configYamlPaths should not contain external content file path, but found: %s", path)
+		}
+	}
+
+	// The lesson file should still be present
+	foundLesson := false
+	for _, path := range p.configYamlPaths {
+		if strings.Contains(path, "lesson.md") {
+			foundLesson = true
+		}
+	}
+	if !foundLesson {
+		t.Errorf("configYamlPaths should contain the lesson content file path")
+	}
+}
+
 func testFilesExist(t *testing.T, paths []string) {
 	for _, file := range paths {
 		if _, err := os.Stat(fmt.Sprintf("single-file-upload/%s", file)); os.IsNotExist(err) {

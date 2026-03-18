@@ -911,6 +911,9 @@ func (p *previewBuilder) parseConfigAndGatherPaths() error {
 
 	for _, std := range config.Standards {
 		for _, cf := range std.ContentFiles {
+			if strings.ToLower(cf.Type) == "external" {
+				continue
+			}
 			contents, err := ioutil.ReadFile(p.target + cf.Path)
 			if err != nil {
 				return fmt.Errorf("Failure to read file '%s'. Err: %s", string(contents), err)
