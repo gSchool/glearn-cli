@@ -31,7 +31,7 @@ When generating challenges with the `learn md` command, you can see explanations
 * short answer
 * number
 * paragraph
-* code snippet--js, py, java, sql (code directly in Learn)
+* code snippet--js, py, java, go, sql (code directly in Learn)
 * custom-snippet--write your own `Dockerfile` and `test.sh` to allow student code to run in a customized container
 * project, testable project (code locally, submit a repo)
 

@@ -57,6 +57,7 @@ func addQuestionCommands(c *cobra.Command) {
 		questions.NewPythonCommand,
 		questions.NewSqlCommand,
 		questions.NewRubyCommand,
+		questions.NewGoCommand,
 		questions.NewUploadCommand,
 		questions.NewCustomSnippetCommand,
 		questions.NewProjectCommand,
