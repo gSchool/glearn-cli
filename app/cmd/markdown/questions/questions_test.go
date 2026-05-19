@@ -21,6 +21,7 @@ func getTestCases() []testCase {
 	return []testCase{
 		{"checkbox", "cb", NewCheckBoxCommand, checkboxTemplate, checkboxTemplateMin},
 		{"customsnippet", "cs", NewCustomSnippetCommand, customSnippetTemplate, customSnippetTemplateMin},
+		{"go", "go", NewGoCommand, goTemplate, goTemplateMin},
 		{"java", "ja", NewJavaCommand, javaTemplate, javaTemplateMin},
 		{"javascript", "js", NewJavaScriptCommand, javascriptTemplate, javascriptTemplateMin},
 		{"multiplechoice", "mc", NewMultipleChoiceCommand, multipleChoiceTemplate, multipleChoiceTemplateMin},
