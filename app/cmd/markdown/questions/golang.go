@@ -35,7 +35,6 @@ const goTemplate = `<!-- >>>>>>>>>>>>>>>>>>>>>> BEGIN CHALLENGE >>>>>>>>>>>>>>>>
 <!-- * points: [1] (optional, the number of points for scoring as a checkpoint) -->
 <!-- * topics: [goroutines, channels] (Checkpoints only, optional the topics for analyzing points) -->
 <!-- * test_file: [/path/to/file.txt] (External test file, replaces 'tests' section) -->
-<!-- * setup_file: [/path/to/file.txt] (External setup file, replaces 'setup' section) -->
 
 ##### !question
 
