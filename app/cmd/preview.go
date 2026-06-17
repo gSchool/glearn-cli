@@ -169,6 +169,12 @@ func (p *previewBuilder) compressDirectory(zipTarget string) error {
 	filepath.Walk(p.target, func(path string, info os.FileInfo, err error) error {
 		path = filepath.ToSlash(path)
 
+		// Skip the .claude directory and all of its contents entirely so it is
+		// never collected into the preview payload.
+		if info != nil && info.IsDir() && filepath.Base(path) == ".claude" {
+			return filepath.SkipDir
+		}
+
 		fileIsIncluded := false
 		for _, p := range p.configYamlPaths {
 			var configPathSplits = strings.Split(p, string(os.PathSeparator))
