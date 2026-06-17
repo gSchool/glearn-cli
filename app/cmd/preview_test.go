@@ -107,6 +107,13 @@ func Test_compressDirectory(t *testing.T) {
 		}
 	}
 
+	// The .claude directory and its contents should never be included in the payload.
+	for path := range paths {
+		if strings.Contains(path, ".claude/") {
+			t.Errorf("Should not have included file from .claude directory: %s", path)
+		}
+	}
+
 	os.Remove(tmpZipFile)
 }
 
