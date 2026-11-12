@@ -14,6 +14,7 @@ The easiest installation is with Homebrew, which is for MacOS and Linux. Follow 
 
 ```
 brew tap gSchool/learn
+brew trust gSchool/learn
 brew install learn
 ```
 
